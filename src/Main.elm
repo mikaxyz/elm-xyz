@@ -1,23 +1,46 @@
-module Main exposing (..)
+module Main exposing (main)
 
-import Html exposing (Html, program)
-import AnimationFrame
-import Msg exposing (Msg(..))
-import View exposing (view, initModel, Model)
+import Browser
+import Browser.Events
+import Json.Decode as D
+import Math.Vector2 as Vec2 exposing (Vec2)
+import Model exposing (Model, Msg(..))
+import Update exposing (update)
+import View
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
-    Html.program
-        { init = ( initModel, Cmd.none )
-        , view = view
+    Browser.document
+        { init = always ( Model.init, Cmd.none )
+        , view = View.doc
         , update = update
-        , subscriptions = (\model -> AnimationFrame.diffs Animate)
+        , subscriptions = subscriptions
         }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Animate elapsed ->
-            ( { model | theta = model.theta + (elapsed / 10000) }, Cmd.none )
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    let
+        drags =
+            case model.drag of
+                Just _ ->
+                    Sub.batch
+                        [ Browser.Events.onMouseMove (vectorDecoder |> D.map Drag)
+                        , Browser.Events.onMouseUp (vectorDecoder |> D.map DragEnd)
+                        ]
+
+                Nothing ->
+                    Browser.Events.onMouseDown (vectorDecoder |> D.map DragStart)
+    in
+    Sub.batch
+        [ drags
+        , Browser.Events.onAnimationFrameDelta Animate
+        ]
+
+
+vectorDecoder : D.Decoder Vec2
+vectorDecoder =
+    D.map2 Vec2.vec2
+        (D.field "x" D.float)
+        (D.field "y" D.float)

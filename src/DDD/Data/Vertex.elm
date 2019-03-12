@@ -1,4 +1,4 @@
-module Types exposing (..)
+module DDD.Data.Vertex exposing (Vertex)
 
 import Math.Vector3 exposing (Vec3)
 

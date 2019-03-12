@@ -1,4 +1,3 @@
 /node_modules
 /dist
-/elm-stuff/build-artifacts
-/elm-stuff/packages
+/elm-stuff

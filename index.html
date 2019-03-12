@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<base href="/">
 	<meta charset="utf-8">
 	<title>Elm Web GL Experiment</title>
+	<style>
+		html {background-color: black;}
+		body {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 100vh;
+			margin: 0;
+		}
+		canvas {background-color: #16161D;}
+	</style>
 </head>
 <body>
-<script src="/dist/app.js"></script>
+<script src="dist/app.js"></script>
 <script>
-	Elm.Main.fullscreen();
+	Elm.Main.init();
 </script>
 </body>
 </html>

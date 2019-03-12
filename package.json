@@ -2,16 +2,15 @@
   "name": "elm-weg-gl-experimant",
   "private": true,
   "version": "1.0.0",
-  "description": "",
+  "description": "Elm Web GL Experiments",
   "main": "index.html",
   "scripts": {
-    "elm-make": "./node_modules/.bin/elm-make ./src/Main.elm --output=./dist/app.js --warn --yes || true",
-    "elm-css": "./node_modules/.bin/elm-css src/Stylesheets.elm || true"
+    "build": "./node_modules/.bin/elm make ./src/Main.elm --output=./dist/app.js"
   },
   "author": "me@mika.xyz",
   "license": "ISC",
   "devDependencies": {
-    "elm": "~0.18.0",
-    "elm-format": "0.6.1-alpha"
+    "elm": "^0.19.0-bugfix6",
+    "elm-format": "^0.8.1"
   }
 }
