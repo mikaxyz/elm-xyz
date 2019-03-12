@@ -22,6 +22,12 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     let
+        vectorDecoder : D.Decoder Vec2
+        vectorDecoder =
+            D.map2 Vec2.vec2
+                (D.field "x" D.float)
+                (D.field "y" D.float)
+
         drags =
             case model.drag of
                 Just _ ->
@@ -37,10 +43,3 @@ subscriptions model =
         [ drags
         , Browser.Events.onAnimationFrameDelta Animate
         ]
-
-
-vectorDecoder : D.Decoder Vec2
-vectorDecoder =
-    D.map2 Vec2.vec2
-        (D.field "x" D.float)
-        (D.field "y" D.float)

@@ -8,16 +8,22 @@ import Model exposing (Model, Msg)
 import WebGL
 
 
-viewport =
-    { width = 800
-    , height = 600
-    }
-
-
 doc : Model -> Browser.Document Msg
 doc model =
     { title = "Elm Web GL Experiment"
     , body = view model |> List.singleton
+    }
+
+
+type alias Config =
+    { width : Int
+    , height : Int
+    }
+
+
+viewport =
+    { width = 800
+    , height = 600
     }
 
 
@@ -27,4 +33,4 @@ view model =
         [ width viewport.width
         , height viewport.height
         ]
-        [ Scene.render ]
+        (Scene.render viewport model.theta model.scene)

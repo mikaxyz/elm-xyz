@@ -7,32 +7,32 @@ import Math.Vector3 exposing (vec3)
 import WebGL exposing (..)
 
 
-mesh : Float -> Mesh Vertex
-mesh height =
+mesh : Float -> Float -> Float -> Mesh Vertex
+mesh w h l =
     let
         rft =
-            vec3 1 height 1
+            vec3 w h l
 
         lft =
-            vec3 -1 height 1
+            vec3 -w h l
 
         lbt =
-            vec3 -1 -height 1
+            vec3 -w -h l
 
         rbt =
-            vec3 1 -height 1
+            vec3 w -h l
 
         rbb =
-            vec3 1 -height -1
+            vec3 w -h -l
 
         rfb =
-            vec3 1 height -1
+            vec3 w h -l
 
         lfb =
-            vec3 -1 height -1
+            vec3 -w h -l
 
         lbb =
-            vec3 -1 -height -1
+            vec3 -w -h -l
     in
     [ face Color.green rft rfb rbb rbt
     , face Color.cyan rft rfb lfb lft

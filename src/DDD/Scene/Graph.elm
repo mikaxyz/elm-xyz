@@ -1,6 +1,6 @@
 module DDD.Scene.Graph exposing (Graph)
 
 
-type Graph a
-    = Graph a
-    | Children (List (Graph a))
+type Graph attributes object
+    = Graph attributes object
+    | Children (List (Graph attributes object))
