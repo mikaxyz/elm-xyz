@@ -6,8 +6,13 @@ module DDD.Scene exposing
     , render
     )
 
+--import DDD.Mesh.Tree exposing (tree)
+
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Cube
+import DDD.Scene.Graph exposing (Graph(..))
+import DDD.Scene.Object exposing (Object)
+import DDD.Scene.Uniforms exposing (Uniforms)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -38,30 +43,11 @@ cameraRotateApply scene =
     }
 
 
-type Graph
-    = Graph Object (List Graph)
-
-
-type alias Object =
-    { position : Vec3
-    , rotation : Mat4
-    , mesh : Mesh Vertex
-    }
-
-
 floor : Object
 floor =
     { position = vec3 0 0 0
     , rotation = Mat4.identity
     , mesh = DDD.Mesh.Cube.mesh 1 0.1 1
-    }
-
-
-cube : Object
-cube =
-    { position = vec3 0.4 0.2 0
-    , rotation = Mat4.makeRotate (Basics.pi / 12) (vec3 0 1 0)
-    , mesh = DDD.Mesh.Cube.mesh 0.2 0.2 0.2
     }
 
 
@@ -93,10 +79,12 @@ init =
     { graph =
         Graph floor []
             :: cubes 0.8 0.1
-            ++ cubes 0.6 0.075
-            ++ cubes 0.4 0.05
-            ++ cubes 0.2 0.025
-            ++ cubes 0.1 0.005
+
+    --            ++ cubes 0.6 0.075
+    --            ++ cubes 0.4 0.05
+    --            ++ cubes 0.2 0.025
+    --            ++ cubes 0.1 0.005
+    --            ++ tree
     , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 1.5 0) (vec3 0 1 0)
     , cameraRotate = Mat4.identity
     }
@@ -104,10 +92,19 @@ init =
 
 render : { width : Int, height : Int } -> Float -> Scene -> List Entity
 render viewport theta scene =
+    let
+        uniforms : Float -> Mat4 -> Uniforms
+        uniforms aspectRatio camera =
+            { rotation = Mat4.makeRotate (6 * theta) (vec3 0 1 0)
+            , translate = Mat4.identity
+            , perspective = Mat4.makePerspective 45 aspectRatio 0.01 100
+            , camera = camera
+            , shade = 1.0
+            }
+    in
     renderGraph
-        (sceneUniforms
+        (uniforms
             (toFloat <| viewport.width // viewport.height)
-            theta
             (Mat4.mul scene.camera scene.cameraRotate)
         )
         scene.graph
@@ -146,25 +143,6 @@ entity uniforms object =
         fragmentShader
         object.mesh
         uniforms
-
-
-sceneUniforms : Float -> Float -> Mat4 -> Uniforms
-sceneUniforms aspectRatio theta camera =
-    { rotation = Mat4.makeRotate (6 * theta) (vec3 0 1 0)
-    , translate = Mat4.identity
-    , perspective = Mat4.makePerspective 45 aspectRatio 0.01 100
-    , camera = camera
-    , shade = 1.0
-    }
-
-
-type alias Uniforms =
-    { rotation : Mat4
-    , translate : Mat4
-    , perspective : Mat4
-    , camera : Mat4
-    , shade : Float
-    }
 
 
 vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }

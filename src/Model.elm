@@ -1,8 +1,7 @@
 module Model exposing (Model, Msg(..), init)
 
-import DDD.Data.Node exposing (Node(..))
 import DDD.Scene as Scene exposing (Scene)
-import Math.Vector2 as Vec2 exposing (Vec2, vec2)
+import Math.Vector2 exposing (Vec2)
 
 
 type Msg
