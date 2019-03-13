@@ -1,4 +1,4 @@
-module DDD.Mesh.Primitives exposing (bone, face)
+module DDD.Mesh.Primitives exposing (bone, bone2, face)
 
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
@@ -18,6 +18,11 @@ face color a b c d =
 
 bone : Color -> Color -> Float -> Float -> List ( Vertex, Vertex, Vertex )
 bone color1 color2 thickness length =
+    bone2 color1 color2 color2 thickness length
+
+
+bone2 : Color -> Color -> Color -> Float -> Float -> List ( Vertex, Vertex, Vertex )
+bone2 color1 color2 color3 thickness length =
     let
         top =
             vec3 0 length 0
@@ -38,5 +43,5 @@ bone color1 color2 thickness length =
             Vertex (Color.vec3 color) position
     in
     [ ( vertex color1 top, vertex color2 bottomL1, vertex color2 bottomR1 )
-    , ( vertex color1 top, vertex color2 bottomL2, vertex color2 bottomR2 )
+    , ( vertex color1 top, vertex color3 bottomL2, vertex color3 bottomR2 )
     ]
