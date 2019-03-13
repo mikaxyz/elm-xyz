@@ -1,5 +1,7 @@
 module Update exposing (update)
 
+import DDD.Scene as Scene
+import Math.Vector2 as Vec2
 import Model exposing (Model, Msg(..))
 
 
@@ -15,16 +17,18 @@ update msg model =
         Drag pos ->
             ( { model
                 | drag = Maybe.map (\drag -> { drag | to = pos }) model.drag
+                , scene =
+                    model.drag
+                        |> Maybe.map (\drag -> Scene.cameraRotate (Vec2.sub drag.from drag.to |> Vec2.scale 0.01) model.scene)
+                        |> Maybe.withDefault model.scene
               }
             , Cmd.none
             )
 
-        DragEnd pos ->
+        DragEnd _ ->
             ( { model
                 | drag = Nothing
-                , camera =
-                    Model.camera
-                        { model | drag = Maybe.map (\drag -> { drag | to = pos }) model.drag }
+                , scene = Scene.cameraRotateApply model.scene
               }
             , Cmd.none
             )

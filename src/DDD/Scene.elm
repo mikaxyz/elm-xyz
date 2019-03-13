@@ -1,8 +1,15 @@
-module DDD.Scene exposing (Scene, init, render)
+module DDD.Scene exposing
+    ( Scene
+    , cameraRotate
+    , cameraRotateApply
+    , init
+    , render
+    )
 
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Cube
 import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Mesh, Shader)
 
@@ -10,6 +17,24 @@ import WebGL exposing (Entity, Mesh, Shader)
 type alias Scene =
     { graph : List Graph
     , camera : Mat4
+    , cameraRotate : Mat4
+    }
+
+
+cameraRotate : Vec2 -> Scene -> Scene
+cameraRotate rotate scene =
+    { scene
+        | cameraRotate =
+            Mat4.makeRotate (Vec2.getX rotate) (vec3 0 1 0)
+                |> Mat4.rotate (Vec2.getY rotate) (vec3 1 0 0)
+    }
+
+
+cameraRotateApply : Scene -> Scene
+cameraRotateApply scene =
+    { scene
+        | camera = Mat4.mul scene.camera scene.cameraRotate
+        , cameraRotate = Mat4.identity
     }
 
 
@@ -24,6 +49,7 @@ type alias Object =
     }
 
 
+floor : Object
 floor =
     { position = vec3 0 0 0
     , rotation = Mat4.identity
@@ -31,6 +57,7 @@ floor =
     }
 
 
+cube : Object
 cube =
     { position = vec3 0.4 0.2 0
     , rotation = Mat4.makeRotate (Basics.pi / 12) (vec3 0 1 0)
@@ -42,10 +69,36 @@ cube =
 --
 
 
+cubes : Float -> Float -> List Graph
+cubes r w =
+    List.range 0 (round (3 / w))
+        |> List.map toFloat
+        |> List.map
+            (\i ->
+                Graph
+                    { position = vec3 r (i * w + 0.1) 0
+                    , rotation = Mat4.makeRotate (Basics.pi / 6 * i) (vec3 0 1 0)
+
+                    --                        Mat4.mul
+                    --                        Mat4.makeRotate (Basics.pi / 6 * i) (vec3 0 1 0)
+                    --                            (Mat4.makeTranslate (vec3 r (i * w + 0.1) 0))
+                    , mesh = DDD.Mesh.Cube.mesh w 0.01 w
+                    }
+                    []
+            )
+
+
 init : Scene
 init =
-    { graph = [ Graph floor [ Graph cube [ Graph cube [ Graph cube [] ] ] ] ]
-    , camera = Mat4.makeLookAt (vec3 0 1 4) (vec3 0 1 0) (vec3 0 1 0)
+    { graph =
+        Graph floor []
+            :: cubes 0.8 0.1
+            ++ cubes 0.6 0.075
+            ++ cubes 0.4 0.05
+            ++ cubes 0.2 0.025
+            ++ cubes 0.1 0.005
+    , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 1.5 0) (vec3 0 1 0)
+    , cameraRotate = Mat4.identity
     }
 
 
@@ -55,7 +108,7 @@ render viewport theta scene =
         (sceneUniforms
             (toFloat <| viewport.width // viewport.height)
             theta
-            (Mat4.makeLookAt (vec3 0 1 4) (vec3 0 1 0) (vec3 0 1 0))
+            (Mat4.mul scene.camera scene.cameraRotate)
         )
         scene.graph
 
@@ -97,7 +150,7 @@ entity uniforms object =
 
 sceneUniforms : Float -> Float -> Mat4 -> Uniforms
 sceneUniforms aspectRatio theta camera =
-    { rotation = Mat4.makeRotate (8 * theta) (vec3 0 1 0)
+    { rotation = Mat4.makeRotate (6 * theta) (vec3 0 1 0)
     , translate = Mat4.identity
     , perspective = Mat4.makePerspective 45 aspectRatio 0.01 100
     , camera = camera
