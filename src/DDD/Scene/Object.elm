@@ -1,4 +1,4 @@
-module DDD.Scene.Object exposing (Object, withMesh)
+module DDD.Scene.Object exposing (Object, withMesh, withPosition)
 
 import DDD.Data.Vertex exposing (Vertex)
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -19,3 +19,8 @@ withMesh mesh =
     , rotation = Mat4.identity
     , mesh = mesh
     }
+
+
+withPosition : Vec3 -> Object -> Object
+withPosition pos obj =
+    { obj | position = pos }

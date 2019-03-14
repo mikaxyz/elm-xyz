@@ -3,6 +3,7 @@ module Update exposing (update)
 import DDD.Scene as Scene
 import Math.Vector2 as Vec2
 import Model exposing (Model, Msg(..))
+import Scenes.ObjectLoader
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -36,9 +37,12 @@ update msg model =
         KeyPressed key ->
             case String.toLower key of
                 "j" ->
-                    ( model |> Model.nextScene
-                    , Cmd.none
-                    )
+                    model |> Model.nextScene
 
                 _ ->
                     ( model, Cmd.none )
+
+        GotObj str ->
+            ( { model | scene = Scenes.ObjectLoader.addMesh (Scenes.ObjectLoader.mesh str) model.scene }
+            , Cmd.none
+            )

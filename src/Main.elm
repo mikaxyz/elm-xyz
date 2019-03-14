@@ -12,7 +12,7 @@ import View
 main : Program () Model Msg
 main =
     Browser.document
-        { init = always ( Model.init, Cmd.none )
+        { init = always Model.init
         , view = View.doc
         , update = update
         , subscriptions = subscriptions

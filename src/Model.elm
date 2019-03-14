@@ -3,27 +3,55 @@ module Model exposing (Model, Msg(..), init, nextScene)
 import DDD.Scene exposing (Scene)
 import Math.Vector2 exposing (Vec2)
 import Scenes.Landscape
+import Scenes.ObjectLoader
 import Scenes.Sandbox
 
 
 type ActiveScene
     = Sandbox
     | Landscape
+    | ObjectLoader
 
 
+withScene : ActiveScene -> Model -> ( Model, Cmd Msg )
+withScene scene model =
+    case scene of
+        Landscape ->
+            ( { model
+                | currentScene = Landscape
+                , scene = Scenes.Landscape.init
+              }
+            , Cmd.none
+            )
+
+        ObjectLoader ->
+            ( { model
+                | currentScene = ObjectLoader
+                , scene = Scenes.ObjectLoader.init
+              }
+            , Scenes.ObjectLoader.getObj GotObj
+            )
+
+        Sandbox ->
+            ( { model
+                | currentScene = Sandbox
+                , scene = Scenes.Sandbox.init
+              }
+            , Cmd.none
+            )
+
+
+nextScene : Model -> ( Model, Cmd Msg )
 nextScene model =
     case model.currentScene of
         Sandbox ->
-            { model
-                | currentScene = Landscape
-                , scene = Scenes.Landscape.init
-            }
+            model |> withScene Landscape
 
         Landscape ->
-            { model
-                | currentScene = Sandbox
-                , scene = Scenes.Sandbox.init
-            }
+            model |> withScene ObjectLoader
+
+        ObjectLoader ->
+            model |> withScene Sandbox
 
 
 type Msg
@@ -32,6 +60,7 @@ type Msg
     | Drag Vec2
     | DragEnd Vec2
     | KeyPressed String
+    | GotObj String
 
 
 type alias Model =
@@ -42,10 +71,11 @@ type alias Model =
     }
 
 
-init : Model
+init : ( Model, Cmd Msg )
 init =
     { theta = 0
     , drag = Nothing
     , scene = Scenes.Sandbox.init
     , currentScene = Sandbox
     }
+        |> withScene ObjectLoader
