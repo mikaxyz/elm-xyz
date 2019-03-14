@@ -42,4 +42,5 @@ subscriptions model =
     Sub.batch
         [ drags
         , Browser.Events.onAnimationFrameDelta Animate
+        , Browser.Events.onKeyPress (D.field "key" D.string) |> Sub.map KeyPressed
         ]

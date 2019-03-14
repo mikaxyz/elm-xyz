@@ -2,15 +2,11 @@ module DDD.Scene exposing
     ( Scene
     , cameraRotate
     , cameraRotateApply
-    , init
+    , defaultScene
     , render
     )
 
---import DDD.Mesh.Tree exposing (tree)
-
 import DDD.Data.Vertex exposing (Vertex)
-import DDD.Mesh.Cube
-import DDD.Mesh.Tree exposing (tree)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
@@ -24,6 +20,14 @@ type alias Scene =
     { graph : List Graph
     , camera : Mat4
     , cameraRotate : Mat4
+    }
+
+
+defaultScene : Scene
+defaultScene =
+    { graph = []
+    , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 1.5 0) (vec3 0 1 0)
+    , cameraRotate = Mat4.identity
     }
 
 
@@ -41,46 +45,6 @@ cameraRotateApply scene =
     { scene
         | camera = Mat4.mul scene.camera scene.cameraRotate
         , cameraRotate = Mat4.identity
-    }
-
-
-floor : Object
-floor =
-    { position = vec3 0 0 0
-    , rotation = Mat4.identity
-    , mesh = DDD.Mesh.Cube.mesh 0.4 0.01 0.4
-    }
-
-
-
---
-
-
-cubes : Float -> Float -> List Graph
-cubes r w =
-    List.range 0 (round (4 / w))
-        |> List.map toFloat
-        |> List.map
-            (\i ->
-                Graph
-                    { position = vec3 (r * (i / (4 / w))) (-i * (w * w) * r) 0
-                    , rotation = Mat4.makeRotate (Basics.pi * w * i) (vec3 0 1 0)
-                    , mesh = DDD.Mesh.Cube.mesh w 0.01 w
-                    }
-                    []
-            )
-
-
-init : Scene
-init =
-    { graph =
-        tree 8 0
-            ++ cubes 4 0.1
-            ++ cubes 3 0.075
-            ++ cubes 2 0.05
-            ++ cubes 1 0.025
-    , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 1.5 0) (vec3 0 1 0)
-    , cameraRotate = Mat4.identity
     }
 
 

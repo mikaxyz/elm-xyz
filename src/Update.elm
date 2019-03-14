@@ -32,3 +32,13 @@ update msg model =
               }
             , Cmd.none
             )
+
+        KeyPressed key ->
+            case String.toLower key of
+                "j" ->
+                    ( model |> Model.nextScene
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
