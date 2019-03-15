@@ -8,7 +8,7 @@ module DDD.Scene exposing
 
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Scene.Graph exposing (Graph(..))
-import DDD.Scene.Object exposing (Object)
+import DDD.Scene.Object as Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
@@ -79,7 +79,7 @@ renderGraph uniforms graph =
                             uniforms_ =
                                 { uniforms
                                     | translate =
-                                        Mat4.makeTranslate object.position
+                                        Mat4.makeTranslate (Object.position object)
 
                                     --                                        Mat4.mul
                                     --                                            uniforms.translate
@@ -88,7 +88,7 @@ renderGraph uniforms graph =
                                         --                                        object.rotation
                                         Mat4.mul
                                             uniforms.rotation
-                                            object.rotation
+                                            (Object.rotation object)
                                 }
                         in
                         entity uniforms_ object
@@ -100,9 +100,9 @@ renderGraph uniforms graph =
 entity : Uniforms -> Object -> Entity
 entity uniforms object =
     WebGL.entity
-        vertexShader
+        (Object.vertexShader object |> Maybe.withDefault vertexShader)
         fragmentShader
-        object.mesh
+        (Object.mesh object)
         uniforms
 
 

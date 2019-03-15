@@ -4,8 +4,10 @@ import DDD.Mesh.Cube
 import DDD.Mesh.Tree exposing (tree)
 import DDD.Scene exposing (Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
+import DDD.Scene.Object as Object
 import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (vec3)
+import WebGL
 
 
 
@@ -31,9 +33,10 @@ cubes r w =
         |> List.map
             (\i ->
                 Graph
-                    { position = vec3 (r * (i / (4 / w))) (-i * (w * w) * r) 0
-                    , rotation = Mat4.makeRotate (Basics.pi * w * i) (vec3 0 1 0)
-                    , mesh = DDD.Mesh.Cube.mesh w 0.01 w
-                    }
+                    (DDD.Mesh.Cube.mesh w 0.01 w
+                        |> Object.withMesh
+                        |> Object.withPosition (vec3 (r * (i / (4 / w))) (-i * (w * w) * r) 0)
+                        |> Object.withRotation (Mat4.makeRotate (Basics.pi * w * i) (vec3 0 1 0))
+                    )
                     []
             )

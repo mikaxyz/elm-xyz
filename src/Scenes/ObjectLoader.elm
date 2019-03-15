@@ -7,11 +7,12 @@ import DDD.Mesh.Cube
 import DDD.Scene exposing (Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
+import DDD.Scene.Uniforms exposing (Uniforms)
 import Http
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Parser exposing ((|.), (|=), Parser, float, int, lazy, spaces, succeed, symbol)
-import WebGL
+import WebGL exposing (Shader)
 
 
 type alias VertMap =
@@ -150,6 +151,7 @@ addMesh tris scene =
             tris
                 |> WebGL.triangles
                 |> Object.withMesh
+                |> Object.withVertexShader vertexShader
                 |> Object.withPosition (vec3 0 0.5 0)
     in
     { scene | graph = Graph graphObject [] :: scene.graph }
@@ -170,3 +172,23 @@ getObj tagger =
         { url = "obj/monkey.obj"
         , expect = Http.expectString (\x -> tagger (x |> Result.withDefault ""))
         }
+
+
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader =
+    [glsl|
+        attribute vec3 position;
+        attribute vec3 color;
+        uniform mat4 perspective;
+        uniform mat4 camera;
+        uniform mat4 rotation;
+        uniform mat4 translate;
+        varying vec3 vcolor;
+
+        vec3 campos = camera[3].xyz;
+
+        void main () {
+            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+            vcolor = mix(normalize(campos), normalize(position), 0.8);
+        }
+    |]

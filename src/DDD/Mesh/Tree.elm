@@ -4,7 +4,7 @@ import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Node exposing (Node(..))
 import DDD.Mesh.Primitives exposing (bone2)
 import DDD.Scene.Graph exposing (Graph(..))
-import DDD.Scene.Object exposing (Object)
+import DDD.Scene.Object as Object exposing (Object)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3)
 import WebGL exposing (..)
@@ -58,10 +58,12 @@ type alias Branch =
 
 object : Float -> Branch -> Object
 object t branch =
-    { position = vec3 0 0 0
-    , rotation =
-        Mat4.mul
-            (Mat4.makeTranslate (vec3 0 t 0))
-            (Mat4.makeRotate branch.r (vec3 0.4 0.5 0.2))
-    , mesh = bone2 Color.orange Color.blue Color.green (0.1 * branch.l) branch.l |> WebGL.triangles
-    }
+    bone2 Color.orange Color.blue Color.green (0.1 * branch.l) branch.l
+        |> WebGL.triangles
+        |> Object.withMesh
+        |> Object.withPosition (vec3 0 0 0)
+        |> Object.withRotation
+            (Mat4.mul
+                (Mat4.makeTranslate (vec3 0 t 0))
+                (Mat4.makeRotate branch.r (vec3 0.4 0.5 0.2))
+            )
