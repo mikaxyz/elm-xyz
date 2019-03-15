@@ -62,7 +62,7 @@ render viewport theta scene =
     in
     renderGraph
         (uniforms
-            (toFloat <| viewport.width // viewport.height)
+            (toFloat viewport.width / toFloat viewport.height)
             (Mat4.mul scene.camera scene.cameraRotate)
         )
         scene.graph
