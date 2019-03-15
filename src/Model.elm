@@ -1,57 +1,17 @@
-module Model exposing (Model, Msg(..), init, nextScene)
+module Model exposing
+    ( Model
+    , Msg(..)
+    , init
+    , nextScene
+    , prevScene
+    )
 
+import Array exposing (Array)
 import DDD.Scene exposing (Scene)
 import Math.Vector2 exposing (Vec2)
 import Scenes.Landscape
 import Scenes.ObjectLoader
 import Scenes.Sandbox
-
-
-type ActiveScene
-    = Sandbox
-    | Landscape
-    | ObjectLoader
-
-
-withScene : ActiveScene -> Model -> ( Model, Cmd Msg )
-withScene scene model =
-    case scene of
-        Landscape ->
-            ( { model
-                | currentScene = Landscape
-                , scene = Scenes.Landscape.init
-              }
-            , Cmd.none
-            )
-
-        ObjectLoader ->
-            ( { model
-                | currentScene = ObjectLoader
-                , scene = Scenes.ObjectLoader.init
-              }
-            , Scenes.ObjectLoader.getObj GotObj "obj/monkey.obj"
-            )
-
-        Sandbox ->
-            ( { model
-                | currentScene = Sandbox
-                , scene = Scenes.Sandbox.init
-              }
-            , Cmd.none
-            )
-
-
-nextScene : Model -> ( Model, Cmd Msg )
-nextScene model =
-    case model.currentScene of
-        Sandbox ->
-            model |> withScene Landscape
-
-        Landscape ->
-            model |> withScene ObjectLoader
-
-        ObjectLoader ->
-            model |> withScene Sandbox
 
 
 type Msg
@@ -67,7 +27,8 @@ type alias Model =
     { theta : Float
     , drag : Maybe { from : Vec2, to : Vec2 }
     , scene : Scene
-    , currentScene : ActiveScene
+    , scenes : Array ActiveScene
+    , currentSceneIndex : Int
     }
 
 
@@ -76,6 +37,64 @@ init =
     { theta = 0
     , drag = Nothing
     , scene = Scenes.Sandbox.init
-    , currentScene = Sandbox
+    , scenes =
+        Array.fromList
+            [ Sandbox
+            , ObjectLoader
+            , Landscape
+            ]
+    , currentSceneIndex = 0
     }
-        |> withScene ObjectLoader
+        |> loadScene
+
+
+nextScene : Model -> ( Model, Cmd Msg )
+nextScene model =
+    { model
+        | currentSceneIndex = model.currentSceneIndex + 1 |> modBy (Array.length model.scenes)
+    }
+        |> loadScene
+
+
+prevScene : Model -> ( Model, Cmd Msg )
+prevScene model =
+    { model
+        | currentSceneIndex = model.currentSceneIndex - 1 |> modBy (Array.length model.scenes)
+    }
+        |> loadScene
+
+
+
+-- PRIVATE
+
+
+type ActiveScene
+    = Sandbox
+    | Landscape
+    | ObjectLoader
+
+
+loadScene : Model -> ( Model, Cmd Msg )
+loadScene model =
+    case Array.get model.currentSceneIndex model.scenes of
+        Just Sandbox ->
+            ( { model | scene = Scenes.Sandbox.init }
+            , Cmd.none
+            )
+
+        Just ObjectLoader ->
+            ( { model
+                | scene = Scenes.ObjectLoader.init
+              }
+            , Scenes.ObjectLoader.getObj GotObj "obj/monkey.obj"
+            )
+
+        Just Landscape ->
+            ( { model
+                | scene = Scenes.Landscape.init
+              }
+            , Cmd.none
+            )
+
+        Nothing ->
+            ( model, Cmd.none )

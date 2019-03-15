@@ -39,6 +39,9 @@ update msg model =
                 "j" ->
                     model |> Model.nextScene
 
+                "k" ->
+                    model |> Model.prevScene
+
                 _ ->
                     ( model, Cmd.none )
 
