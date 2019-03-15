@@ -2,7 +2,7 @@ module Scenes.ObjectLoader exposing (addMesh, getObj, init, mesh)
 
 import Array exposing (Array)
 import DDD.Data.Color as Color exposing (Color)
-import DDD.Data.Vertex as Vertex exposing (Vertex)
+import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Cube
 import DDD.Scene exposing (Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
@@ -11,54 +11,72 @@ import DDD.Scene.Uniforms exposing (Uniforms)
 import Http
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Parser exposing ((|.), (|=), Parser, float, int, lazy, spaces, succeed, symbol)
+import Parser exposing ((|.), (|=), Parser, float, int, spaces, succeed, symbol)
 import WebGL exposing (Shader)
 
 
-type alias VertMap =
-    { v1 : Int
-    , vt1 : Int
-    , vn1 : Int
-    , v2 : Int
-    , vt2 : Int
-    , vn2 : Int
-    , v3 : Int
-    , vt3 : Int
-    , vn3 : Int
+init : Scene
+init =
+    { defaultScene
+        | graph =
+            [ Graph (DDD.Mesh.Cube.mesh 0.05 0.05 0.05 |> Object.withMesh) [] ]
+        , camera = Mat4.makeLookAt (vec3 0 0 4) (vec3 0 0 0) (vec3 0 1 0)
     }
 
 
-vertMapIndex : Parser Int
-vertMapIndex =
-    Parser.oneOf [ int, Parser.succeed -1 |. symbol "" ]
+getObj : (String -> msg) -> String -> Cmd msg
+getObj tagger url =
+    Http.get
+        { url = url
+        , expect = Http.expectString (\x -> tagger (x |> Result.withDefault ""))
+        }
 
 
-vertMapParser : Parser VertMap
-vertMapParser =
-    succeed VertMap
-        |. symbol "f"
-        |. spaces
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. spaces
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. spaces
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
+addMesh : List ( Vertex, Vertex, Vertex ) -> Scene -> Scene
+addMesh tris scene =
+    let
+        graphObject : Object
+        graphObject =
+            tris
+                |> WebGL.triangles
+                |> Object.withMesh
+                |> Object.withVertexShader vertexShader
+                |> Object.withPosition (vec3 0 0.5 0)
+    in
+    { scene | graph = Graph graphObject [] :: scene.graph }
 
 
-parse1 : Float -> String -> List ( Vertex, Vertex, Vertex )
-parse1 scale x =
+mesh : String -> List ( Vertex, Vertex, Vertex )
+mesh x =
+    parse 0.5 x
+
+
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader =
+    [glsl|
+        attribute vec3 position;
+        attribute vec3 color;
+        uniform mat4 perspective;
+        uniform mat4 camera;
+        uniform mat4 rotation;
+        uniform mat4 translate;
+        varying vec3 vcolor;
+
+        vec3 campos = camera[3].xyz;
+
+        void main () {
+            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+            vcolor = mix(normalize(campos), normalize(position), 0.8);
+        }
+    |]
+
+
+
+-- PARSE
+
+
+parse : Float -> String -> List ( Vertex, Vertex, Vertex )
+parse scale x =
     let
         signedFloat : Parser Float
         signedFloat =
@@ -126,9 +144,46 @@ parse1 scale x =
     vertices
 
 
-mesh : String -> List ( Vertex, Vertex, Vertex )
-mesh x =
-    parse1 0.5 x
+type alias VertMap =
+    { v1 : Int
+    , vt1 : Int
+    , vn1 : Int
+    , v2 : Int
+    , vt2 : Int
+    , vn2 : Int
+    , v3 : Int
+    , vt3 : Int
+    , vn3 : Int
+    }
+
+
+vertMapIndex : Parser Int
+vertMapIndex =
+    Parser.oneOf [ int, Parser.succeed -1 |. symbol "" ]
+
+
+vertMapParser : Parser VertMap
+vertMapParser =
+    succeed VertMap
+        |. symbol "f"
+        |. spaces
+        |= vertMapIndex
+        |. symbol "/"
+        |= vertMapIndex
+        |. symbol "/"
+        |= vertMapIndex
+        |. spaces
+        |= vertMapIndex
+        |. symbol "/"
+        |= vertMapIndex
+        |. symbol "/"
+        |= vertMapIndex
+        |. spaces
+        |= vertMapIndex
+        |. symbol "/"
+        |= vertMapIndex
+        |. symbol "/"
+        |= vertMapIndex
 
 
 
@@ -141,54 +196,3 @@ mesh x =
 --        rest ->
 --            []
 --
-
-
-addMesh : List ( Vertex, Vertex, Vertex ) -> Scene -> Scene
-addMesh tris scene =
-    let
-        graphObject : Object
-        graphObject =
-            tris
-                |> WebGL.triangles
-                |> Object.withMesh
-                |> Object.withVertexShader vertexShader
-                |> Object.withPosition (vec3 0 0.5 0)
-    in
-    { scene | graph = Graph graphObject [] :: scene.graph }
-
-
-init : Scene
-init =
-    { defaultScene
-        | graph =
-            [ Graph (DDD.Mesh.Cube.mesh 0.05 0.05 0.05 |> Object.withMesh) [] ]
-        , camera = Mat4.makeLookAt (vec3 0 0 4) (vec3 0 0 0) (vec3 0 1 0)
-    }
-
-
-getObj : (String -> msg) -> Cmd msg
-getObj tagger =
-    Http.get
-        { url = "obj/monkey.obj"
-        , expect = Http.expectString (\x -> tagger (x |> Result.withDefault ""))
-        }
-
-
-vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
-vertexShader =
-    [glsl|
-        attribute vec3 position;
-        attribute vec3 color;
-        uniform mat4 perspective;
-        uniform mat4 camera;
-        uniform mat4 rotation;
-        uniform mat4 translate;
-        varying vec3 vcolor;
-
-        vec3 campos = camera[3].xyz;
-
-        void main () {
-            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
-            vcolor = mix(normalize(campos), normalize(position), 0.8);
-        }
-    |]

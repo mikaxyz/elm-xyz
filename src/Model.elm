@@ -29,7 +29,7 @@ withScene scene model =
                 | currentScene = ObjectLoader
                 , scene = Scenes.ObjectLoader.init
               }
-            , Scenes.ObjectLoader.getObj GotObj
+            , Scenes.ObjectLoader.getObj GotObj "obj/monkey.obj"
             )
 
         Sandbox ->
