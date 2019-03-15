@@ -4,10 +4,11 @@ module Model exposing
     , init
     , nextScene
     , prevScene
+    , sceneOptions
     )
 
 import Array exposing (Array)
-import DDD.Scene exposing (Scene)
+import DDD.Scene as Scene exposing (Scene)
 import Math.Vector2 exposing (Vec2)
 import Scenes.Landscape
 import Scenes.ObjectLoader
@@ -72,6 +73,22 @@ type ActiveScene
     = Sandbox
     | Landscape
     | ObjectLoader
+
+
+sceneOptions : Model -> Maybe Scene.Options
+sceneOptions model =
+    case Array.get model.currentSceneIndex model.scenes of
+        Just Sandbox ->
+            Scenes.Sandbox.sceneOptions
+
+        Just ObjectLoader ->
+            Scenes.ObjectLoader.sceneOptions
+
+        Just Landscape ->
+            Scenes.Landscape.sceneOptions
+
+        Nothing ->
+            Nothing
 
 
 loadScene : Model -> ( Model, Cmd Msg )

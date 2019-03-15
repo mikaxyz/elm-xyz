@@ -35,11 +35,11 @@ mesh w h l =
             vec3 -w -h -l
     in
     [ face Color.green rft rfb rbb rbt
-    , face Color.cyan rft rfb lfb lft
-    , face Color.red rft lft lbt rbt
-    , face Color.yellow rfb lfb lbb rbb
-    , face Color.blue lft lfb lbb lbt
-    , face Color.magenta rbt rbb lbb lbt
+    , face Color.magenta rft rfb lfb lft
+    , face Color.cyan rft lft lbt rbt
+    , face Color.blue rfb lfb lbb rbb
+    , face Color.yellow lft lfb lbb lbt
+    , face Color.red rbt rbb lbb lbt
     ]
         |> List.concat
         |> WebGL.triangles
