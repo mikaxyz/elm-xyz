@@ -1,5 +1,6 @@
 module DDD.Scene exposing
-    ( Scene
+    ( Options
+    , Scene
     , cameraRotate
     , cameraRotateApply
     , defaultScene
@@ -31,6 +32,21 @@ defaultScene =
     }
 
 
+type alias Options =
+    { rotation : Float -> Mat4
+    , translate : Float -> Mat4
+    , perspective : Float -> Mat4
+    }
+
+
+defaultOptions : Options
+defaultOptions =
+    { rotation = \theta -> Mat4.makeRotate (6 * theta) (vec3 0 1 0)
+    , translate = always Mat4.identity
+    , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
+    }
+
+
 cameraRotate : Vec2 -> Scene -> Scene
 cameraRotate rotate scene =
     { scene
@@ -48,14 +64,14 @@ cameraRotateApply scene =
     }
 
 
-render : { width : Int, height : Int } -> Float -> Scene -> List Entity
-render viewport theta scene =
+render : { width : Int, height : Int } -> Float -> Maybe Options -> Scene -> List Entity
+render viewport theta options scene =
     let
-        uniforms : Float -> Mat4 -> Uniforms
-        uniforms aspectRatio camera =
-            { rotation = Mat4.makeRotate (6 * theta) (vec3 0 1 0)
-            , translate = Mat4.identity
-            , perspective = Mat4.makePerspective 45 aspectRatio 0.01 100
+        uniforms : Float -> Mat4 -> Options -> Uniforms
+        uniforms aspectRatio camera options_ =
+            { rotation = options_.rotation theta
+            , translate = options_.translate theta
+            , perspective = options_.perspective aspectRatio
             , camera = camera
             , shade = 1.0
             }
@@ -64,6 +80,7 @@ render viewport theta scene =
         (uniforms
             (toFloat viewport.width / toFloat viewport.height)
             (Mat4.mul scene.camera scene.cameraRotate)
+            (options |> Maybe.withDefault defaultOptions)
         )
         scene.graph
 

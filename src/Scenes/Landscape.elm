@@ -1,9 +1,9 @@
-module Scenes.Landscape exposing (init)
+module Scenes.Landscape exposing (init, sceneOptions)
 
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Cube
-import DDD.Scene exposing (Scene, defaultScene)
+import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
 import Math.Matrix4 as Mat4
@@ -38,6 +38,15 @@ init =
                    )
         , camera = Mat4.makeLookAt (vec3 0 2 5) (vec3 0 0 0) (vec3 0 1 0)
     }
+
+
+sceneOptions : Maybe Options
+sceneOptions =
+    Just
+        { rotation = always Mat4.identity
+        , translate = always Mat4.identity
+        , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
+        }
 
 
 points : Int -> Vec2 -> Vec2 -> List Vec2

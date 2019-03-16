@@ -1,8 +1,8 @@
-module Scenes.Sandbox exposing (init)
+module Scenes.Sandbox exposing (init, sceneOptions)
 
 import DDD.Mesh.Cube
 import DDD.Mesh.Tree exposing (tree)
-import DDD.Scene exposing (Scene, defaultScene)
+import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object
 import Math.Matrix4 as Mat4
@@ -24,6 +24,11 @@ init =
                 ++ cubes 2 0.05
                 ++ cubes 1 0.025
     }
+
+
+sceneOptions : Maybe Options
+sceneOptions =
+    Nothing
 
 
 cubes : Float -> Float -> List Graph

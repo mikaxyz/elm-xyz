@@ -33,4 +33,9 @@ view model =
         [ width viewport.width
         , height viewport.height
         ]
-        (Scene.render viewport model.theta model.scene)
+        (Scene.render
+            viewport
+            model.theta
+            (Model.sceneOptions model)
+            model.scene
+        )

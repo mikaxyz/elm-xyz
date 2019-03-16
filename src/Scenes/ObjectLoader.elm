@@ -1,10 +1,10 @@
-module Scenes.ObjectLoader exposing (addMesh, getObj, init, mesh)
+module Scenes.ObjectLoader exposing (addMesh, getObj, init, mesh, sceneOptions)
 
 import Array exposing (Array)
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Cube
-import DDD.Scene exposing (Scene, defaultScene)
+import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
@@ -22,6 +22,11 @@ init =
             [ Graph (DDD.Mesh.Cube.mesh 0.05 0.05 0.05 |> Object.withMesh) [] ]
         , camera = Mat4.makeLookAt (vec3 0 0 4) (vec3 0 0 0) (vec3 0 1 0)
     }
+
+
+sceneOptions : Maybe Options
+sceneOptions =
+    Nothing
 
 
 getObj : (String -> msg) -> String -> Cmd msg
