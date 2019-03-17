@@ -3,15 +3,17 @@ module Scenes.Landscape exposing (init, sceneOptions)
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Cube
+import DDD.Mesh.Primitives
 import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
+import DDD.Scene.Uniforms exposing (Uniforms)
 import Math.Matrix4 as Mat4
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Noise
 import Random
-import WebGL exposing (Mesh)
+import WebGL exposing (Mesh, Shader)
 
 
 
@@ -26,18 +28,49 @@ c2 =
     { x = 3, y = -3 }
 
 
+segments =
+    30
+
+
 init : Scene
 init =
+    let
+        vMap =
+            List.range 0 ((segments - 1) * (segments - 1) - 1)
+                |> List.map (quad (segments - 1))
+                |> List.concat
+    in
     { defaultScene
         | graph =
-            plane (vec3 c1.x 0 c1.y) (vec3 c2.x 0 c2.y)
-                :: (points 20 (vec2 c1.x c1.y) (vec2 c2.x c2.y)
-                        |> List.map pointData
-                        |> List.map (\p -> vec3 p.x p.y p.z)
-                        |> List.map handle
+            (points segments (vec2 c1.x c1.y) (vec2 c2.x c2.y)
+                |> List.map (addElevation 0.5)
+                |> List.map (\v -> Vertex (Color.vec3 Color.green) v)
+                |> (\vertices -> WebGL.indexedTriangles vertices vMap)
+                |> Object.withMesh
+                |> Object.withVertexShader vertexShader
+                |> (\obj -> Graph obj [])
+            )
+                :: (points segments (vec2 c1.x c1.y) (vec2 c2.x c2.y)
+                        |> List.map (addElevation 0.5)
+                        |> List.map tower
                    )
-        , camera = Mat4.makeLookAt (vec3 0 2 5) (vec3 0 0 0) (vec3 0 1 0)
+        , camera = Mat4.makeLookAt (vec3 0 8 -5) (vec3 0 0 0) (vec3 0 1 0)
     }
+
+
+quad : Int -> Int -> List ( Int, Int, Int )
+quad div i =
+    let
+        rr =
+            (i // div)
+                * (div + 1)
+
+        ii =
+            modBy div i + rr
+    in
+    [ ( ii, ii + 1, ii + div + 1 )
+    , ( ii + 1, ii + div + 1, ii + div + 2 )
+    ]
 
 
 sceneOptions : Maybe Options
@@ -68,26 +101,29 @@ points div v1 v2 =
             )
 
 
-type alias Data =
-    { x : Float
-    , y : Float
-    , z : Float
-    }
-
-
-pointData : Vec2 -> Data
-pointData v =
+addElevation : Float -> Vec2 -> Vec3
+addElevation m v =
     let
         ( perm, newSeed_ ) =
             Noise.permutationTable (Random.initialSeed 42)
 
         elevation =
-            Noise.noise3d perm (Vec2.getX v) (Vec2.getY v) 1
+            Noise.noise3d perm (Vec2.getX v + 100) (Vec2.getY v + 100) 1
     in
-    { x = Vec2.getX v
-    , y = (elevation * 0.3) + 0.3
-    , z = Vec2.getY v
-    }
+    vec3
+        (Vec2.getX v)
+        ((elevation * m) + m)
+        (Vec2.getY v)
+
+
+tower : Vec3 -> Graph
+tower v =
+    --    DDD.Mesh.Cube.mesh 0.01 (Vec3.getY v * 0.5) 0.1
+    DDD.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY v)
+        |> WebGL.triangles
+        |> Object.withMesh
+        |> Object.withPosition (Vec3.setY 0 v)
+        |> (\obj -> Graph obj [])
 
 
 handle : Vec3 -> Graph
@@ -140,3 +176,23 @@ face color v =
     [ ( vertex v.tl, vertex v.tr, vertex v.br )
     , ( vertex v.tl, vertex v.br, vertex v.bl )
     ]
+
+
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader =
+    [glsl|
+        attribute vec3 position;
+        attribute vec3 color;
+        uniform mat4 perspective;
+        uniform mat4 camera;
+        uniform mat4 rotation;
+        uniform mat4 translate;
+        varying vec3 vcolor;
+
+        vec3 campos = camera[3].xyz;
+
+        void main () {
+            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+            vcolor = mix(normalize(campos), normalize(position), 0.8);
+        }
+    |]
