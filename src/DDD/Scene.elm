@@ -4,6 +4,8 @@ module DDD.Scene exposing
     , cameraRotate
     , cameraRotateApply
     , defaultScene
+    , lightPosition1
+    , lightPosition2
     , render
     )
 
@@ -15,6 +17,14 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Mesh, Shader)
+
+
+lightPosition1 =
+    vec3 -4 3 3
+
+
+lightPosition2 =
+    vec3 -6 2 3.5
 
 
 type alias Scene =
@@ -74,9 +84,12 @@ render viewport theta options scene =
             , perspective = options_.perspective aspectRatio
             , camera = camera
             , shade = 1.0
+            , light1 = lightPosition1
+            , light2 = lightPosition2
             }
     in
     renderGraph
+        theta
         (uniforms
             (toFloat viewport.width / toFloat viewport.height)
             (Mat4.mul scene.camera scene.cameraRotate)
@@ -85,8 +98,8 @@ render viewport theta options scene =
         scene.graph
 
 
-renderGraph : Uniforms -> List Graph -> List Entity
-renderGraph uniforms graph =
+renderGraph : Float -> Uniforms -> List Graph -> List Entity
+renderGraph theta uniforms graph =
     graph
         |> List.map
             (\g ->
@@ -105,11 +118,11 @@ renderGraph uniforms graph =
                                         --                                        object.rotation
                                         Mat4.mul
                                             uniforms.rotation
-                                            (Object.rotation object)
+                                            (Object.rotationInTime theta object)
                                 }
                         in
                         entity uniforms_ object
-                            :: renderGraph uniforms_ children
+                            :: renderGraph theta uniforms_ children
             )
         |> List.concat
 
@@ -118,12 +131,12 @@ entity : Uniforms -> Object -> Entity
 entity uniforms object =
     WebGL.entity
         (Object.vertexShader object |> Maybe.withDefault vertexShader)
-        fragmentShader
+        (Object.fragmentShader object |> Maybe.withDefault fragmentShader)
         (Object.mesh object)
         uniforms
 
 
-vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
 vertexShader =
     [glsl|
         attribute vec3 position;
@@ -132,20 +145,29 @@ vertexShader =
         uniform mat4 camera;
         uniform mat4 rotation;
         uniform mat4 translate;
+
         varying vec3 vcolor;
+        varying vec3 vnormal;
+        varying vec3 vposition;
+
         void main () {
             gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
             vcolor = color;
+            vposition = position;
         }
     |]
 
 
-fragmentShader : Shader {} Uniforms { vcolor : Vec3 }
+fragmentShader : Shader {} Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
 fragmentShader =
     [glsl|
         precision mediump float;
         uniform float shade;
+
         varying vec3 vcolor;
+        varying vec3 vnormal;
+        varying vec3 vposition;
+
         void main () {
             gl_FragColor = shade * vec4(vcolor, 1.0);
         }

@@ -1,11 +1,15 @@
 module DDD.Scene.Object exposing
     ( Object
+    , Options
+    , fragmentShader
     , mesh
     , position
     , rotation
+    , rotationInTime
     , vertexShader
     , withFragmentShader
     , withMesh
+    , withOptions
     , withPosition
     , withRotation
     , withVertexShader
@@ -23,17 +27,24 @@ type Object
 
 
 type alias VertexShader =
-    Shader Vertex Uniforms { vcolor : Vec3 }
+    Shader Vertex Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
 
 
 type alias FragmentShader =
-    Shader {} Uniforms { vcolor : Vec3 }
+    Shader {} Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
 
 
 type alias ObjectData =
     { position : Vec3
     , rotation : Mat4
     , mesh : Mesh Vertex
+    , options : Maybe Options
+    }
+
+
+type alias Options =
+    { rotation : Float -> Mat4
+    , translate : Float -> Mat4
     }
 
 
@@ -64,6 +75,17 @@ rotation obj =
     obj |> get .rotation
 
 
+rotationInTime : Float -> Object -> Mat4
+rotationInTime theta obj =
+    obj
+        |> get .options
+        |> Maybe.map
+            (\x ->
+                x.rotation theta
+            )
+        |> Maybe.withDefault (obj |> get .rotation)
+
+
 mesh : Object -> Mesh Vertex
 mesh obj =
     obj |> get .mesh
@@ -74,6 +96,13 @@ vertexShader obj =
     case obj of
         Mesh _ shaders ->
             shaders.vertexShader
+
+
+fragmentShader : Object -> Maybe FragmentShader
+fragmentShader obj =
+    case obj of
+        Mesh _ shaders ->
+            shaders.fragmentShader
 
 
 
@@ -100,10 +129,16 @@ withMesh x =
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
+        , options = Nothing
         }
         { vertexShader = Nothing
         , fragmentShader = Nothing
         }
+
+
+withOptions : Options -> Object -> Object
+withOptions x obj =
+    obj |> mapData (\data -> { data | options = Just x })
 
 
 withRotation : Mat4 -> Object -> Object

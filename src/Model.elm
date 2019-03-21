@@ -7,12 +7,17 @@ module Model exposing
     , sceneOptions
     )
 
+--import Scenes.Landscape
+
 import Array exposing (Array)
 import DDD.Scene as Scene exposing (Scene)
 import Math.Vector2 exposing (Vec2)
-import Scenes.Landscape
-import Scenes.ObjectLoader
-import Scenes.Sandbox
+import Scenes.Light
+
+
+
+--import Scenes.ObjectLoader
+--import Scenes.Sandbox
 
 
 type Msg
@@ -37,13 +42,15 @@ init : ( Model, Cmd Msg )
 init =
     { theta = 0
     , drag = Nothing
-    , scene = Scenes.Sandbox.init
+    , scene = Scenes.Light.init
     , scenes =
-        Array.fromList
-            [ Sandbox
-            , ObjectLoader
-            , Landscape
-            ]
+        Array.fromList [ Light ]
+
+    --            [ Sandbox
+    --            , ObjectLoader
+    --            , Landscape
+    --            , Light
+    --            ]
     , currentSceneIndex = 0
     }
         |> loadScene
@@ -69,23 +76,27 @@ prevScene model =
 -- PRIVATE
 
 
-type ActiveScene
-    = Sandbox
-    | Landscape
-    | ObjectLoader
+type
+    ActiveScene
+    --    = Sandbox
+    --    | Landscape
+    --    | ObjectLoader
+    = Light
 
 
 sceneOptions : Model -> Maybe Scene.Options
 sceneOptions model =
     case Array.get model.currentSceneIndex model.scenes of
-        Just Sandbox ->
-            Scenes.Sandbox.sceneOptions
-
-        Just ObjectLoader ->
-            Scenes.ObjectLoader.sceneOptions
-
-        Just Landscape ->
-            Scenes.Landscape.sceneOptions
+        --        Just Sandbox ->
+        --            Scenes.Sandbox.sceneOptions
+        --
+        --        Just ObjectLoader ->
+        --            Scenes.ObjectLoader.sceneOptions
+        --
+        --        Just Landscape ->
+        --            Scenes.Landscape.sceneOptions
+        Just Light ->
+            Scenes.Light.sceneOptions
 
         Nothing ->
             Nothing
@@ -94,21 +105,27 @@ sceneOptions model =
 loadScene : Model -> ( Model, Cmd Msg )
 loadScene model =
     case Array.get model.currentSceneIndex model.scenes of
-        Just Sandbox ->
-            ( { model | scene = Scenes.Sandbox.init }
-            , Cmd.none
-            )
-
-        Just ObjectLoader ->
+        --        Just Sandbox ->
+        --            ( { model | scene = Scenes.Sandbox.init }
+        --            , Cmd.none
+        --            )
+        --
+        --        Just ObjectLoader ->
+        --            ( { model
+        --                | scene = Scenes.ObjectLoader.init
+        --              }
+        --            , Scenes.ObjectLoader.getObj GotObj "obj/monkey.obj"
+        --            )
+        --
+        --        Just Landscape ->
+        --            ( { model
+        --                | scene = Scenes.Landscape.init
+        --              }
+        --            , Cmd.none
+        --            )
+        Just Light ->
             ( { model
-                | scene = Scenes.ObjectLoader.init
-              }
-            , Scenes.ObjectLoader.getObj GotObj "obj/monkey.obj"
-            )
-
-        Just Landscape ->
-            ( { model
-                | scene = Scenes.Landscape.init
+                | scene = Scenes.Light.init
               }
             , Cmd.none
             )

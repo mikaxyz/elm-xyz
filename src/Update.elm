@@ -3,7 +3,10 @@ module Update exposing (update)
 import DDD.Scene as Scene
 import Math.Vector2 as Vec2
 import Model exposing (Model, Msg(..))
-import Scenes.ObjectLoader
+
+
+
+--import Scenes.ObjectLoader
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -46,6 +49,10 @@ update msg model =
                     ( model, Cmd.none )
 
         GotObj str ->
-            ( { model | scene = Scenes.ObjectLoader.addMesh (Scenes.ObjectLoader.mesh str) model.scene }
-            , Cmd.none
-            )
+            ( model, Cmd.none )
+
+
+
+--            ( { model | scene = Scenes.ObjectLoader.addMesh (Scenes.ObjectLoader.mesh str) model.scene }
+--            , Cmd.none
+--            )
