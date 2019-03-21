@@ -29,7 +29,7 @@ c2 =
 
 
 segments =
-    30
+    40
 
 
 init : Scene
@@ -44,15 +44,16 @@ init =
         | graph =
             (points segments (vec2 c1.x c1.y) (vec2 c2.x c2.y)
                 |> List.map (addElevation 0.5)
-                |> List.map (\v -> Vertex (Color.vec3 Color.green) v)
+                |> List.map (\v -> Vertex (Color.vec3 Color.green) v (vec3 0 1 0))
                 |> (\vertices -> WebGL.indexedTriangles vertices vMap)
                 |> Object.withMesh
                 |> Object.withVertexShader vertexShader
+                |> Object.withFragmentShader fragmentShader
                 |> (\obj -> Graph obj [])
             )
-                :: (points segments (vec2 c1.x c1.y) (vec2 c2.x c2.y)
+                :: (points (segments // 4) (vec2 c1.x c1.y) (vec2 c2.x c2.y)
                         |> List.map (addElevation 0.5)
-                        |> List.map tower
+                        |> List.map bone
                    )
         , camera = Mat4.makeLookAt (vec3 0 8 -5) (vec3 0 0 0) (vec3 0 1 0)
     }
@@ -116,9 +117,8 @@ addElevation m v =
         (Vec2.getY v)
 
 
-tower : Vec3 -> Graph
-tower v =
-    --    DDD.Mesh.Cube.mesh 0.01 (Vec3.getY v * 0.5) 0.1
+bone : Vec3 -> Graph
+bone v =
     DDD.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY v)
         |> WebGL.triangles
         |> Object.withMesh
@@ -126,73 +126,64 @@ tower v =
         |> (\obj -> Graph obj [])
 
 
-handle : Vec3 -> Graph
-handle v =
-    DDD.Mesh.Cube.mesh 0.1 0.1 0.1
-        |> Object.withMesh
-        |> Object.withPosition v
-        |> (\obj -> Graph obj [])
-
-
-plane : Vec3 -> Vec3 -> Graph
-plane v1 v2 =
-    corners v1 v2
-        |> face (Color.vec3 Color.grey50)
-        |> WebGL.triangles
-        |> Object.withMesh
-        |> (\obj -> Graph obj [])
-
-
-handles : Vec3 -> Vec3 -> List Graph
-handles v1 v2 =
-    corners v1 v2
-        |> (\x ->
-                [ x.tl, x.tr, x.br, x.bl ]
-                    |> List.map
-                        (\pos ->
-                            DDD.Mesh.Cube.mesh 0.1 0.1 0.1
-                                |> Object.withMesh
-                                |> Object.withPosition pos
-                        )
-                    |> List.map (\obj -> Graph obj [])
-           )
-
-
-corners : Vec3 -> Vec3 -> { tl : Vec3, br : Vec3, tr : Vec3, bl : Vec3 }
-corners tl br =
-    { tl = tl
-    , br = br
-    , tr = Vec3.cross br Vec3.j
-    , bl = Vec3.cross tl Vec3.j
-    }
-
-
-face : Vec3 -> { tl : Vec3, br : Vec3, tr : Vec3, bl : Vec3 } -> List ( Vertex, Vertex, Vertex )
-face color v =
-    let
-        vertex position =
-            Vertex color position
-    in
-    [ ( vertex v.tl, vertex v.tr, vertex v.br )
-    , ( vertex v.tl, vertex v.br, vertex v.bl )
-    ]
-
-
-vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
 vertexShader =
     [glsl|
+        attribute vec3 normal;
         attribute vec3 position;
         attribute vec3 color;
+
         uniform mat4 perspective;
         uniform mat4 camera;
         uniform mat4 rotation;
         uniform mat4 translate;
-        varying vec3 vcolor;
 
-        vec3 campos = camera[3].xyz;
+        varying vec3 vcolor;
+        varying vec3 vnormal;
+        varying vec3 vposition;
+        //varying vec3 vnormal;
+        //f_position = vec3(mvp * vec4(position, 1.0));
 
         void main () {
             gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
-            vcolor = mix(normalize(campos), normalize(position), 0.8);
+            vcolor = color;
+            vnormal = normal;
+            vposition = position;
+        }
+    |]
+
+
+fragmentShader : Shader {} Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
+fragmentShader =
+    [glsl|
+        precision mediump float;
+
+        uniform float shade;
+        uniform vec3 light1;
+        uniform vec3 light2;
+
+        varying vec3 vcolor;
+        varying vec3 vnormal;
+        varying vec3 vposition;
+
+        // vec3 sun = light1;
+        float lightintensity1 = 0.0;
+        float lightintensity2 = 0.0;
+
+        void main () {
+            vec3 l1 = normalize(light1 - vposition);
+            vec3 l2 = normalize(light2 - vposition);
+            //light = max(dot(vnormal, light), 0.0) * vec3(1.0, 1.0, 1.0);
+
+            //lightintensity1 = dot(vnormal, l1);
+            //lightintensity2 = dot(vnormal, l2);
+            lightintensity1 = max(dot(vnormal, l1), 0.0);
+            lightintensity2 = max(dot(vnormal, l2), 0.0);
+
+            //gl_FragColor = shade * vec4(vcolor, light);
+            gl_FragColor = (lightintensity1 + lightintensity2) * vec4(vcolor, 1.0);
+
+            //vec3 light = normalize(sun);
+            //gl_FragColor = shade * vec4(vcolor, light);
         }
     |]

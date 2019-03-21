@@ -7,11 +7,10 @@ module Model exposing
     , sceneOptions
     )
 
---import Scenes.Landscape
-
 import Array exposing (Array)
 import DDD.Scene as Scene exposing (Scene)
 import Math.Vector2 exposing (Vec2)
+import Scenes.Landscape
 import Scenes.Light
 
 
@@ -44,7 +43,7 @@ init =
     , drag = Nothing
     , scene = Scenes.Light.init
     , scenes =
-        Array.fromList [ Light ]
+        Array.fromList [ Light, Landscape ]
 
     --            [ Sandbox
     --            , ObjectLoader
@@ -79,9 +78,9 @@ prevScene model =
 type
     ActiveScene
     --    = Sandbox
-    --    | Landscape
     --    | ObjectLoader
     = Light
+    | Landscape
 
 
 sceneOptions : Model -> Maybe Scene.Options
@@ -93,8 +92,9 @@ sceneOptions model =
         --        Just ObjectLoader ->
         --            Scenes.ObjectLoader.sceneOptions
         --
-        --        Just Landscape ->
-        --            Scenes.Landscape.sceneOptions
+        Just Landscape ->
+            Scenes.Landscape.sceneOptions
+
         Just Light ->
             Scenes.Light.sceneOptions
 
@@ -117,12 +117,13 @@ loadScene model =
         --            , Scenes.ObjectLoader.getObj GotObj "obj/monkey.obj"
         --            )
         --
-        --        Just Landscape ->
-        --            ( { model
-        --                | scene = Scenes.Landscape.init
-        --              }
-        --            , Cmd.none
-        --            )
+        Just Landscape ->
+            ( { model
+                | scene = Scenes.Landscape.init
+              }
+            , Cmd.none
+            )
+
         Just Light ->
             ( { model
                 | scene = Scenes.Light.init
