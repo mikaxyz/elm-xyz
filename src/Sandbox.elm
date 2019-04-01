@@ -138,7 +138,7 @@ scene drag theta =
     [ WebGL.entity
         vertexShader
         fragmentShader
-        (DDD.Mesh.Cube.colorful 1 1 0.1)
+        (DDD.Mesh.Cube.colorful 1 0.1 1)
         (uniforms drag theta)
     , WebGL.entity
         vertexShader
@@ -158,14 +158,22 @@ type alias Uniforms =
 
 
 directionalLight =
-    Vec3.fromRecord { x = 0, y = -1, z = 3 }
+    Vec3.fromRecord { x = 0, y = 0, z = 1 }
 
 
 camera =
     Mat4.makeLookAt
-        (Vec3.fromRecord { x = 0, y = -4, z = 2 })
+        (Vec3.fromRecord { x = 0, y = 1, z = 3 })
         (vec3 0 0 0)
         (vec3 0 1 0)
+
+
+aspect =
+    toFloat viewport.width / toFloat viewport.height
+
+
+perspective =
+    Mat4.makePerspective 45 aspect 0.01 100
 
 
 uniforms : Vec2 -> Float -> Uniforms
@@ -173,8 +181,8 @@ uniforms drag theta =
     { rotation =
         Mat4.identity
             |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
-            |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 0 1)
-    , perspective = Mat4.makePerspective 45 1 0.01 100
+            |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+    , perspective = perspective
     , camera = camera
     , directionalLight = directionalLight
     , pointLight = vec3 0 -5 5
@@ -183,11 +191,11 @@ uniforms drag theta =
 
 boxUniforms : Float -> Uniforms
 boxUniforms theta =
-    { rotation = Mat4.makeRotate (6 * theta) (vec3 0 0 1)
+    { rotation = Mat4.makeRotate (24 * theta) (vec3 0 1 0)
 
     --            Mat4.makeRotate (Vec2.getX rotate) (vec3 0 1 0)
     --                |> Mat4.rotate (Vec2.getY rotate) (vec3 1 0 0)
-    , perspective = Mat4.makePerspective 45 1 0.01 100
+    , perspective = perspective
     , camera = camera
     , directionalLight = directionalLight
     , pointLight = vec3 0 -5 5

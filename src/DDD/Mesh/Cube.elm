@@ -3,7 +3,7 @@ module DDD.Mesh.Cube exposing (colorful, gray)
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Primitives exposing (face, faceWithNormal)
-import Math.Vector3 exposing (vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (..)
 
 
@@ -47,28 +47,28 @@ cube : Colors -> Float -> Float -> Float -> Mesh Vertex
 cube colors w h l =
     let
         rft =
-            vec3 w h l
+            vec3 w h l |> Vec3.scale 0.5
 
         lft =
-            vec3 -w h l
+            vec3 -w h l |> Vec3.scale 0.5
 
         lbt =
-            vec3 -w -h l
+            vec3 -w -h l |> Vec3.scale 0.5
 
         rbt =
-            vec3 w -h l
+            vec3 w -h l |> Vec3.scale 0.5
 
         rbb =
-            vec3 w -h -l
+            vec3 w -h -l |> Vec3.scale 0.5
 
         rfb =
-            vec3 w h -l
+            vec3 w h -l |> Vec3.scale 0.5
 
         lfb =
-            vec3 -w h -l
+            vec3 -w h -l |> Vec3.scale 0.5
 
         lbb =
-            vec3 -w -h -l
+            vec3 -w -h -l |> Vec3.scale 0.5
 
         front =
             faceWithNormal colors.front rft lft lbt rbt (vec3 0 0 1)

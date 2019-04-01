@@ -8,6 +8,7 @@ import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
+import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -29,7 +30,19 @@ c2 =
 
 
 segments =
-    40
+    32
+
+
+stepX =
+    toFloat (c1.x - c2.x) / segments
+
+
+stepY =
+    toFloat (c1.y - c2.y) / segments
+
+
+height =
+    0.4
 
 
 init : Scene
@@ -43,8 +56,8 @@ init =
     { defaultScene
         | graph =
             (points segments (vec2 c1.x c1.y) (vec2 c2.x c2.y)
-                |> List.map (addElevation 0.5)
-                |> List.map (\v -> Vertex (Color.vec3 Color.green) v (vec3 0 1 0))
+                |> List.map (addElevation height)
+                |> List.map (\( v, n ) -> Vertex (Color.vec3 Color.green) v n)
                 |> (\vertices -> WebGL.indexedTriangles vertices vMap)
                 |> Object.withMesh
                 |> Object.withVertexShader vertexShader
@@ -52,10 +65,11 @@ init =
                 |> (\obj -> Graph obj [])
             )
                 :: (points (segments // 4) (vec2 c1.x c1.y) (vec2 c2.x c2.y)
-                        |> List.map (addElevation 0.5)
+                        |> List.map (addElevation height)
+                        |> List.map Tuple.first
                         |> List.map bone
                    )
-        , camera = Mat4.makeLookAt (vec3 0 8 -5) (vec3 0 0 0) (vec3 0 1 0)
+        , camera = Mat4.makeLookAt (vec3 0 8 5) (vec3 0 0 0) (vec3 0 1 0)
     }
 
 
@@ -102,19 +116,47 @@ points div v1 v2 =
             )
 
 
-addElevation : Float -> Vec2 -> Vec3
+addElevation : Float -> Vec2 -> ( Vec3, Vec3 )
 addElevation m v =
     let
         ( perm, newSeed_ ) =
             Noise.permutationTable (Random.initialSeed 42)
 
         elevation =
-            Noise.noise3d perm (Vec2.getX v + 100) (Vec2.getY v + 100) 1
+            Noise.noise2d perm (Vec2.getX v) (Vec2.getY v)
+
+        elevationNorth =
+            Noise.noise2d perm (Vec2.getX v) (Vec2.getY v + stepY)
+
+        elevationSouth =
+            Noise.noise2d perm (Vec2.getX v) (Vec2.getY v - stepY)
+
+        nv1 =
+            Vec3.sub
+                (vec3 (Vec2.getX v) elevationNorth (Vec2.getY v + stepY))
+                (vec3 (Vec2.getX v) elevationSouth (Vec2.getY v - stepY))
+
+        elevationWest =
+            Noise.noise2d perm (Vec2.getX v + stepX) (Vec2.getY v)
+
+        elevationEast =
+            Noise.noise2d perm (Vec2.getX v - stepX) (Vec2.getY v)
+
+        nv2 =
+            Vec3.sub
+                (vec3 (Vec2.getX v) elevationWest (Vec2.getY v + stepX))
+                (vec3 (Vec2.getX v) elevationEast (Vec2.getY v - stepX))
+
+        normal =
+            Vec3.cross nv1 nv2
+
+        pos =
+            vec3
+                (Vec2.getX v)
+                ((elevation * m) + m)
+                (Vec2.getY v)
     in
-    vec3
-        (Vec2.getX v)
-        ((elevation * m) + m)
-        (Vec2.getY v)
+    ( pos, normal )
 
 
 bone : Vec3 -> Graph
@@ -126,7 +168,7 @@ bone v =
         |> (\obj -> Graph obj [])
 
 
-vertexShader : Shader Vertex Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
+vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
         attribute vec3 normal;
@@ -137,15 +179,24 @@ vertexShader =
         uniform mat4 camera;
         uniform mat4 rotation;
         uniform mat4 translate;
+        uniform vec3 directionalLight;
 
         varying vec3 vcolor;
         varying vec3 vnormal;
         varying vec3 vposition;
-        //varying vec3 vnormal;
-        //f_position = vec3(mvp * vec4(position, 1.0));
+        varying vec3 vlighting;
 
         void main () {
+
             gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+
+            highp vec3 ambientLight = vec3(0.1, 0.1, 0.1);
+            highp vec3 directionalLightColor = vec3(1, 1, 1);
+            highp vec3 directionalVector = normalize(directionalLight);
+            highp vec4 transformedNormal = rotation * vec4(normal, 1.0);
+            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+
+            vlighting = ambientLight + (directionalLightColor * directional);
             vcolor = color;
             vnormal = normal;
             vposition = position;
@@ -153,7 +204,7 @@ vertexShader =
     |]
 
 
-fragmentShader : Shader {} Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
+fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
@@ -165,25 +216,9 @@ fragmentShader =
         varying vec3 vcolor;
         varying vec3 vnormal;
         varying vec3 vposition;
-
-        // vec3 sun = light1;
-        float lightintensity1 = 0.0;
-        float lightintensity2 = 0.0;
+        varying vec3 vlighting;
 
         void main () {
-            vec3 l1 = normalize(light1 - vposition);
-            vec3 l2 = normalize(light2 - vposition);
-            //light = max(dot(vnormal, light), 0.0) * vec3(1.0, 1.0, 1.0);
-
-            //lightintensity1 = dot(vnormal, l1);
-            //lightintensity2 = dot(vnormal, l2);
-            lightintensity1 = max(dot(vnormal, l1), 0.0);
-            lightintensity2 = max(dot(vnormal, l2), 0.0);
-
-            //gl_FragColor = shade * vec4(vcolor, light);
-            gl_FragColor = (lightintensity1 + lightintensity2) * vec4(vcolor, 1.0);
-
-            //vec3 light = normalize(sun);
-            //gl_FragColor = shade * vec4(vcolor, light);
+            gl_FragColor = vec4(vcolor * vlighting, 1.0);
         }
     |]

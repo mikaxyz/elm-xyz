@@ -12,4 +12,5 @@ type alias Uniforms =
     , shade : Float
     , light1 : Vec3
     , light2 : Vec3
+    , directionalLight : Vec3
     }

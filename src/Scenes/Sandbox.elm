@@ -38,7 +38,7 @@ cubes r w =
         |> List.map
             (\i ->
                 Graph
-                    (DDD.Mesh.Cube.mesh w 0.01 w
+                    (DDD.Mesh.Cube.colorful w 0.1 w
                         |> Object.withMesh
                         |> Object.withPosition (vec3 (r * (i / (4 / w))) (-i * (w * w) * r) 0)
                         |> Object.withRotation (Mat4.makeRotate (Basics.pi * w * i) (vec3 0 1 0))

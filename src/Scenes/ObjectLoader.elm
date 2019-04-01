@@ -8,6 +8,7 @@ import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
+import DDD.Scene.Varyings exposing (Varyings)
 import Http
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -19,14 +20,18 @@ init : Scene
 init =
     { defaultScene
         | graph =
-            [ Graph (DDD.Mesh.Cube.mesh 0.05 0.05 0.05 |> Object.withMesh) [] ]
-        , camera = Mat4.makeLookAt (vec3 0 0 4) (vec3 0 0 0) (vec3 0 1 0)
+            [ Graph (DDD.Mesh.Cube.colorful 0.05 0.05 0.05 |> Object.withMesh) [] ]
+        , camera = Mat4.makeLookAt (vec3 0 0 2) (vec3 0 0 0) (vec3 0 1 0)
     }
 
 
 sceneOptions : Maybe Options
 sceneOptions =
-    Nothing
+    Just
+        { rotation = always Mat4.identity
+        , translate = always Mat4.identity
+        , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
+        }
 
 
 getObj : (String -> msg) -> String -> Cmd msg
@@ -46,7 +51,8 @@ addMesh tris scene =
                 |> WebGL.triangles
                 |> Object.withMesh
                 |> Object.withVertexShader vertexShader
-                |> Object.withPosition (vec3 0 0.5 0)
+                |> Object.withFragmentShader fragmentShader
+                |> Object.withPosition (vec3 0 0 0)
     in
     { scene | graph = Graph graphObject [] :: scene.graph }
 
@@ -56,22 +62,58 @@ mesh x =
     parse 0.5 x
 
 
-vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
+        attribute vec3 normal;
         attribute vec3 position;
         attribute vec3 color;
+
         uniform mat4 perspective;
         uniform mat4 camera;
         uniform mat4 rotation;
         uniform mat4 translate;
-        varying vec3 vcolor;
+        uniform vec3 directionalLight;
 
-        vec3 campos = camera[3].xyz;
+        varying vec3 vcolor;
+        varying vec3 vnormal;
+        varying vec3 vposition;
+        varying vec3 vlighting;
 
         void main () {
+
             gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
-            vcolor = mix(normalize(campos), normalize(position), 0.8);
+
+            highp vec3 ambientLight = vec3(0, 0, 0);
+            highp vec3 directionalLightColor = vec3(1, 1, 1);
+            highp vec3 directionalVector = normalize(directionalLight);
+            highp vec4 transformedNormal = rotation * vec4(normal, 1.0);
+            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+
+            vlighting = ambientLight + (directionalLightColor * directional);
+            vcolor = color;
+            vnormal = normal;
+            vposition = position;
+        }
+    |]
+
+
+fragmentShader : Shader {} Uniforms Varyings
+fragmentShader =
+    [glsl|
+        precision mediump float;
+
+        uniform float shade;
+        uniform vec3 light1;
+        uniform vec3 light2;
+
+        varying vec3 vcolor;
+        varying vec3 vnormal;
+        varying vec3 vposition;
+        varying vec3 vlighting;
+
+        void main () {
+            gl_FragColor = vec4(vcolor * vlighting, 1.0);
         }
     |]
 
@@ -110,6 +152,7 @@ parse scale x =
                 |> List.filterMap identity
                 |> Array.fromList
 
+        normals : Array Vec3
         normals =
             x
                 |> String.lines
@@ -117,6 +160,7 @@ parse scale x =
                 |> List.filterMap identity
                 |> Array.fromList
 
+        vertMaps : List VertMap
         vertMaps =
             x
                 |> String.lines
@@ -124,20 +168,28 @@ parse scale x =
                 |> List.filterMap identity
 
         --                |> Debug.log "vertMaps"
+        color =
+            vec3 1.0 0.95 0.9
+
         vertices =
             vertMaps
                 |> List.map
                     (\vertMap ->
                         case
-                            ( Array.get (vertMap.v1 - 1) positions
-                            , Array.get (vertMap.v2 - 1) positions
-                            , Array.get (vertMap.v3 - 1) positions
+                            ( ( Array.get (vertMap.v1 - 1) positions
+                              , Array.get (vertMap.v2 - 1) positions
+                              , Array.get (vertMap.v3 - 1) positions
+                              )
+                            , ( Array.get (vertMap.vn1 - 1) normals
+                              , Array.get (vertMap.vn2 - 1) normals
+                              , Array.get (vertMap.vn3 - 1) normals
+                              )
                             )
                         of
-                            ( Just v1, Just v2, Just v3 ) ->
-                                ( Vertex (Color.vec3 Color.red) (v1 |> Vec3.scale scale)
-                                , Vertex (Color.vec3 Color.red) (v2 |> Vec3.scale scale)
-                                , Vertex (Color.vec3 Color.red) (v3 |> Vec3.scale scale)
+                            ( ( Just v1, Just v2, Just v3 ), ( Just vn1, Just vn2, Just vn3 ) ) ->
+                                ( Vertex color (v1 |> Vec3.scale scale) vn1
+                                , Vertex color (v2 |> Vec3.scale scale) vn2
+                                , Vertex color (v3 |> Vec3.scale scale) vn3
                                 )
                                     |> Just
 

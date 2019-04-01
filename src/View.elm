@@ -35,6 +35,7 @@ view model =
         ]
         (Scene.render
             viewport
+            (Model.getDrag model)
             model.theta
             (Model.sceneOptions model)
             model.scene

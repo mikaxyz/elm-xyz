@@ -1,12 +1,8 @@
 module Update exposing (update)
 
-import DDD.Scene as Scene
 import Math.Vector2 as Vec2
 import Model exposing (Model, Msg(..))
-
-
-
---import Scenes.ObjectLoader
+import Scenes.ObjectLoader
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -16,23 +12,22 @@ update msg model =
             ( { model | theta = model.theta + (elapsed / 10000) }, Cmd.none )
 
         DragStart pos ->
-            ( { model | drag = Just { from = pos, to = pos } }, Cmd.none )
+            ( { model | dragger = Just { from = pos, to = pos } }, Cmd.none )
 
         Drag pos ->
             ( { model
-                | drag = Maybe.map (\drag -> { drag | to = pos }) model.drag
-                , scene =
-                    model.drag
-                        |> Maybe.map (\drag -> Scene.cameraRotate (Vec2.sub drag.from drag.to |> Vec2.scale 0.01) model.scene)
-                        |> Maybe.withDefault model.scene
+                | dragger = Maybe.map (\drag -> { drag | to = pos }) model.dragger
               }
             , Cmd.none
             )
 
-        DragEnd _ ->
+        DragEnd pos ->
             ( { model
-                | drag = Nothing
-                , scene = Scene.cameraRotateApply model.scene
+                | dragger = Nothing
+                , drag =
+                    model.dragger
+                        |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
+                        |> Maybe.withDefault model.drag
               }
             , Cmd.none
             )
@@ -49,10 +44,6 @@ update msg model =
                     ( model, Cmd.none )
 
         GotObj str ->
-            ( model, Cmd.none )
-
-
-
---            ( { model | scene = Scenes.ObjectLoader.addMesh (Scenes.ObjectLoader.mesh str) model.scene }
---            , Cmd.none
---            )
+            ( { model | scene = Scenes.ObjectLoader.addMesh (Scenes.ObjectLoader.mesh str) model.scene }
+            , Cmd.none
+            )

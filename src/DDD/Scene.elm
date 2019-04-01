@@ -1,8 +1,6 @@
 module DDD.Scene exposing
     ( Options
     , Scene
-    , cameraRotate
-    , cameraRotateApply
     , defaultScene
     , lightPosition1
     , lightPosition2
@@ -13,10 +11,15 @@ import DDD.Data.Vertex exposing (Vertex)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
+import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Mesh, Shader)
+
+
+directionalLight =
+    Vec3.fromRecord { x = 0, y = 3, z = 4 }
 
 
 lightPosition1 =
@@ -37,7 +40,7 @@ type alias Scene =
 defaultScene : Scene
 defaultScene =
     { graph = []
-    , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 1.5 0) (vec3 0 1 0)
+    , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 0 0) (vec3 0 1 0)
     , cameraRotate = Mat4.identity
     }
 
@@ -51,31 +54,14 @@ type alias Options =
 
 defaultOptions : Options
 defaultOptions =
-    { rotation = \theta -> Mat4.makeRotate (6 * theta) (vec3 0 1 0)
+    { rotation = \theta -> Mat4.makeRotate (24 * theta) (vec3 0 1 0)
     , translate = always Mat4.identity
     , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
     }
 
 
-cameraRotate : Vec2 -> Scene -> Scene
-cameraRotate rotate scene =
-    { scene
-        | cameraRotate =
-            Mat4.makeRotate (Vec2.getX rotate) (vec3 0 1 0)
-                |> Mat4.rotate (Vec2.getY rotate) (vec3 1 0 0)
-    }
-
-
-cameraRotateApply : Scene -> Scene
-cameraRotateApply scene =
-    { scene
-        | camera = Mat4.mul scene.camera scene.cameraRotate
-        , cameraRotate = Mat4.identity
-    }
-
-
-render : { width : Int, height : Int } -> Float -> Maybe Options -> Scene -> List Entity
-render viewport theta options scene =
+render : { width : Int, height : Int } -> Vec2 -> Float -> Maybe Options -> Scene -> List Entity
+render viewport drag theta options scene =
     let
         uniforms : Float -> Mat4 -> Options -> Uniforms
         uniforms aspectRatio camera options_ =
@@ -86,43 +72,54 @@ render viewport theta options scene =
             , shade = 1.0
             , light1 = lightPosition1
             , light2 = lightPosition2
+            , directionalLight = directionalLight
             }
     in
     renderGraph
+        drag
         theta
         (uniforms
             (toFloat viewport.width / toFloat viewport.height)
-            (Mat4.mul scene.camera scene.cameraRotate)
+            (scene.camera
+             --                |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
+             --                |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+            )
             (options |> Maybe.withDefault defaultOptions)
         )
         scene.graph
 
 
-renderGraph : Float -> Uniforms -> List Graph -> List Entity
-renderGraph theta uniforms graph =
+renderGraph : Vec2 -> Float -> Uniforms -> List Graph -> List Entity
+renderGraph drag theta uniforms graph =
     graph
         |> List.map
             (\g ->
                 case g of
                     Graph object children ->
                         let
+                            object_ =
+                                object
+                                    |> Object.rotationWithDrag drag
+                                    |> Object.rotationInTime theta
+
                             uniforms_ =
                                 { uniforms
                                     | translate =
                                         Mat4.makeTranslate (Object.position object)
-
-                                    --                                        Mat4.mul
-                                    --                                            uniforms.translate
-                                    --                                            (Mat4.makeTranslate object.position)
                                     , rotation =
-                                        --                                        object.rotation
                                         Mat4.mul
                                             uniforms.rotation
-                                            (Object.rotationInTime theta object)
+                                            (Object.rotation object_)
                                 }
+
+                            --                            obj x =
+                            --                                x
+                            --                                    |> Object.withUniforms
+                            --                                    |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
+                            --                                    |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
                         in
-                        entity uniforms_ object
-                            :: renderGraph theta uniforms_ children
+                        entity uniforms_ object_
+                            :: renderGraph drag theta uniforms_ children
             )
         |> List.concat
 
@@ -136,7 +133,7 @@ entity uniforms object =
         uniforms
 
 
-vertexShader : Shader Vertex Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
+vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
         attribute vec3 position;
@@ -149,6 +146,7 @@ vertexShader =
         varying vec3 vcolor;
         varying vec3 vnormal;
         varying vec3 vposition;
+        varying vec3 vlighting;
 
         void main () {
             gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
@@ -158,7 +156,7 @@ vertexShader =
     |]
 
 
-fragmentShader : Shader {} Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
+fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
@@ -167,6 +165,7 @@ fragmentShader =
         varying vec3 vcolor;
         varying vec3 vnormal;
         varying vec3 vposition;
+        varying vec3 vlighting;
 
         void main () {
             gl_FragColor = shade * vec4(vcolor, 1.0);

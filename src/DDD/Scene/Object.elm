@@ -17,6 +17,7 @@ module DDD.Scene.Object exposing
 
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Scene.Uniforms exposing (Uniforms)
+import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import WebGL exposing (Mesh, Shader)
@@ -27,11 +28,11 @@ type Object
 
 
 type alias VertexShader =
-    Shader Vertex Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
+    Shader Vertex Uniforms Varyings
 
 
 type alias FragmentShader =
-    Shader {} Uniforms { vcolor : Vec3, vnormal : Vec3, vposition : Vec3 }
+    Shader {} Uniforms Varyings
 
 
 type alias ObjectData =

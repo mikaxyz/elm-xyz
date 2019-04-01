@@ -29,7 +29,7 @@ subscriptions model =
                 (D.field "y" D.float)
 
         drags =
-            case model.drag of
+            case model.dragger of
                 Just _ ->
                     Sub.batch
                         [ Browser.Events.onMouseMove (vectorDecoder |> D.map Drag)
