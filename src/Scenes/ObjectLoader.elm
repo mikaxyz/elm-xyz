@@ -20,7 +20,12 @@ init : Scene
 init =
     { defaultScene
         | graph =
-            [ Graph (DDD.Mesh.Cube.colorful 0.05 0.05 0.05 |> Object.withMesh) [] ]
+            [ Graph
+                (DDD.Mesh.Cube.colorful 0.05 0.05 0.05
+                    |> Object.withMesh
+                )
+                []
+            ]
         , camera = Mat4.makeLookAt (vec3 0 0 2) (vec3 0 0 0) (vec3 0 1 0)
     }
 
@@ -50,6 +55,7 @@ addMesh tris scene =
             tris
                 |> WebGL.triangles
                 |> Object.withMesh
+                |> Object.withOptionDragToRotateXY
                 |> Object.withVertexShader vertexShader
                 |> Object.withFragmentShader fragmentShader
                 |> Object.withPosition (vec3 0 0 0)

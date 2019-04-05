@@ -6,9 +6,17 @@ module DDD.Scene.Object exposing
     , position
     , rotation
     , rotationInTime
+    , rotationWithDrag
+    , rotationWithDragX
+    , rotationWithDragXY
+    , rotationWithDragY
     , vertexShader
     , withFragmentShader
     , withMesh
+    , withOptionDragToRotateX
+    , withOptionDragToRotateXY
+    , withOptionDragToRotateY
+    , withOptionRotationInTime
     , withOptions
     , withPosition
     , withRotation
@@ -19,7 +27,8 @@ import DDD.Data.Vertex exposing (Vertex)
 import DDD.Scene.Uniforms exposing (Uniforms)
 import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Vector2 as Vec2 exposing (Vec2)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh, Shader)
 
 
@@ -46,7 +55,90 @@ type alias ObjectData =
 type alias Options =
     { rotation : Float -> Mat4
     , translate : Float -> Mat4
+    , rotationWithDrag : Vec2 -> Mat4
     }
+
+
+defaultOptions : Options
+defaultOptions =
+    { rotation = always Mat4.identity
+    , translate = always Mat4.identity
+    , rotationWithDrag = always Mat4.identity
+    }
+
+
+mapOptions : (Maybe Options -> Maybe Options) -> Object -> Object
+mapOptions f obj =
+    case obj of
+        Mesh data shaders ->
+            Mesh { data | options = f data.options } shaders
+
+
+withOptionRotationInTime : (Float -> Mat4) -> Object -> Object
+withOptionRotationInTime f obj =
+    obj
+        |> mapOptions
+            (\options ->
+                options
+                    |> Maybe.map (\x -> { x | rotation = f })
+                    |> Maybe.withDefault { defaultOptions | rotation = f }
+                    |> Just
+            )
+
+
+withOptionDragToRotateX : Object -> Object
+withOptionDragToRotateX obj =
+    obj
+        |> mapOptions
+            (\options ->
+                options
+                    |> Maybe.map (\x -> { x | rotationWithDrag = rotationWithDragX })
+                    |> Maybe.withDefault { defaultOptions | rotationWithDrag = rotationWithDragX }
+                    |> Just
+            )
+
+
+withOptionDragToRotateY : Object -> Object
+withOptionDragToRotateY obj =
+    obj
+        |> mapOptions
+            (\options ->
+                options
+                    |> Maybe.map (\x -> { x | rotationWithDrag = rotationWithDragY })
+                    |> Maybe.withDefault { defaultOptions | rotationWithDrag = rotationWithDragY }
+                    |> Just
+            )
+
+
+withOptionDragToRotateXY : Object -> Object
+withOptionDragToRotateXY obj =
+    obj
+        |> mapOptions
+            (\options ->
+                options
+                    |> Maybe.map (\x -> { x | rotationWithDrag = rotationWithDragXY })
+                    |> Maybe.withDefault { defaultOptions | rotationWithDrag = rotationWithDragXY }
+                    |> Just
+            )
+
+
+rotationWithDragXY : Vec2 -> Mat4
+rotationWithDragXY drag =
+    Mat4.identity
+        |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
+        |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+
+
+rotationWithDragX : Vec2 -> Mat4
+rotationWithDragX drag =
+    Mat4.identity
+        |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+
+
+rotationWithDragY : Vec2 -> Mat4
+rotationWithDragY drag =
+    Mat4.identity
+        |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
 
 
 type alias Shaders =
@@ -76,15 +168,38 @@ rotation obj =
     obj |> get .rotation
 
 
-rotationInTime : Float -> Object -> Mat4
+rotationWithDrag : Vec2 -> Object -> Object
+rotationWithDrag drag obj =
+    obj
+        |> get .options
+        |> Maybe.map
+            (\x ->
+                obj
+                    |> mapData
+                        (\data ->
+                            { data
+                                | rotation = Mat4.mul data.rotation (x.rotationWithDrag drag)
+                            }
+                        )
+            )
+        |> Maybe.withDefault obj
+
+
+rotationInTime : Float -> Object -> Object
 rotationInTime theta obj =
     obj
         |> get .options
         |> Maybe.map
             (\x ->
-                x.rotation theta
+                obj
+                    |> mapData
+                        (\data ->
+                            { data
+                                | rotation = Mat4.mul data.rotation (x.rotation theta)
+                            }
+                        )
             )
-        |> Maybe.withDefault (obj |> get .rotation)
+        |> Maybe.withDefault obj
 
 
 mesh : Object -> Mesh Vertex

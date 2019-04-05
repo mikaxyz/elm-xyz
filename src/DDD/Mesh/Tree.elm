@@ -58,7 +58,7 @@ type alias Branch =
 
 object : Float -> Branch -> Object
 object t branch =
-    bone2 Color.orange Color.blue Color.green (0.1 * branch.l) branch.l
+    bone2 Color.orange Color.blue Color.green (0.3 * branch.l) branch.l
         |> WebGL.triangles
         |> Object.withMesh
         |> Object.withPosition (vec3 0 0 0)

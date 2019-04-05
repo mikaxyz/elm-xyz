@@ -13,10 +13,8 @@ import Math.Vector3 exposing (Vec3, vec3)
 import WebGL exposing (Shader)
 
 
-opt =
-    { rotation = \theta -> Mat4.makeRotate (8 * theta) (vec3 0 1 0)
-    , translate = always Mat4.identity
-    }
+speed =
+    48
 
 
 init : Scene
@@ -24,30 +22,72 @@ init =
     { defaultScene
         | graph =
             [ Graph
-                (DDD.Mesh.Cube.gray 1 1 1
+                (DDD.Mesh.Cube.colorful 2 0.2 2
                     |> Object.withMesh
-                    --                    |> Object.withOptions opt
+                    |> Object.withPosition (vec3 0 -0.6 0)
+                    |> Object.withOptionDragToRotateY
                     |> Object.withVertexShader vertexShader
                     |> Object.withFragmentShader fragmentShader
                 )
-                []
-            , floor
+                [ Graph
+                    (DDD.Mesh.Cube.gray 1 1 1
+                        |> Object.withMesh
+                        |> Object.withOptionDragToRotateX
+                        |> Object.withVertexShader vertexShader
+                        |> Object.withFragmentShader fragmentShader
+                    )
+                    [ Graph
+                        (DDD.Mesh.Cube.colorful 0.4 0.2 0.4
+                            |> Object.withMesh
+                            |> Object.withPosition (vec3 0 0.6 0)
+                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 0 1 0))
+                            |> Object.withVertexShader vertexShader
+                            |> Object.withFragmentShader fragmentShader
+                        )
+                        []
+                    , Graph
+                        (DDD.Mesh.Cube.colorful 0.2 0.4 0.4
+                            |> Object.withMesh
+                            |> Object.withPosition (vec3 0.6 0 0)
+                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 1 0 0))
+                            |> Object.withVertexShader vertexShader
+                            |> Object.withFragmentShader fragmentShader
+                        )
+                        []
+                    , Graph
+                        (DDD.Mesh.Cube.colorful 0.2 0.4 0.4
+                            |> Object.withMesh
+                            |> Object.withPosition (vec3 -0.6 0 0)
+                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 -1 0 0))
+                            |> Object.withVertexShader vertexShader
+                            |> Object.withFragmentShader fragmentShader
+                        )
+                        []
+                    , Graph
+                        (DDD.Mesh.Cube.colorful 0.4 0.4 0.2
+                            |> Object.withMesh
+                            |> Object.withPosition (vec3 0 0 0.6)
+                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 0 0 1))
+                            |> Object.withVertexShader vertexShader
+                            |> Object.withFragmentShader fragmentShader
+                        )
+                        []
+                    , Graph
+                        (DDD.Mesh.Cube.colorful 0.4 0.4 0.2
+                            |> Object.withMesh
+                            |> Object.withPosition (vec3 0 0 -0.6)
+                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 0 0 -1))
+                            |> Object.withVertexShader vertexShader
+                            |> Object.withFragmentShader fragmentShader
+                        )
+                        []
+                    ]
+                ]
             , light Scene.lightPosition1
             , light Scene.lightPosition2
             ]
         , camera = Mat4.makeLookAt (vec3 0 1 4) (vec3 0 0 0) (vec3 0 1 0)
     }
-
-
-floor =
-    Graph
-        (DDD.Mesh.Cube.colorful 2 0.2 2
-            |> Object.withMesh
-            |> Object.withPosition (vec3 0 -0.6 0)
-            |> Object.withVertexShader vertexShader
-            |> Object.withFragmentShader fragmentShader
-        )
-        []
 
 
 light p =

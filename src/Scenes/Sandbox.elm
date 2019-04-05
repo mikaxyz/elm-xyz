@@ -7,7 +7,6 @@ import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object
 import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (vec3)
-import WebGL
 
 
 
@@ -18,11 +17,18 @@ init : Scene
 init =
     { defaultScene
         | graph =
-            tree 8 0
-                ++ cubes 4 0.1
-                ++ cubes 3 0.075
-                ++ cubes 2 0.05
-                ++ cubes 1 0.025
+            [ Graph
+                (DDD.Mesh.Cube.colorful 0.1 0.1 0.1
+                    |> Object.withMesh
+                    |> Object.withOptionDragToRotateXY
+                )
+                (tree 8 0
+                    ++ cubes 4 0.1
+                    ++ cubes 3 0.075
+                    ++ cubes 2 0.05
+                    ++ cubes 1 0.025
+                )
+            ]
     }
 
 

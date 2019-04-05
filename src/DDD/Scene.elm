@@ -54,7 +54,7 @@ type alias Options =
 
 defaultOptions : Options
 defaultOptions =
-    { rotation = \theta -> Mat4.makeRotate (24 * theta) (vec3 0 1 0)
+    { rotation = always Mat4.identity
     , translate = always Mat4.identity
     , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
     }
@@ -111,12 +111,6 @@ renderGraph drag theta uniforms graph =
                                             uniforms.rotation
                                             (Object.rotation object_)
                                 }
-
-                            --                            obj x =
-                            --                                x
-                            --                                    |> Object.withUniforms
-                            --                                    |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
-                            --                                    |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
                         in
                         entity uniforms_ object_
                             :: renderGraph drag theta uniforms_ children

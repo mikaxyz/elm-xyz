@@ -60,6 +60,7 @@ init =
                 |> List.map (\( v, n ) -> Vertex (Color.vec3 Color.green) v n)
                 |> (\vertices -> WebGL.indexedTriangles vertices vMap)
                 |> Object.withMesh
+                |> Object.withOptionDragToRotateXY
                 |> Object.withVertexShader vertexShader
                 |> Object.withFragmentShader fragmentShader
                 |> (\obj -> Graph obj [])
@@ -165,6 +166,7 @@ bone v =
         |> WebGL.triangles
         |> Object.withMesh
         |> Object.withPosition (Vec3.setY 0 v)
+        |> Object.withOptionDragToRotateXY
         |> (\obj -> Graph obj [])
 
 
