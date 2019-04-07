@@ -1,7 +1,5 @@
-module Scenes.ObjectLoader exposing (addMesh, getObj, init, mesh, sceneOptions)
+module Scenes.ObjectLoader exposing (addMesh, getObj, init, sceneOptions)
 
-import Array exposing (Array)
-import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Mesh.Cube
 import DDD.Scene exposing (Options, Scene, defaultScene)
@@ -12,7 +10,6 @@ import DDD.Scene.Varyings exposing (Varyings)
 import Http
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Parser exposing ((|.), (|=), Parser, float, int, spaces, succeed, symbol)
 import WebGL exposing (Shader)
 
 
@@ -21,12 +18,16 @@ init =
     { defaultScene
         | graph =
             [ Graph
-                (DDD.Mesh.Cube.colorful 0.05 0.05 0.05
+                (DDD.Mesh.Cube.gray 2 0.1 2
                     |> Object.withMesh
+                    |> Object.withVertexShader vertexShader
+                    |> Object.withFragmentShader fragmentShader
+                    |> Object.withPosition (vec3 0 -0.75 0)
+                    |> Object.withOptionDragToRotateXY
                 )
                 []
             ]
-        , camera = Mat4.makeLookAt (vec3 0 0 2) (vec3 0 0 0) (vec3 0 1 0)
+        , camera = Mat4.makeLookAt (vec3 0 0 2.5) (vec3 0 0 0) (vec3 0 1 0)
     }
 
 
@@ -39,33 +40,37 @@ sceneOptions =
         }
 
 
-getObj : (String -> msg) -> String -> Cmd msg
-getObj tagger url =
+getObj : { scale : Float, color : Vec3 } -> Vec3 -> String -> (( { scale : Float, color : Vec3 }, Vec3, String ) -> msg) -> Cmd msg
+getObj options pos url tagger =
     Http.get
         { url = url
-        , expect = Http.expectString (\x -> tagger (x |> Result.withDefault ""))
+        , expect = Http.expectString (\x -> tagger ( options, pos, x |> Result.withDefault "" ))
         }
 
 
-addMesh : List ( Vertex, Vertex, Vertex ) -> Scene -> Scene
-addMesh tris scene =
+addMesh : List ( Vertex, Vertex, Vertex ) -> Vec3 -> Scene -> Scene
+addMesh tris pos scene =
     let
         graphObject : Object
         graphObject =
             tris
                 |> WebGL.triangles
                 |> Object.withMesh
-                |> Object.withOptionDragToRotateXY
                 |> Object.withVertexShader vertexShader
                 |> Object.withFragmentShader fragmentShader
-                |> Object.withPosition (vec3 0 0 0)
+                |> Object.withPosition pos
+
+        updated =
+            case scene.graph of
+                graph :: _ ->
+                    case graph of
+                        Graph root children ->
+                            [ Graph root (Graph graphObject [] :: children) ]
+
+                _ ->
+                    scene.graph
     in
-    { scene | graph = Graph graphObject [] :: scene.graph }
-
-
-mesh : String -> List ( Vertex, Vertex, Vertex )
-mesh x =
-    parse 0.5 x
+    { scene | graph = updated }
 
 
 vertexShader : Shader Vertex Uniforms Varyings
@@ -122,140 +127,3 @@ fragmentShader =
             gl_FragColor = vec4(vcolor * vlighting, 1.0);
         }
     |]
-
-
-
--- PARSE
-
-
-parse : Float -> String -> List ( Vertex, Vertex, Vertex )
-parse scale x =
-    let
-        signedFloat : Parser Float
-        signedFloat =
-            Parser.oneOf
-                [ succeed negate
-                    |. symbol "-"
-                    |= float
-                , float
-                ]
-
-        vector1 : String -> Parser Vec3
-        vector1 h =
-            succeed vec3
-                |. symbol h
-                |. spaces
-                |= signedFloat
-                |. spaces
-                |= signedFloat
-                |. spaces
-                |= signedFloat
-
-        positions =
-            x
-                |> String.lines
-                |> List.map (\line -> Parser.run (vector1 "v") line |> Result.toMaybe)
-                |> List.filterMap identity
-                |> Array.fromList
-
-        normals : Array Vec3
-        normals =
-            x
-                |> String.lines
-                |> List.map (\line -> Parser.run (vector1 "vn") line |> Result.toMaybe)
-                |> List.filterMap identity
-                |> Array.fromList
-
-        vertMaps : List VertMap
-        vertMaps =
-            x
-                |> String.lines
-                |> List.map (\line -> Parser.run vertMapParser line |> Result.toMaybe)
-                |> List.filterMap identity
-
-        --                |> Debug.log "vertMaps"
-        color =
-            vec3 1.0 0.95 0.9
-
-        vertices =
-            vertMaps
-                |> List.map
-                    (\vertMap ->
-                        case
-                            ( ( Array.get (vertMap.v1 - 1) positions
-                              , Array.get (vertMap.v2 - 1) positions
-                              , Array.get (vertMap.v3 - 1) positions
-                              )
-                            , ( Array.get (vertMap.vn1 - 1) normals
-                              , Array.get (vertMap.vn2 - 1) normals
-                              , Array.get (vertMap.vn3 - 1) normals
-                              )
-                            )
-                        of
-                            ( ( Just v1, Just v2, Just v3 ), ( Just vn1, Just vn2, Just vn3 ) ) ->
-                                ( Vertex color (v1 |> Vec3.scale scale) vn1
-                                , Vertex color (v2 |> Vec3.scale scale) vn2
-                                , Vertex color (v3 |> Vec3.scale scale) vn3
-                                )
-                                    |> Just
-
-                            _ ->
-                                Nothing
-                    )
-                |> List.filterMap identity
-    in
-    vertices
-
-
-type alias VertMap =
-    { v1 : Int
-    , vt1 : Int
-    , vn1 : Int
-    , v2 : Int
-    , vt2 : Int
-    , vn2 : Int
-    , v3 : Int
-    , vt3 : Int
-    , vn3 : Int
-    }
-
-
-vertMapIndex : Parser Int
-vertMapIndex =
-    Parser.oneOf [ int, Parser.succeed -1 |. symbol "" ]
-
-
-vertMapParser : Parser VertMap
-vertMapParser =
-    succeed VertMap
-        |. symbol "f"
-        |. spaces
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. spaces
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. spaces
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-        |. symbol "/"
-        |= vertMapIndex
-
-
-
---toTriangles : Float -> List Vertex -> List ( Vertex, Vertex, Vertex )
---toTriangles scale x =
---    case x of
---        v1 :: v2 :: v3 :: rest ->
---            ( v1 |> Vertex.scale scale, v2 |> Vertex.scale scale, v3 |> Vertex.scale scale ) :: toTriangles scale rest
---
---        rest ->
---            []
---

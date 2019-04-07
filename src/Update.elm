@@ -1,5 +1,6 @@
 module Update exposing (update)
 
+import DDD.Parser.Obj
 import Math.Vector2 as Vec2
 import Model exposing (Model, Msg(..))
 import Scenes.ObjectLoader
@@ -43,7 +44,13 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        GotObj str ->
-            ( { model | scene = Scenes.ObjectLoader.addMesh (Scenes.ObjectLoader.mesh str) model.scene }
+        GotObj ( options, pos, str ) ->
+            ( { model
+                | scene =
+                    Scenes.ObjectLoader.addMesh
+                        (DDD.Parser.Obj.parse options str)
+                        pos
+                        model.scene
+              }
             , Cmd.none
             )

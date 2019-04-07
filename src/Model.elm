@@ -11,6 +11,7 @@ module Model exposing
 import Array exposing (Array)
 import DDD.Scene as Scene exposing (Scene)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
+import Math.Vector3 exposing (Vec3, vec3)
 import Scenes.Landscape
 import Scenes.Light
 import Scenes.ObjectLoader
@@ -23,7 +24,7 @@ type Msg
     | Drag Vec2
     | DragEnd Vec2
     | KeyPressed String
-    | GotObj String
+    | GotObj ( { scale : Float, color : Vec3 }, Vec3, String )
 
 
 type alias Model =
@@ -48,7 +49,7 @@ init =
     , dragger = Nothing
     , drag = vec2 0 0
     , scene = Scenes.Light.init
-    , scenes = [ Light, Sandbox, ObjectLoader, Landscape ] |> Array.fromList
+    , scenes = [ ObjectLoader, Light, Sandbox, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     }
         |> loadScene
@@ -112,7 +113,33 @@ loadScene model =
             ( { model
                 | scene = Scenes.ObjectLoader.init
               }
-            , Scenes.ObjectLoader.getObj GotObj "obj/monkey.obj"
+            , Cmd.batch
+                [ Scenes.ObjectLoader.getObj
+                    { scale = 0.001, color = vec3 1 0.5 0.5 }
+                    (vec3 0 -0.7 -0.5)
+                    "obj/deer.obj"
+                    GotObj
+                , Scenes.ObjectLoader.getObj
+                    { scale = 0.3, color = vec3 0.5 0.5 1 }
+                    (vec3 -0.5 0.5 0)
+                    "obj/monkey.obj"
+                    GotObj
+                , Scenes.ObjectLoader.getObj
+                    { scale = 0.001, color = vec3 1 1 0.5 }
+                    (vec3 0 -0.7 0.5)
+                    "obj/cat.obj"
+                    GotObj
+                , Scenes.ObjectLoader.getObj
+                    { scale = 0.001, color = vec3 0.5 1 1 }
+                    (vec3 0 -0.7 0)
+                    "obj/wolf.obj"
+                    GotObj
+                , Scenes.ObjectLoader.getObj
+                    { scale = 0.3, color = vec3 0.5 1 0.5 }
+                    (vec3 -0.7 -0.6 0)
+                    "obj/cube.obj"
+                    GotObj
+                ]
             )
 
         Just Landscape ->

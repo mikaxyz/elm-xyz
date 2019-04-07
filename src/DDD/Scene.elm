@@ -19,7 +19,7 @@ import WebGL exposing (Entity, Mesh, Shader)
 
 
 directionalLight =
-    Vec3.fromRecord { x = 0, y = 3, z = 4 }
+    Vec3.fromRecord { x = 1, y = 0.7, z = 0.2 }
 
 
 lightPosition1 =
