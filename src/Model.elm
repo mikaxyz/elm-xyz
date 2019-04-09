@@ -49,7 +49,7 @@ init =
     , dragger = Nothing
     , drag = vec2 0 0
     , scene = Scenes.Light.init
-    , scenes = [ ObjectLoader, Light, Sandbox, Landscape ] |> Array.fromList
+    , scenes = [ Landscape, ObjectLoader, Light, Sandbox ] |> Array.fromList
     , currentSceneIndex = 0
     }
         |> loadScene
