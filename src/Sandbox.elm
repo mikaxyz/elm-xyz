@@ -3,10 +3,12 @@ module Sandbox exposing (main)
 import Browser
 import Browser.Events
 import DDD.Data.Vertex exposing (Vertex)
+import DDD.Generator.Landscape
 import DDD.Mesh.Cube
 import Html exposing (Html)
 import Html.Attributes exposing (height, width)
 import Json.Decode as D
+import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -17,6 +19,8 @@ type alias Model =
     { theta : Float
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
+    , keyboard : Keyboard.State
+    , player : Vec2
     }
 
 
@@ -31,6 +35,8 @@ initModel =
     { theta = 0
     , dragger = Nothing
     , drag = vec2 0 0
+    , keyboard = Keyboard.init
+    , player = vec2 0 0
     }
 
 
@@ -39,6 +45,7 @@ type Msg
     | DragStart Vec2
     | Drag Vec2
     | DragEnd Vec2
+    | KeyboardMsg Keyboard.Msg
 
 
 main : Program () Model Msg
@@ -74,14 +81,44 @@ subscriptions model =
     Sub.batch
         [ drags
         , Browser.Events.onAnimationFrameDelta Animate
+        , Keyboard.subscriptions { tagger = KeyboardMsg }
         ]
+
+
+movePlayer : Float -> Model -> Model
+movePlayer d model =
+    let
+        x =
+            if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowRight then
+                d
+
+            else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowLeft then
+                -d
+
+            else
+                0
+
+        y =
+            if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowUp then
+                d
+
+            else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowDown then
+                -d
+
+            else
+                0
+    in
+    { model | player = Vec2.add model.player (vec2 x y) }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Animate elapsed ->
-            ( { model | theta = model.theta + (elapsed / 10000) }, Cmd.none )
+            ( { model | theta = model.theta + (elapsed / 10000) }
+                |> movePlayer (elapsed / 3000)
+            , Cmd.none
+            )
 
         DragStart pos ->
             ( { model | dragger = Just { from = pos, to = pos } }, Cmd.none )
@@ -101,6 +138,11 @@ update msg model =
                         |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
                         |> Maybe.withDefault model.drag
               }
+            , Cmd.none
+            )
+
+        KeyboardMsg msg_ ->
+            ( { model | keyboard = Keyboard.update msg_ model.keyboard }
             , Cmd.none
             )
 
@@ -130,21 +172,30 @@ view model =
         [ width viewport.width
         , height viewport.height
         ]
-        (scene (getDrag model) model.theta)
+        (scene (getDrag model) model.theta model.player)
 
 
-scene : Vec2 -> Float -> List Entity
-scene drag theta =
+landscape =
+    DDD.Generator.Landscape.mesh
+        { width = 10
+        , height = 10
+        , elevation = 0.2
+        , segments = 32
+        }
+
+
+scene : Vec2 -> Float -> Vec2 -> List Entity
+scene drag theta player =
     [ WebGL.entity
         vertexShader
         fragmentShader
-        (DDD.Mesh.Cube.colorful 1 0.1 1)
+        landscape
         (uniforms drag theta)
     , WebGL.entity
         vertexShader
         fragmentShader
         (DDD.Mesh.Cube.colorful 0.2 0.2 0.2)
-        (boxUniforms theta)
+        (playerUniforms theta player)
     ]
 
 
@@ -189,9 +240,12 @@ uniforms drag theta =
     }
 
 
-boxUniforms : Float -> Uniforms
-boxUniforms theta =
-    { rotation = Mat4.makeRotate (24 * theta) (vec3 0 1 0)
+playerUniforms : Float -> Vec2 -> Uniforms
+playerUniforms theta player =
+    { rotation =
+        Mat4.identity
+            --        Mat4.makeRotate (24 * theta) (vec3 0 1 0)
+            |> Mat4.translate (vec3 (Vec2.getX player) 0.5 (Vec2.getY player))
 
     --            Mat4.makeRotate (Vec2.getX rotate) (vec3 0 1 0)
     --                |> Mat4.rotate (Vec2.getY rotate) (vec3 1 0 0)
@@ -232,11 +286,11 @@ vertexShader =
 
         void main () {
             gl_Position = perspective * camera * rotation * vec4(position, 1.0);
-
-            highp vec3 ambientLight = vec3(0, 0, 0);
+            
+            highp vec3 ambientLight = vec3(0.1, 0.1, 0.1);
             highp vec3 directionalLightColor = vec3(1, 1, 1);
             highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = rotation * vec4(normal, 1.0);
+            highp vec4 transformedNormal = rotation * vec4(normalize(normal), 1.0);
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
 
             v_lighting = ambientLight + (directionalLightColor * directional);
