@@ -2,7 +2,8 @@ module Scenes.Landscape exposing (init, sceneOptions)
 
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
-import DDD.Generator.Landscape
+import DDD.Generator.Perlin as Perlin
+import DDD.Mesh.Landscape
 import DDD.Mesh.Primitives
 import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
@@ -14,11 +15,27 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh, Shader)
 
 
+elevation x y =
+    let
+        seed =
+            42
+
+        freq =
+            0.5
+
+        e1 =
+            Perlin.value2d { seed = seed, freq = freq } x y
+    in
+    e1
+        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 3 * freq } x y)
+        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 10 * freq } x y)
+
+
 init : Scene
 init =
     let
         divisions =
-            63
+            31
 
         color height =
             let
@@ -31,14 +48,13 @@ init =
                 normalized
 
         landscape =
-            DDD.Generator.Landscape.mesh
+            DDD.Mesh.Landscape.simple
                 { divisions = divisions
-                , seed = 42
-                , freq = 0.8
                 , width = 3
                 , length = 3
                 , height = 1
                 , color = color
+                , elevation = elevation
                 }
 
         normalBone : Vertex -> Graph
@@ -54,7 +70,7 @@ init =
                     (\v ->
                         { v
                             | color = vec3 0.2 0.2 0.2
-                            , normal = Vec3.scale 0.5 v.normal
+                            , normal = Vec3.scale 0.2 v.normal
                         }
                     )
                 |> List.map normalBone
@@ -82,9 +98,7 @@ init =
                 |> List.map bone
 
         helpers =
-            []
-
-        --            normalGuides ++ elevationBones 4
+            normalGuides ++ elevationBones 4
     in
     { defaultScene
         | graph =

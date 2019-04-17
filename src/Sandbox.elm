@@ -3,8 +3,9 @@ module Sandbox exposing (main)
 import Browser
 import Browser.Events
 import DDD.Data.Vertex exposing (Vertex)
-import DDD.Generator.Landscape
+import DDD.Generator.Perlin as Perlin
 import DDD.Mesh.Cube
+import DDD.Mesh.Landscape
 import Html exposing (Html)
 import Html.Attributes exposing (height, width)
 import Json.Decode as D
@@ -45,14 +46,29 @@ color height_ =
         snow
 
 
+elevation x y =
+    let
+        seed =
+            42
+
+        freq =
+            0.1
+
+        e1 =
+            Perlin.value2d { seed = seed, freq = freq } x y
+    in
+    e1
+        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 3 * freq } x y)
+        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 10 * freq } x y)
+
+
 landscapeOptions =
     { divisions = 63
-    , seed = 42
-    , freq = 0.1
     , width = 10
     , length = 10
     , height = 3
     , color = color
+    , elevation = elevation
     }
 
 
@@ -79,10 +95,6 @@ getDrag model =
         |> Maybe.withDefault model.drag
 
 
-elevationAtPoint =
-    DDD.Generator.Landscape.elevationAtPoint landscapeOptions
-
-
 initModel : Model
 initModel =
     { theta = 0
@@ -93,7 +105,7 @@ initModel =
     , meshes =
         { player = DDD.Mesh.Cube.colorful (playerHeight / 4) playerHeight (playerHeight / 4)
         , landscape =
-            DDD.Generator.Landscape.mesh landscapeOptions
+            DDD.Mesh.Landscape.simple landscapeOptions
                 |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
         }
     }
@@ -238,7 +250,7 @@ scene drag model =
             ( Vec2.getX model.player, Vec2.getY model.player )
 
         pz x y =
-            elevationAtPoint x y + (playerHeight / 2)
+            landscapeOptions.height * elevation x y + (playerHeight / 2)
     in
     [ WebGL.entity
         vertexShader

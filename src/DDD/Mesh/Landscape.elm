@@ -1,43 +1,25 @@
-module DDD.Generator.Landscape exposing (elevationAtPoint, mesh)
+module DDD.Mesh.Landscape exposing (simple)
 
 import DDD.Data.Vertex exposing (Vertex)
-import DDD.Generator.Perlin as Perlin
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 
 
 type alias Options =
     { divisions : Int
-    , seed : Int
-    , freq : Float
     , width : Float
     , length : Float
     , height : Float
     , color : Float -> Vec3
+    , elevation : Float -> Float -> Float
     }
 
 
-noiseValueAtPoint : Options -> Float -> Float -> Float
-noiseValueAtPoint options x y =
-    let
-        e1 =
-            Perlin.value2d { seed = options.seed, freq = options.freq } x y
-    in
-    e1
-        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = options.seed, freq = 3 * options.freq } x y)
-        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = options.seed, freq = 10 * options.freq } x y)
-
-
-elevationAtPoint : Options -> Float -> Float -> Float
-elevationAtPoint options x y =
-    noiseValueAtPoint options x y * options.height
-
-
-mesh : Options -> ( List Vertex, List ( Int, Int, Int ) )
-mesh options =
+simple : Options -> ( List Vertex, List ( Int, Int, Int ) )
+simple options =
     let
         f =
-            noiseValueAtPoint options
+            options.elevation
 
         c1 =
             { x = -options.width, y = options.length }
