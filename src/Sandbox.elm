@@ -12,7 +12,52 @@ import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import WebGL exposing (Entity, Shader)
+import WebGL exposing (Entity, Mesh, Shader)
+
+
+color height_ =
+    let
+        height =
+            (height_ + 1) / 2
+
+        water =
+            vec3 0 0 1
+
+        grass =
+            vec3 0 1 0
+
+        cliffs =
+            vec3 0.5 0.52 0.53
+
+        snow =
+            vec3 0.99 1 1
+    in
+    if height <= 0.3 then
+        water
+
+    else if height <= 0.6 then
+        grass
+
+    else if height <= 0.7 then
+        cliffs
+
+    else
+        snow
+
+
+landscapeOptions =
+    { divisions = 63
+    , seed = 42
+    , freq = 0.1
+    , width = 10
+    , length = 10
+    , height = 3
+    , color = color
+    }
+
+
+playerHeight =
+    1
 
 
 type alias Model =
@@ -21,6 +66,10 @@ type alias Model =
     , drag : Vec2
     , keyboard : Keyboard.State
     , player : Vec2
+    , meshes :
+        { player : Mesh Vertex
+        , landscape : Mesh Vertex
+        }
     }
 
 
@@ -30,6 +79,10 @@ getDrag model =
         |> Maybe.withDefault model.drag
 
 
+elevationAtPoint =
+    DDD.Generator.Landscape.elevationAtPoint landscapeOptions
+
+
 initModel : Model
 initModel =
     { theta = 0
@@ -37,6 +90,12 @@ initModel =
     , drag = vec2 0 0
     , keyboard = Keyboard.init
     , player = vec2 0 0
+    , meshes =
+        { player = DDD.Mesh.Cube.colorful (playerHeight / 4) playerHeight (playerHeight / 4)
+        , landscape =
+            DDD.Generator.Landscape.mesh landscapeOptions
+                |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
+        }
     }
 
 
@@ -100,10 +159,10 @@ movePlayer d model =
 
         y =
             if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowUp then
-                d
+                -d
 
             else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowDown then
-                -d
+                d
 
             else
                 0
@@ -116,7 +175,7 @@ update msg model =
     case msg of
         Animate elapsed ->
             ( { model | theta = model.theta + (elapsed / 10000) }
-                |> movePlayer (elapsed / 3000)
+                |> movePlayer (elapsed / 500)
             , Cmd.none
             )
 
@@ -154,12 +213,6 @@ doc model =
     }
 
 
-type alias Config =
-    { width : Int
-    , height : Int
-    }
-
-
 viewport =
     { width = 800
     , height = 600
@@ -172,51 +225,52 @@ view model =
         [ width viewport.width
         , height viewport.height
         ]
-        (scene (getDrag model) model.theta model.player)
+        (scene (getDrag model) model)
 
 
-landscape =
-    DDD.Generator.Landscape.mesh
-        { width = 10
-        , height = 10
-        , elevation = 0.2
-        , segments = 32
-        }
+scene : Vec2 -> Model -> List Entity
+scene drag model =
+    let
+        uniforms =
+            sceneUniforms drag
 
+        ( px, py ) =
+            ( Vec2.getX model.player, Vec2.getY model.player )
 
-scene : Vec2 -> Float -> Vec2 -> List Entity
-scene drag theta player =
+        pz x y =
+            elevationAtPoint x y + (playerHeight / 2)
+    in
     [ WebGL.entity
         vertexShader
         fragmentShader
-        landscape
-        (uniforms drag theta)
+        model.meshes.landscape
+        uniforms
     , WebGL.entity
         vertexShader
         fragmentShader
-        (DDD.Mesh.Cube.colorful 0.2 0.2 0.2)
-        (playerUniforms theta player)
+        model.meshes.player
+        (playerUniforms
+            (Mat4.makeTranslate (vec3 px (pz px py) py))
+            uniforms.rotation
+        )
     ]
 
 
 type alias Uniforms =
     { rotation : Mat4
+    , translate : Mat4
     , perspective : Mat4
     , camera : Mat4
     , directionalLight : Vec3
-    , pointLight : Vec3
     }
 
 
 directionalLight =
-    Vec3.fromRecord { x = 0, y = 0, z = 1 }
+    Vec3.fromRecord { x = 1, y = 0.7, z = 0.2 }
 
 
 camera =
-    Mat4.makeLookAt
-        (Vec3.fromRecord { x = 0, y = 1, z = 3 })
-        (vec3 0 0 0)
-        (vec3 0 1 0)
+    Mat4.makeLookAt (vec3 0 8 16) (vec3 0 0 0) (vec3 0 1 0)
 
 
 aspect =
@@ -227,32 +281,26 @@ perspective =
     Mat4.makePerspective 45 aspect 0.01 100
 
 
-uniforms : Vec2 -> Float -> Uniforms
-uniforms drag theta =
+sceneUniforms : Vec2 -> Uniforms
+sceneUniforms drag =
     { rotation =
         Mat4.identity
             |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
             |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+    , translate = Mat4.identity
     , perspective = perspective
     , camera = camera
     , directionalLight = directionalLight
-    , pointLight = vec3 0 -5 5
     }
 
 
-playerUniforms : Float -> Vec2 -> Uniforms
-playerUniforms theta player =
-    { rotation =
-        Mat4.identity
-            --        Mat4.makeRotate (24 * theta) (vec3 0 1 0)
-            |> Mat4.translate (vec3 (Vec2.getX player) 0.5 (Vec2.getY player))
-
-    --            Mat4.makeRotate (Vec2.getX rotate) (vec3 0 1 0)
-    --                |> Mat4.rotate (Vec2.getY rotate) (vec3 1 0 0)
+playerUniforms : Mat4 -> Mat4 -> Uniforms
+playerUniforms position rotation =
+    { rotation = rotation
+    , translate = position
     , perspective = perspective
     , camera = camera
     , directionalLight = directionalLight
-    , pointLight = vec3 0 -5 5
     }
 
 
@@ -276,6 +324,7 @@ vertexShader =
         uniform mat4 perspective;
         uniform mat4 camera;
         uniform mat4 rotation;
+        uniform mat4 translate;
         uniform vec3 directionalLight;
 
         varying vec3 v_color;
@@ -285,7 +334,7 @@ vertexShader =
 
 
         void main () {
-            gl_Position = perspective * camera * rotation * vec4(position, 1.0);
+            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
             
             highp vec3 ambientLight = vec3(0.1, 0.1, 0.1);
             highp vec3 directionalLightColor = vec3(1, 1, 1);

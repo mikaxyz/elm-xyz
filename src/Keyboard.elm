@@ -35,14 +35,12 @@ init =
 
 update : Msg -> State -> State
 update msg state =
-    case msg |> Debug.log "msg_" of
+    case msg of
         KeyDown x ->
             { state | down = addKey x state.down }
-                |> Debug.log "state_"
 
         KeyUp x ->
             { state | down = removeKey x state.down }
-                |> Debug.log "state_"
 
 
 addKey : Key -> List Key -> List Key
@@ -121,7 +119,7 @@ keyDecoder =
 
 toKey : KeyData -> Key
 toKey { key, code, keyChar, target } =
-    case ( key, keyChar ) |> Debug.log "asd" of
+    case ( key, keyChar ) of
         ( "Shift", _ ) ->
             Shift
 

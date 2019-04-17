@@ -2,9 +2,19 @@ module DDD.Mesh.Cube exposing (colorful, gray)
 
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
-import DDD.Mesh.Primitives exposing (face, faceWithNormal)
+import DDD.Mesh.Primitives exposing (faceWithNormal)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (..)
+
+
+type alias Colors =
+    { top : Color
+    , bottom : Color
+    , left : Color
+    , right : Color
+    , front : Color
+    , back : Color
+    }
 
 
 colorful : Float -> Float -> Float -> Mesh Vertex
@@ -31,16 +41,6 @@ gray =
             Color.grey50
             Color.grey50
         )
-
-
-type alias Colors =
-    { top : Color
-    , bottom : Color
-    , left : Color
-    , right : Color
-    , front : Color
-    , back : Color
-    }
 
 
 cube : Colors -> Float -> Float -> Float -> Mesh Vertex

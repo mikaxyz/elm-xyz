@@ -2,6 +2,7 @@ module Scenes.Landscape exposing (init, sceneOptions)
 
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
+import DDD.Generator.Landscape
 import DDD.Mesh.Primitives
 import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
@@ -9,53 +10,36 @@ import DDD.Scene.Object as Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
 import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4
-import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Noise
-import Random
 import WebGL exposing (Mesh, Shader)
-
-
-
---
-
-
-c1 =
-    { x = -5, y = 5 }
-
-
-c2 =
-    { x = 5, y = -5 }
-
-
-segments =
-    16
-
-
-stepX =
-    toFloat (c1.x - c2.x) / segments
-
-
-stepY =
-    toFloat (c1.y - c2.y) / segments
-
-
-height =
-    1
 
 
 init : Scene
 init =
     let
-        vMap =
-            List.range 0 ((segments - 1) * (segments - 1) - 1)
-                |> List.map (quad (segments - 1))
-                |> List.concat
+        divisions =
+            63
 
-        vertices =
-            points segments (vec2 c1.x c1.y) (vec2 c2.x c2.y)
-                |> List.map (addElevation height)
-                |> List.map (\( v, n ) -> Vertex (Color.vec3 Color.green) v n)
+        color height =
+            let
+                normalized =
+                    height + 1 / 2
+            in
+            vec3
+                normalized
+                1
+                normalized
+
+        landscape =
+            DDD.Generator.Landscape.mesh
+                { divisions = divisions
+                , seed = 42
+                , freq = 0.8
+                , width = 3
+                , length = 3
+                , height = 1
+                , color = color
+                }
 
         normalBone : Vertex -> Graph
         normalBone v =
@@ -63,50 +47,58 @@ init =
                 |> Object.withMesh
                 |> (\obj -> Graph obj [])
 
-        normalBones =
-            vertices
-                |> List.map (\v -> { v | color = vec3 0.2 0.2 0.2 })
+        normalGuides =
+            landscape
+                |> Tuple.first
+                |> List.map
+                    (\v ->
+                        { v
+                            | color = vec3 0.2 0.2 0.2
+                            , normal = Vec3.scale 0.5 v.normal
+                        }
+                    )
                 |> List.map normalBone
 
-        elevationBones =
-            points (segments // 2) (vec2 c1.x c1.y) (vec2 c2.x c2.y)
-                |> List.map (addElevation height)
-                |> List.map Tuple.first
+        bone : Vec3 -> Graph
+        bone v =
+            DDD.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
+                |> WebGL.triangles
+                |> Object.withMesh
+                |> Object.withPosition (Vec3.setY -1 v)
+                |> (\obj -> Graph obj [])
+
+        elevationBones density =
+            landscape
+                |> Tuple.first
+                |> List.indexedMap
+                    (\i v ->
+                        if modBy density i == 0 && modBy density (i // divisions) == 0 then
+                            Just v.position
+
+                        else
+                            Nothing
+                    )
+                |> List.filterMap identity
                 |> List.map bone
 
         helpers =
-            normalBones
+            []
 
-        --                ++ elevationBones
+        --            normalGuides ++ elevationBones 4
     in
     { defaultScene
         | graph =
-            [ vertices
-                |> (\vertices_ -> WebGL.indexedTriangles vertices_ vMap)
+            [ landscape
+                |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
                 |> Object.withMesh
-                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
+                --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
                 |> Object.withOptionDragToRotateXY
                 |> Object.withVertexShader vertexShader
                 |> Object.withFragmentShader fragmentShader
                 |> (\obj -> Graph obj helpers)
             ]
-        , camera = Mat4.makeLookAt (vec3 0 5 12) (vec3 0 0 0) (vec3 0 1 0)
+        , camera = Mat4.makeLookAt (vec3 0 4 7) (vec3 0 0 0) (vec3 0 1 0)
     }
-
-
-quad : Int -> Int -> List ( Int, Int, Int )
-quad div i =
-    let
-        rr =
-            (i // div)
-                * (div + 1)
-
-        ii =
-            modBy div i + rr
-    in
-    [ ( ii, ii + 1, ii + div + 1 )
-    , ( ii + 1, ii + div + 1, ii + div + 2 )
-    ]
 
 
 sceneOptions : Maybe Options
@@ -116,74 +108,6 @@ sceneOptions =
         , translate = always Mat4.identity
         , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
         }
-
-
-points : Int -> Vec2 -> Vec2 -> List Vec2
-points div v1 v2 =
-    List.range 0 (div * div - 1)
-        |> List.map
-            (\i ->
-                let
-                    ( ix, iy ) =
-                        ( toFloat (modBy div i), toFloat (i // div) )
-
-                    x =
-                        Vec2.getX v1 + (ix / toFloat (div - 1) * (Vec2.getX v2 - Vec2.getX v1))
-
-                    y =
-                        Vec2.getY v1 + (iy / toFloat (div - 1) * (Vec2.getY v2 - Vec2.getY v1))
-                in
-                vec2 x y
-            )
-
-
-addElevation : Float -> Vec2 -> ( Vec3, Vec3 )
-addElevation m v =
-    let
-        ( perm, newSeed_ ) =
-            Noise.permutationTable (Random.initialSeed 42)
-
-        f x y =
-            --            m * cos x * sin y
-            m * Noise.noise2d perm ((x + 100) / 6) ((y + 100) / 6)
-
-        elevation =
-            f (Vec2.getX v) (Vec2.getY v)
-
-        elevationNorth =
-            f (Vec2.getX v) (Vec2.getY v + stepY)
-
-        elevationSouth =
-            f (Vec2.getX v) (Vec2.getY v - stepY)
-
-        elevationWest =
-            f (Vec2.getX v + stepX) (Vec2.getY v)
-
-        elevationEast =
-            f (Vec2.getX v - stepX) (Vec2.getY v)
-
-        normal =
-            vec3
-                ((elevationEast - elevationWest) / stepX)
-                2
-                ((elevationSouth - elevationNorth) / stepY)
-
-        pos =
-            vec3
-                (Vec2.getX v)
-                elevation
-                (Vec2.getY v)
-    in
-    ( pos, normal |> Vec3.normalize |> Vec3.scale 0.5 )
-
-
-bone : Vec3 -> Graph
-bone v =
-    DDD.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY v)
-        |> WebGL.triangles
-        |> Object.withMesh
-        |> Object.withPosition (Vec3.setY 0 v)
-        |> (\obj -> Graph obj [])
 
 
 vertexShader : Shader Vertex Uniforms Varyings

@@ -1,4 +1,16 @@
-module DDD.Data.Color exposing (Color, blue, cyan, green, grey50, magenta, orange, purple, red, vec3, yellow)
+module DDD.Data.Color exposing
+    ( Color
+    , blue
+    , cyan
+    , green
+    , grey50
+    , magenta
+    , orange
+    , purple
+    , red
+    , vec3
+    , yellow
+    )
 
 import Math.Vector3 exposing (Vec3)
 

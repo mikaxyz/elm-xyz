@@ -1,82 +1,61 @@
-module DDD.Generator.Landscape exposing (Options, addElevation, bone, mesh, points, quad)
+module DDD.Generator.Landscape exposing (elevationAtPoint, mesh)
 
-import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex exposing (Vertex)
-import DDD.Mesh.Primitives
-import DDD.Scene exposing (Options, Scene, defaultScene)
-import DDD.Scene.Graph exposing (Graph(..))
-import DDD.Scene.Object as Object exposing (Object)
-import Math.Matrix4 as Mat4
+import DDD.Generator.Perlin as Perlin
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Noise
-import Random
-import WebGL exposing (Mesh, Shader)
-
-
-
---
 
 
 type alias Options =
-    { width : Float
+    { divisions : Int
+    , seed : Int
+    , freq : Float
+    , width : Float
+    , length : Float
     , height : Float
-    , elevation : Float
-    , segments : Int
+    , color : Float -> Vec3
     }
 
 
-mesh : Options -> Mesh Vertex
+noiseValueAtPoint : Options -> Float -> Float -> Float
+noiseValueAtPoint options x y =
+    let
+        e1 =
+            Perlin.value2d { seed = options.seed, freq = options.freq } x y
+    in
+    e1
+        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = options.seed, freq = 3 * options.freq } x y)
+        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = options.seed, freq = 10 * options.freq } x y)
+
+
+elevationAtPoint : Options -> Float -> Float -> Float
+elevationAtPoint options x y =
+    noiseValueAtPoint options x y * options.height
+
+
+mesh : Options -> ( List Vertex, List ( Int, Int, Int ) )
 mesh options =
     let
+        f =
+            noiseValueAtPoint options
+
         c1 =
-            { x = -options.width, y = options.width }
+            { x = -options.width, y = options.length }
 
         c2 =
-            { x = options.height, y = -options.height }
+            { x = options.width, y = -options.length }
 
         vMap =
-            List.range 0 ((options.segments - 1) * (options.segments - 1) - 1)
-                |> List.map (quad (options.segments - 1))
+            List.range 0 ((options.divisions - 1) * (options.divisions - 1) - 1)
+                |> List.map (quad (options.divisions - 1))
                 |> List.concat
 
         vertices =
-            points options.segments (vec2 c1.x c1.y) (vec2 c2.x c2.y)
-                |> List.map (addElevation options)
-                |> List.map (\( v, n ) -> Vertex (Color.vec3 Color.green) v n)
-
-        normalBone : Vertex -> Graph
-        normalBone v =
-            WebGL.lines [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
-                |> Object.withMesh
-                |> (\obj -> Graph obj [])
-
-        normalBones =
-            vertices
-                |> List.map (\v -> { v | color = vec3 0.2 0.2 0.2 })
-                |> List.map normalBone
-
-        elevationBones =
-            points (options.segments // 2) (vec2 c1.x c1.y) (vec2 c2.x c2.y)
-                |> List.map (addElevation options)
-                |> List.map Tuple.first
-                |> List.map bone
-
-        helpers =
-            normalBones
-
-        --                ++ elevationBones
+            points options.divisions (vec2 c1.x c1.y) (vec2 c2.x c2.y)
+                |> List.map (addElevation options f)
+                |> List.map (\( elevation, v, n ) -> Vertex (options.color elevation) v n)
     in
-    WebGL.indexedTriangles vertices vMap
-
-
-bone : Vec3 -> Graph
-bone v =
-    DDD.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY v)
-        |> WebGL.triangles
-        |> Object.withMesh
-        |> Object.withPosition (Vec3.setY 0 v)
-        |> (\obj -> Graph obj [])
+    ( vertices, vMap )
 
 
 points : Int -> Vec2 -> Vec2 -> List Vec2
@@ -113,22 +92,15 @@ quad div i =
     ]
 
 
-addElevation : Options -> Vec2 -> ( Vec3, Vec3 )
-addElevation options v =
+addElevation : Options -> (Float -> Float -> Float) -> Vec2 -> ( Float, Vec3, Vec3 )
+addElevation options f v =
     let
         ( stepX, stepY ) =
-            ( options.width / toFloat options.segments
-            , options.height / toFloat options.segments
+            ( options.width / toFloat options.divisions
+            , options.length / toFloat options.divisions
             )
 
-        ( perm, newSeed_ ) =
-            Noise.permutationTable (Random.initialSeed 42)
-
-        f x y =
-            --            m * cos x * sin y
-            options.elevation * Noise.noise2d perm ((x + 100) / 6) ((y + 100) / 6)
-
-        elevation =
+        z =
             f (Vec2.getX v) (Vec2.getY v)
 
         elevationNorth =
@@ -148,11 +120,12 @@ addElevation options v =
                 ((elevationEast - elevationWest) / stepX)
                 2
                 ((elevationSouth - elevationNorth) / stepY)
+                |> Vec3.normalize
 
         pos =
             vec3
                 (Vec2.getX v)
-                elevation
+                (z * options.height)
                 (Vec2.getY v)
     in
-    ( pos, normal |> Vec3.normalize |> Vec3.scale 0.5 )
+    ( z, pos, normal )
