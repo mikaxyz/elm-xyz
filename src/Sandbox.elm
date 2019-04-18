@@ -88,6 +88,8 @@ type alias Model =
     , keyboard : Keyboard.State
     , player :
         { position : Vec2
+        , direction : Vec2
+        , movement : Vec2
         , mesh : Mesh Vertex
         }
     , terrain : Dict ( Int, Int ) (Mesh Vertex)
@@ -108,6 +110,8 @@ initModel =
     , keyboard = Keyboard.init
     , player =
         { position = vec2 0 0
+        , direction = vec2 0 0
+        , movement = vec2 0 0
         , mesh = DDD.Mesh.Cube.colorful (playerHeight / 4) playerHeight (playerHeight / 4)
         }
     , terrain = Dict.empty
@@ -162,25 +166,38 @@ subscriptions model =
 movePlayer : Float -> Model -> Model
 movePlayer d model =
     let
-        x =
-            if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowRight then
-                -d
+        m =
+            0.005
 
-            else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowLeft then
-                d
+        friction =
+            0.09
 
-            else
-                0
+        movement_ =
+            model.player.movement
 
-        y =
+        movementForward =
             if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowUp then
-                d
+                vec2 0 m
 
             else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowDown then
-                -d
+                vec2 0 -m
 
             else
-                0
+                vec2 0 -(friction * Vec2.getY movement_)
+
+        movementSide =
+            if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowLeft then
+                vec2 m 0
+
+            else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowRight then
+                vec2 -m 0
+
+            else
+                vec2 -(friction * Vec2.getX movement_) 0
+
+        movement =
+            Vec2.add movementForward movementSide
+                |> Vec2.add movement_
 
         player_ =
             model.player
@@ -188,7 +205,8 @@ movePlayer d model =
     { model
         | player =
             { player_
-                | position = Vec2.add model.player.position (vec2 x y)
+                | position = Vec2.add model.player.position movement
+                , movement = movement
             }
     }
 
@@ -350,7 +368,7 @@ directionalLight =
 
 
 camera =
-    Mat4.makeLookAt (vec3 -8 16 -24) (vec3 0 0 0) (vec3 0 1 0)
+    Mat4.makeLookAt (vec3 0 16 -24) (vec3 0 0 0) (vec3 0 1 0)
 
 
 aspect =
