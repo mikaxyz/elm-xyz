@@ -6,6 +6,7 @@ import DDD.Data.Vertex exposing (Vertex)
 import DDD.Generator.Perlin as Perlin
 import DDD.Mesh.Cube
 import DDD.Mesh.Landscape
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes exposing (height, width)
 import Json.Decode as D
@@ -62,10 +63,14 @@ elevation x y =
         + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 10 * freq } x y)
 
 
+terrainChunkSize =
+    5
+
+
 landscapeOptions =
-    { divisions = 63
-    , width = 10
-    , length = 10
+    { divisions = 15
+    , width = terrainChunkSize
+    , length = terrainChunkSize
     , height = 3
     , color = color
     , elevation = elevation
@@ -81,11 +86,11 @@ type alias Model =
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
     , keyboard : Keyboard.State
-    , player : Vec2
-    , meshes :
-        { player : Mesh Vertex
-        , landscape : Mesh Vertex
+    , player :
+        { position : Vec2
+        , mesh : Mesh Vertex
         }
+    , terrain : Dict ( Int, Int ) (Mesh Vertex)
     }
 
 
@@ -101,13 +106,11 @@ initModel =
     , dragger = Nothing
     , drag = vec2 0 0
     , keyboard = Keyboard.init
-    , player = vec2 0 0
-    , meshes =
-        { player = DDD.Mesh.Cube.colorful (playerHeight / 4) playerHeight (playerHeight / 4)
-        , landscape =
-            DDD.Mesh.Landscape.simple landscapeOptions
-                |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
+    , player =
+        { position = vec2 0 0
+        , mesh = DDD.Mesh.Cube.colorful (playerHeight / 4) playerHeight (playerHeight / 4)
         }
+    , terrain = Dict.empty
     }
 
 
@@ -161,25 +164,67 @@ movePlayer d model =
     let
         x =
             if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowRight then
-                d
+                -d
 
             else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowLeft then
-                -d
+                d
 
             else
                 0
 
         y =
             if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowUp then
-                -d
+                d
 
             else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowDown then
-                d
+                -d
 
             else
                 0
+
+        player_ =
+            model.player
     in
-    { model | player = Vec2.add model.player (vec2 x y) }
+    { model
+        | player =
+            { player_
+                | position = Vec2.add model.player.position (vec2 x y)
+            }
+    }
+
+
+generateTerrain : Model -> Model
+generateTerrain model =
+    let
+        ( chunkX, chunkY ) =
+            ( round (Vec2.getX model.player.position / (terrainChunkSize * 2))
+            , round (Vec2.getY model.player.position / (terrainChunkSize * 2))
+            )
+
+        terrain =
+            let
+                newOptions =
+                    { landscapeOptions
+                        | elevation =
+                            \x y ->
+                                elevation
+                                    (x + (chunkX * (terrainChunkSize * 2) |> toFloat))
+                                    (y + (chunkY * (terrainChunkSize * 2) |> toFloat))
+                    }
+            in
+            DDD.Mesh.Landscape.simple newOptions
+                |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
+    in
+    case model.terrain |> Dict.get ( chunkX, chunkY ) of
+        Just _ ->
+            model
+
+        Nothing ->
+            { model
+                | terrain =
+                    model.terrain
+                        |> Dict.insert ( chunkX, chunkY ) terrain
+            }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -187,7 +232,8 @@ update msg model =
     case msg of
         Animate elapsed ->
             ( { model | theta = model.theta + (elapsed / 10000) }
-                |> movePlayer (elapsed / 500)
+                |> movePlayer (elapsed / 100)
+                |> generateTerrain
             , Cmd.none
             )
 
@@ -247,25 +293,47 @@ scene drag model =
             sceneUniforms drag
 
         ( px, py ) =
-            ( Vec2.getX model.player, Vec2.getY model.player )
+            ( Vec2.getX model.player.position, Vec2.getY model.player.position )
 
         pz x y =
             landscapeOptions.height * elevation x y + (playerHeight / 2)
     in
-    [ WebGL.entity
+    WebGL.entity
         vertexShader
         fragmentShader
-        model.meshes.landscape
-        uniforms
-    , WebGL.entity
-        vertexShader
-        fragmentShader
-        model.meshes.player
+        model.player.mesh
         (playerUniforms
             (Mat4.makeTranslate (vec3 px (pz px py) py))
             uniforms.rotation
         )
-    ]
+        :: (model.terrain
+                |> Dict.toList
+                |> List.map
+                    (\( k, mesh ) ->
+                        WebGL.entity
+                            vertexShader
+                            fragmentShader
+                            mesh
+                            (terrainChunkUniforms drag
+                                ( Tuple.first k * terrainChunkSize * 2 |> toFloat
+                                , Tuple.second k * terrainChunkSize * 2 |> toFloat
+                                )
+                            )
+                    )
+           )
+
+
+terrainChunkUniforms : Vec2 -> ( Float, Float ) -> Uniforms
+terrainChunkUniforms drag ( x, y ) =
+    { rotation =
+        Mat4.identity
+            |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
+            |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+    , translate = Mat4.makeTranslate (vec3 x 0 y)
+    , perspective = perspective
+    , camera = camera
+    , directionalLight = directionalLight
+    }
 
 
 type alias Uniforms =
@@ -282,7 +350,7 @@ directionalLight =
 
 
 camera =
-    Mat4.makeLookAt (vec3 0 8 16) (vec3 0 0 0) (vec3 0 1 0)
+    Mat4.makeLookAt (vec3 -8 16 -24) (vec3 0 0 0) (vec3 0 1 0)
 
 
 aspect =
