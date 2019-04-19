@@ -86,6 +86,7 @@ type alias Model =
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
     , keyboard : Keyboard.State
+    , camera : Camera
     , player :
         { position : Vec2
         , direction : Vec2
@@ -102,15 +103,22 @@ getDrag model =
         |> Maybe.withDefault model.drag
 
 
+type alias Camera =
+    { position : Vec3
+    , focus : Vec3
+    }
+
+
 initModel : Model
 initModel =
     { theta = 0
     , dragger = Nothing
     , drag = vec2 0 0
     , keyboard = Keyboard.init
+    , camera = Camera (vec3 0 20 -4) (vec3 0 0 0)
     , player =
         { position = vec2 0 0
-        , direction = vec2 0 0
+        , direction = vec2 0 1
         , movement = vec2 0 0
         , mesh = DDD.Mesh.Cube.colorful (playerHeight / 4) playerHeight (playerHeight / 4)
         }
@@ -161,6 +169,15 @@ subscriptions model =
         , Browser.Events.onAnimationFrameDelta Animate
         , Keyboard.subscriptions { tagger = KeyboardMsg }
         ]
+
+
+moveCamera : Camera -> Model -> Model
+moveCamera camera_ model =
+    let
+        { x, y } =
+            model.player.position |> Vec2.toRecord
+    in
+    { model | camera = { camera_ | focus = vec3 x 0 y } }
 
 
 movePlayer : Float -> Model -> Model
@@ -251,6 +268,7 @@ update msg model =
         Animate elapsed ->
             ( { model | theta = model.theta + (elapsed / 10000) }
                 |> movePlayer (elapsed / 100)
+                |> moveCamera model.camera
                 |> generateTerrain
             , Cmd.none
             )
@@ -308,7 +326,7 @@ scene : Vec2 -> Model -> List Entity
 scene drag model =
     let
         uniforms =
-            sceneUniforms drag
+            sceneUniforms model.camera drag
 
         ( px, py ) =
             ( Vec2.getX model.player.position, Vec2.getY model.player.position )
@@ -321,6 +339,7 @@ scene drag model =
         fragmentShader
         model.player.mesh
         (playerUniforms
+            model.camera
             (Mat4.makeTranslate (vec3 px (pz px py) py))
             uniforms.rotation
         )
@@ -332,7 +351,8 @@ scene drag model =
                             vertexShader
                             fragmentShader
                             mesh
-                            (terrainChunkUniforms drag
+                            (terrainChunkUniforms model.camera
+                                drag
                                 ( Tuple.first k * terrainChunkSize * 2 |> toFloat
                                 , Tuple.second k * terrainChunkSize * 2 |> toFloat
                                 )
@@ -341,15 +361,15 @@ scene drag model =
            )
 
 
-terrainChunkUniforms : Vec2 -> ( Float, Float ) -> Uniforms
-terrainChunkUniforms drag ( x, y ) =
+terrainChunkUniforms : Camera -> Vec2 -> ( Float, Float ) -> Uniforms
+terrainChunkUniforms camera_ drag ( x, y ) =
     { rotation =
         Mat4.identity
             |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
             |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
     , translate = Mat4.makeTranslate (vec3 x 0 y)
     , perspective = perspective
-    , camera = camera
+    , camera = camera camera_
     , directionalLight = directionalLight
     }
 
@@ -367,8 +387,9 @@ directionalLight =
     Vec3.fromRecord { x = 1, y = 0.7, z = 0.2 }
 
 
-camera =
-    Mat4.makeLookAt (vec3 0 16 -24) (vec3 0 0 0) (vec3 0 1 0)
+camera : Camera -> Mat4
+camera camera_ =
+    Mat4.makeLookAt camera_.position camera_.focus (vec3 0 1 0)
 
 
 aspect =
@@ -379,25 +400,25 @@ perspective =
     Mat4.makePerspective 45 aspect 0.01 100
 
 
-sceneUniforms : Vec2 -> Uniforms
-sceneUniforms drag =
+sceneUniforms : Camera -> Vec2 -> Uniforms
+sceneUniforms camera_ drag =
     { rotation =
         Mat4.identity
             |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
             |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
     , translate = Mat4.identity
     , perspective = perspective
-    , camera = camera
+    , camera = camera camera_
     , directionalLight = directionalLight
     }
 
 
-playerUniforms : Mat4 -> Mat4 -> Uniforms
-playerUniforms position rotation =
+playerUniforms : Camera -> Mat4 -> Mat4 -> Uniforms
+playerUniforms camera_ position rotation =
     { rotation = rotation
     , translate = position
     , perspective = perspective
-    , camera = camera
+    , camera = camera camera_
     , directionalLight = directionalLight
     }
 
