@@ -18,36 +18,23 @@ init =
     { defaultScene
         | graph =
             [ Graph
-                (DDD.Mesh.Cube.colorful 0.1 0.1 0.1
+                (DDD.Mesh.Cube.colorful 1 0.2 1
                     |> Object.withMesh
+                    |> Object.withPosition (vec3 0 -0.7 0)
                     |> Object.withOptionDragToRotateXY
                 )
-                (tree 8 0
-                    ++ cubes 4 0.1
-                    ++ cubes 3 0.075
-                    ++ cubes 2 0.05
-                    ++ cubes 1 0.025
-                )
+                [ Graph
+                    (DDD.Mesh.Cube.colorful 0.01 0.01 0.01
+                        |> Object.withMesh
+                        |> Object.withPosition (vec3 0 0.1 0)
+                    )
+                    (tree 8 0)
+                ]
             ]
+        , camera = Mat4.makeLookAt (vec3 0 1 2.5) (vec3 0 0 0) (vec3 0 1 0)
     }
 
 
 sceneOptions : Maybe Options
 sceneOptions =
     Nothing
-
-
-cubes : Float -> Float -> List Graph
-cubes r w =
-    List.range 0 (round (4 / w))
-        |> List.map toFloat
-        |> List.map
-            (\i ->
-                Graph
-                    (DDD.Mesh.Cube.colorful w 0.1 w
-                        |> Object.withMesh
-                        |> Object.withPosition (vec3 (r * (i / (4 / w))) (-i * (w * w) * r) 0)
-                        |> Object.withRotation (Mat4.makeRotate (Basics.pi * w * i) (vec3 0 1 0))
-                    )
-                    []
-            )

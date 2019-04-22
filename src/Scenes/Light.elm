@@ -8,7 +8,6 @@ import DDD.Scene.Object as Object
 import DDD.Scene.Uniforms exposing (Uniforms)
 import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4
-import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import WebGL exposing (Shader)
 
@@ -24,7 +23,7 @@ init =
             [ Graph
                 (DDD.Mesh.Cube.colorful 2 0.2 2
                     |> Object.withMesh
-                    |> Object.withPosition (vec3 0 -0.6 0)
+                    |> Object.withPosition (vec3 0 -1 0)
                     |> Object.withOptionDragToRotateY
                     |> Object.withVertexShader vertexShader
                     |> Object.withFragmentShader fragmentShader
@@ -32,6 +31,7 @@ init =
                 [ Graph
                     (DDD.Mesh.Cube.gray 1 1 1
                         |> Object.withMesh
+                        |> Object.withPosition (vec3 0 0.6 -0.5)
                         |> Object.withOptionDragToRotateX
                         |> Object.withVertexShader vertexShader
                         |> Object.withFragmentShader fragmentShader
@@ -40,7 +40,7 @@ init =
                         (DDD.Mesh.Cube.colorful 0.4 0.2 0.4
                             |> Object.withMesh
                             |> Object.withPosition (vec3 0 0.6 0)
-                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 0 1 0))
+                            --                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 0 1 0))
                             |> Object.withVertexShader vertexShader
                             |> Object.withFragmentShader fragmentShader
                         )
@@ -49,7 +49,7 @@ init =
                         (DDD.Mesh.Cube.colorful 0.2 0.4 0.4
                             |> Object.withMesh
                             |> Object.withPosition (vec3 0.6 0 0)
-                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 1 0 0))
+                            --                            |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 1 0 0))
                             |> Object.withVertexShader vertexShader
                             |> Object.withFragmentShader fragmentShader
                         )
@@ -118,8 +118,7 @@ vertexShader =
 
         uniform mat4 perspective;
         uniform mat4 camera;
-        uniform mat4 rotation;
-        uniform mat4 translate;
+        uniform mat4 worldMatrix;
         uniform vec3 directionalLight;
 
         varying vec3 vcolor;
@@ -129,12 +128,12 @@ vertexShader =
 
         void main () {
 
-            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+            gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
 
             highp vec3 ambientLight = vec3(0, 0, 0);
             highp vec3 directionalLightColor = vec3(1, 1, 1);
             highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = rotation * vec4(normal, 1.0);
+            highp vec4 transformedNormal = worldMatrix * vec4(normal, 0.0);
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
 
             vlighting = ambientLight + (directionalLightColor * directional);
@@ -149,10 +148,6 @@ fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
-
-        uniform float shade;
-        uniform vec3 light1;
-        uniform vec3 light2;
 
         varying vec3 vcolor;
         varying vec3 vnormal;
@@ -173,7 +168,6 @@ lightFragmentShader : Shader {} Uniforms Varyings
 lightFragmentShader =
     [glsl|
         precision mediump float;
-        uniform float shade;
 
         varying vec3 vcolor;
         varying vec3 vnormal;
@@ -181,6 +175,6 @@ lightFragmentShader =
         varying vec3 vlighting;
 
         void main () {
-            gl_FragColor = shade * vec4(vcolor, 1.0);
+            gl_FragColor = vec4(vcolor * vlighting, 1.0);
         }
     |]

@@ -49,7 +49,7 @@ init =
     , dragger = Nothing
     , drag = vec2 0 0
     , scene = Scenes.Light.init
-    , scenes = [ Landscape, ObjectLoader, Light, Sandbox ] |> Array.fromList
+    , scenes = [ Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     }
         |> loadScene
@@ -116,27 +116,27 @@ loadScene model =
             , Cmd.batch
                 [ Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 1 0.5 0.5 }
-                    (vec3 0 -0.7 -0.5)
+                    (vec3 0 0 -0.5)
                     "obj/deer.obj"
                     GotObj
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.3, color = vec3 0.5 0.5 1 }
-                    (vec3 -0.5 0.5 0)
+                    (vec3 -1 1 0)
                     "obj/monkey.obj"
                     GotObj
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 1 1 0.5 }
-                    (vec3 0 -0.7 0.5)
+                    (vec3 0 0 0.5)
                     "obj/cat.obj"
                     GotObj
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 0.5 1 1 }
-                    (vec3 0 -0.7 0)
+                    (vec3 0 0 0)
                     "obj/wolf.obj"
                     GotObj
                 , Scenes.ObjectLoader.getObj
-                    { scale = 0.3, color = vec3 0.5 1 0.5 }
-                    (vec3 -0.7 -0.6 0)
+                    { scale = 1, color = vec3 0.5 1 0.5 }
+                    (vec3 0 0.5 -1.5)
                     "obj/cube.obj"
                     GotObj
                 ]

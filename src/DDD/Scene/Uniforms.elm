@@ -9,8 +9,6 @@ type alias Uniforms =
     , translate : Mat4
     , perspective : Mat4
     , camera : Mat4
-    , shade : Float
-    , light1 : Vec3
-    , light2 : Vec3
     , directionalLight : Vec3
+    , worldMatrix : Mat4
     }

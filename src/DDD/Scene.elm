@@ -19,7 +19,7 @@ import WebGL exposing (Entity, Mesh, Shader)
 
 
 directionalLight =
-    Vec3.fromRecord { x = 1, y = 0.7, z = 0.2 }
+    Vec3.fromRecord { x = 1, y = 0.7, z = 0.5 }
 
 
 lightPosition1 =
@@ -66,13 +66,11 @@ render viewport drag theta options scene =
         uniforms : Float -> Mat4 -> Options -> Uniforms
         uniforms aspectRatio camera options_ =
             { rotation = options_.rotation theta
-            , translate = options_.translate theta
+            , translate = Mat4.identity
             , perspective = options_.perspective aspectRatio
             , camera = camera
-            , shade = 1.0
-            , light1 = lightPosition1
-            , light2 = lightPosition2
             , directionalLight = directionalLight
+            , worldMatrix = Mat4.identity
             }
     in
     renderGraph
@@ -102,14 +100,24 @@ renderGraph drag theta uniforms graph =
                                     |> Object.rotationWithDrag drag
                                     |> Object.rotationInTime theta
 
+                            translate =
+                                uniforms.translate
+                                    |> Mat4.translate (Object.position object_)
+
+                            rotation =
+                                Object.rotation object_
+                                    |> Mat4.mul uniforms.rotation
+
+                            worldMatrix =
+                                Object.rotation object_
+                                    |> Mat4.mul (Mat4.makeTranslate (Object.position object_))
+                                    |> Mat4.mul uniforms.worldMatrix
+
                             uniforms_ =
                                 { uniforms
-                                    | translate =
-                                        Mat4.makeTranslate (Object.position object)
-                                    , rotation =
-                                        Mat4.mul
-                                            uniforms.rotation
-                                            (Object.rotation object_)
+                                    | translate = translate
+                                    , rotation = rotation
+                                    , worldMatrix = worldMatrix
                                 }
                         in
                         entity uniforms_ object_
@@ -134,8 +142,7 @@ vertexShader =
         attribute vec3 color;
         uniform mat4 perspective;
         uniform mat4 camera;
-        uniform mat4 rotation;
-        uniform mat4 translate;
+        uniform mat4 worldMatrix;
 
         varying vec3 vcolor;
         varying vec3 vnormal;
@@ -143,7 +150,7 @@ vertexShader =
         varying vec3 vlighting;
 
         void main () {
-            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+            gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
             vcolor = color;
             vposition = position;
         }
@@ -154,7 +161,6 @@ fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
-        uniform float shade;
 
         varying vec3 vcolor;
         varying vec3 vnormal;
@@ -162,6 +168,6 @@ fragmentShader =
         varying vec3 vlighting;
 
         void main () {
-            gl_FragColor = shade * vec4(vcolor, 1.0);
+            gl_FragColor = vec4(vcolor, 1.0);
         }
     |]

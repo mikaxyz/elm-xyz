@@ -133,8 +133,7 @@ vertexShader =
 
         uniform mat4 perspective;
         uniform mat4 camera;
-        uniform mat4 rotation;
-        uniform mat4 translate;
+        uniform mat4 worldMatrix;
         uniform vec3 directionalLight;
 
         varying vec3 vcolor;
@@ -144,12 +143,12 @@ vertexShader =
 
         void main () {
 
-            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+            gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
 
             highp vec3 ambientLight = vec3(0.1, 0.1, 0.1);
             highp vec3 directionalLightColor = vec3(1, 1, 1);
             highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = rotation * vec4(normalize(normal), 1.0);
+            highp vec4 transformedNormal = worldMatrix * vec4(normalize(normal), 0.0);
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
 
             vlighting = ambientLight + (directionalLightColor * directional);
@@ -164,11 +163,7 @@ fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
-
-        uniform float shade;
-        uniform vec3 light1;
-        uniform vec3 light2;
-
+        
         varying vec3 vcolor;
         varying vec3 vnormal;
         varying vec3 vposition;
