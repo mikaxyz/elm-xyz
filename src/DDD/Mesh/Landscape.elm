@@ -1,4 +1,4 @@
-module DDD.Mesh.Landscape exposing (simple)
+module DDD.Mesh.Landscape exposing (Options, simple)
 
 import DDD.Data.Vertex exposing (Vertex)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)

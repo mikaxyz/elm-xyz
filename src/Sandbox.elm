@@ -1,4 +1,4 @@
-module Sandbox exposing (main)
+port module Sandbox exposing (main)
 
 import Browser
 import Browser.Events
@@ -15,6 +15,9 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Mesh, Shader)
+
+
+port onPointerMove : ({ x : Int, y : Int } -> msg) -> Sub msg
 
 
 color height_ =
@@ -67,6 +70,7 @@ terrainChunkSize =
     5
 
 
+landscapeOptions : DDD.Mesh.Landscape.Options
 landscapeOptions =
     { divisions = 15
     , width = terrainChunkSize
@@ -106,6 +110,7 @@ getDrag model =
 type alias Camera =
     { position : Vec3
     , focus : Vec3
+    , zoom : Float
     }
 
 
@@ -115,7 +120,7 @@ initModel =
     , dragger = Nothing
     , drag = vec2 0 0
     , keyboard = Keyboard.init
-    , camera = Camera (vec3 0 20 -4) (vec3 0 0 0)
+    , camera = Camera (vec3 0 0 0) (vec3 0 0 0) 1.0
     , player =
         { position = vec2 0 0
         , direction = vec2 0 1
@@ -132,6 +137,7 @@ type Msg
     | Drag Vec2
     | DragEnd Vec2
     | KeyboardMsg Keyboard.Msg
+    | OnPointerMove { x : Int, y : Int }
 
 
 main : Program () Model Msg
@@ -165,56 +171,133 @@ subscriptions model =
                     Browser.Events.onMouseDown (vectorDecoder |> D.map DragStart)
     in
     Sub.batch
-        [ drags
-        , Browser.Events.onAnimationFrameDelta Animate
+        --        [ drags
+        [ Browser.Events.onAnimationFrameDelta Animate
         , Keyboard.subscriptions { tagger = KeyboardMsg }
+        , onPointerMove OnPointerMove
         ]
 
 
 moveCamera : Camera -> Model -> Model
 moveCamera camera_ model =
     let
-        { x, y } =
-            model.player.position |> Vec2.toRecord
+        position =
+            model.player.direction
+                |> Vec2.normalize
+                |> Vec2.scale (8 * camera_.zoom + 8)
+                |> Vec2.sub model.player.position
+                |> Vec2.toRecord
+                |> (\{ x, y } -> vec3 x (20 * camera_.zoom * camera_.zoom + 4) y)
+
+        focus =
+            model.player.direction
+                |> Vec2.normalize
+                |> Vec2.scale (8 * (camera_.zoom - 1))
+                |> Vec2.negate
+                |> Vec2.add model.player.position
+                |> Vec2.toRecord
+                |> (\{ x, y } -> vec3 x 0 y)
     in
-    { model | camera = { camera_ | focus = vec3 x 0 y } }
+    { model
+        | camera =
+            { camera_
+                | focus = focus
+                , position = position
+            }
+    }
 
 
-movePlayer : Float -> Model -> Model
-movePlayer d model =
+handlePointerMove : Vec2 -> Model -> Model
+handlePointerMove pointerMove model =
+    let
+        ( dx, dy ) =
+            ( Vec2.getX pointerMove
+            , Vec2.getY pointerMove
+            )
+
+        -- Camera
+        camera_ =
+            model.camera
+
+        zoom_ =
+            model.camera.zoom
+                |> (\y -> y + dy)
+                |> (\y -> max 0 y)
+                |> (\y -> min 1 y)
+
+        player =
+            model.player
+
+        ( cx, cy ) =
+            ( Vec2.getX model.player.direction
+            , Vec2.getY model.player.direction
+            )
+
+        ( px, py ) =
+            ( cx * cos dx - cy * sin dx
+            , cx * sin dx + cy * cos dx
+            )
+    in
+    { model
+        | player = { player | direction = vec2 px py }
+        , camera = { camera_ | zoom = zoom_ }
+    }
+
+
+movePlayer : Model -> Model
+movePlayer model =
     let
         m =
-            0.005
+            0.3
 
-        friction =
-            0.09
-
-        movement_ =
-            model.player.movement
+        direction_ =
+            model.player.direction
 
         movementForward =
-            if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowUp then
-                vec2 0 m
+            if
+                Keyboard.isKeyDown Keyboard.ArrowUp model.keyboard
+                    || Keyboard.isKeyDown (Keyboard.Alpha 'W') model.keyboard
+            then
+                direction_
+                    |> Vec2.normalize
+                    |> Vec2.scale m
 
-            else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowDown then
-                vec2 0 -m
+            else if
+                Keyboard.isKeyDown Keyboard.ArrowDown model.keyboard
+                    || Keyboard.isKeyDown (Keyboard.Alpha 'S') model.keyboard
+            then
+                direction_
+                    |> Vec2.negate
+                    |> Vec2.normalize
+                    |> Vec2.scale m
 
             else
-                vec2 0 -(friction * Vec2.getY movement_)
+                vec2 0 0
 
         movementSide =
-            if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowLeft then
-                vec2 m 0
+            if
+                Keyboard.isKeyDown Keyboard.ArrowLeft model.keyboard
+                    || Keyboard.isKeyDown (Keyboard.Alpha 'A') model.keyboard
+            then
+                direction_
+                    |> (\v -> vec2 (Vec2.getY v) -(Vec2.getX v))
+                    |> Vec2.normalize
+                    |> Vec2.scale m
 
-            else if model.keyboard |> Keyboard.isKeyDown Keyboard.ArrowRight then
-                vec2 -m 0
+            else if
+                Keyboard.isKeyDown Keyboard.ArrowRight model.keyboard
+                    || Keyboard.isKeyDown (Keyboard.Alpha 'D') model.keyboard
+            then
+                direction_
+                    |> (\v -> vec2 -(Vec2.getY v) (Vec2.getX v))
+                    |> Vec2.normalize
+                    |> Vec2.scale m
 
             else
-                vec2 -(friction * Vec2.getX movement_) 0
+                vec2 0 0
 
         movement =
             Vec2.add movementForward movementSide
-                |> Vec2.add movement_
 
         player_ =
             model.player
@@ -224,6 +307,7 @@ movePlayer d model =
             { player_
                 | position = Vec2.add model.player.position movement
                 , movement = movement
+                , direction = direction_
             }
     }
 
@@ -267,9 +351,16 @@ update msg model =
     case msg of
         Animate elapsed ->
             ( { model | theta = model.theta + (elapsed / 10000) }
-                |> movePlayer (elapsed / 100)
+                |> movePlayer
                 |> moveCamera model.camera
                 |> generateTerrain
+            , Cmd.none
+            )
+
+        OnPointerMove { x, y } ->
+            ( model
+                |> handlePointerMove
+                    (vec2 (toFloat x / 100) (toFloat y / 100))
             , Cmd.none
             )
 
@@ -340,6 +431,7 @@ scene drag model =
         model.player.mesh
         (playerUniforms
             model.camera
+            model.player.direction
             (Mat4.makeTranslate (vec3 px (pz px py) py))
             uniforms.rotation
         )
@@ -352,7 +444,6 @@ scene drag model =
                             fragmentShader
                             mesh
                             (terrainChunkUniforms model.camera
-                                drag
                                 ( Tuple.first k * terrainChunkSize * 2 |> toFloat
                                 , Tuple.second k * terrainChunkSize * 2 |> toFloat
                                 )
@@ -361,12 +452,9 @@ scene drag model =
            )
 
 
-terrainChunkUniforms : Camera -> Vec2 -> ( Float, Float ) -> Uniforms
-terrainChunkUniforms camera_ drag ( x, y ) =
-    { rotation =
-        Mat4.identity
-            |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
-            |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+terrainChunkUniforms : Camera -> ( Float, Float ) -> Uniforms
+terrainChunkUniforms camera_ ( x, y ) =
+    { rotation = Mat4.identity
     , translate = Mat4.makeTranslate (vec3 x 0 y)
     , perspective = perspective
     , camera = camera camera_
@@ -384,7 +472,7 @@ type alias Uniforms =
 
 
 directionalLight =
-    Vec3.fromRecord { x = 1, y = 0.7, z = 0.2 }
+    Vec3.fromRecord { x = 1, y = 0.5, z = 1 }
 
 
 camera : Camera -> Mat4
@@ -402,10 +490,7 @@ perspective =
 
 sceneUniforms : Camera -> Vec2 -> Uniforms
 sceneUniforms camera_ drag =
-    { rotation =
-        Mat4.identity
-            |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
-            |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
+    { rotation = Mat4.identity
     , translate = Mat4.identity
     , perspective = perspective
     , camera = camera camera_
@@ -413,9 +498,9 @@ sceneUniforms camera_ drag =
     }
 
 
-playerUniforms : Camera -> Mat4 -> Mat4 -> Uniforms
-playerUniforms camera_ position rotation =
-    { rotation = rotation
+playerUniforms : Camera -> Vec2 -> Mat4 -> Mat4 -> Uniforms
+playerUniforms camera_ direction position rotation =
+    { rotation = Mat4.makeRotate (atan2 (Vec2.getX direction) (Vec2.getY direction)) (vec3 0 1 0)
     , translate = position
     , perspective = perspective
     , camera = camera camera_
@@ -453,12 +538,12 @@ vertexShader =
 
 
         void main () {
-            gl_Position = perspective * camera * rotation * translate * vec4(position, 1.0);
+            gl_Position = perspective * camera * translate * rotation * vec4(position, 1.0);
             
-            highp vec3 ambientLight = vec3(0.1, 0.1, 0.1);
+            highp vec3 ambientLight = vec3(0.0, 0.05, 0.01);
             highp vec3 directionalLightColor = vec3(1, 1, 1);
             highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = rotation * vec4(normalize(normal), 1.0);
+            highp vec4 transformedNormal = rotation * vec4(normalize(normal), 0.0);
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
 
             v_lighting = ambientLight + (directionalLightColor * directional);
