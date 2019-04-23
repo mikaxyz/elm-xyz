@@ -67,7 +67,7 @@ elevation x y =
 
 
 terrainChunkSize =
-    5
+    3
 
 
 landscapeOptions : DDD.Mesh.Landscape.Options
@@ -312,38 +312,78 @@ movePlayer model =
     }
 
 
+
+-- TERRAIN
+
+
 generateTerrain : Model -> Model
 generateTerrain model =
     let
-        ( chunkX, chunkY ) =
+        playerPos =
             ( round (Vec2.getX model.player.position / (terrainChunkSize * 2))
             , round (Vec2.getY model.player.position / (terrainChunkSize * 2))
             )
 
+        addPlayerPos ( x, y ) =
+            ( x + Tuple.first playerPos
+            , y + Tuple.second playerPos
+            )
+
         terrain =
-            let
-                newOptions =
-                    { landscapeOptions
-                        | elevation =
-                            \x y ->
-                                elevation
-                                    (x + (chunkX * (terrainChunkSize * 2) |> toFloat))
-                                    (y + (chunkY * (terrainChunkSize * 2) |> toFloat))
-                    }
-            in
-            DDD.Mesh.Landscape.simple newOptions
+            coordsAround 8 0 []
+                |> List.map addPlayerPos
+                |> List.foldl (\c acc -> generateTerrainAt 7 c acc) model.terrain
+    in
+    { model | terrain = terrain |> generateTerrainAt 31 playerPos }
+
+
+generateTerrainAt : Int -> ( Int, Int ) -> Dict ( Int, Int ) (Mesh Vertex) -> Dict ( Int, Int ) (Mesh Vertex)
+generateTerrainAt divisions ( x, y ) terrain =
+    let
+        options chunkX chunkY =
+            { landscapeOptions
+                | divisions = divisions
+                , elevation =
+                    \ex ey ->
+                        elevation
+                            (ex + (chunkX * (terrainChunkSize * 2) |> toFloat))
+                            (ey + (chunkY * (terrainChunkSize * 2) |> toFloat))
+            }
+
+        chunk chunkX chunkY =
+            DDD.Mesh.Landscape.simple (options chunkX chunkY)
                 |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
     in
-    case model.terrain |> Dict.get ( chunkX, chunkY ) of
+    case terrain |> Dict.get ( x, y ) of
         Just _ ->
-            model
+            terrain
 
         Nothing ->
-            { model
-                | terrain =
-                    model.terrain
-                        |> Dict.insert ( chunkX, chunkY ) terrain
-            }
+            terrain |> Dict.insert ( x, y ) (chunk x y)
+
+
+coordsAround n i coords =
+    let
+        value =
+            toFloat i / toFloat n
+
+        theta =
+            degrees (360 * value)
+
+        c =
+            fromPolar ( 1, theta )
+                |> Tuple.mapFirst round
+                |> Tuple.mapSecond round
+    in
+    if i == (n - 1) then
+        c :: coords
+
+    else
+        coordsAround n (i + 1) (c :: coords)
+
+
+
+--
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
