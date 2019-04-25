@@ -14,6 +14,7 @@ import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Sandbox.GridWorld as GridWorld exposing (GridWorld)
 import WebGL exposing (Entity, Mesh, Shader)
 
 
@@ -66,16 +67,12 @@ elevation x y =
         + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 10 * freq } x y)
 
 
-terrainChunkSize =
-    3
-
-
 landscapeOptions : DDD.Mesh.Landscape.Options
 landscapeOptions =
     { divisions = 15
-    , width = terrainChunkSize
-    , length = terrainChunkSize
-    , height = 3
+    , width = GridWorld.chunkSize / 2
+    , length = GridWorld.chunkSize / 2
+    , height = 2
     , color = color
     , elevation = elevation
     }
@@ -98,6 +95,7 @@ type alias Model =
         , mesh : Mesh Vertex
         }
     , terrain : Dict ( Int, Int ) (Mesh Vertex)
+    , gridWorld : GridWorld Vertex
     }
 
 
@@ -125,10 +123,39 @@ initModel =
         { position = vec2 0 0
         , direction = vec2 0 1
         , movement = vec2 0 0
-        , mesh = DDD.Mesh.Cube.colorful (playerHeight / 4) playerHeight (playerHeight / 4)
+        , mesh = DDD.Mesh.Cube.colorful (playerHeight / 8) playerHeight (playerHeight / 8)
         }
     , terrain = Dict.empty
+    , gridWorld = GridWorld.init (GridWorld.withGenerator generator)
     }
+
+
+generator : ( Int, Int ) -> ( Vec2, Vec2 ) -> Mesh Vertex
+generator ( ix, iy ) ( p1, p2 ) =
+    let
+        ( width, length ) =
+            ( Vec2.getX p2 - Vec2.getX p1
+            , Vec2.getY p2 - Vec2.getY p1
+            )
+
+        options : DDD.Mesh.Landscape.Options
+        options =
+            { divisions = 31
+            , width = width / 2
+            , length = length / 2
+            , height = 2
+            , color = color
+            , elevation =
+                \x y ->
+                    elevation
+                        (Vec2.getX p1 + x + (width / 2))
+                        (Vec2.getY p1 + y + (length / 2))
+
+            --                        + toFloat (iy + ix)
+            }
+    in
+    DDD.Mesh.Landscape.simple options
+        |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
 
 
 type Msg
@@ -318,72 +345,12 @@ movePlayer model =
 
 generateTerrain : Model -> Model
 generateTerrain model =
-    let
-        playerPos =
-            ( round (Vec2.getX model.player.position / (terrainChunkSize * 2))
-            , round (Vec2.getY model.player.position / (terrainChunkSize * 2))
-            )
-
-        addPlayerPos ( x, y ) =
-            ( x + Tuple.first playerPos
-            , y + Tuple.second playerPos
-            )
-
-        terrain =
-            coordsAround 8 0 []
-                |> List.map addPlayerPos
-                |> List.foldl (\c acc -> generateTerrainAt 7 c acc) model.terrain
-    in
-    { model | terrain = terrain |> generateTerrainAt 31 playerPos }
-
-
-generateTerrainAt : Int -> ( Int, Int ) -> Dict ( Int, Int ) (Mesh Vertex) -> Dict ( Int, Int ) (Mesh Vertex)
-generateTerrainAt divisions ( x, y ) terrain =
-    let
-        options chunkX chunkY =
-            { landscapeOptions
-                | divisions = divisions
-                , elevation =
-                    \ex ey ->
-                        elevation
-                            (ex + (chunkX * (terrainChunkSize * 2) |> toFloat))
-                            (ey + (chunkY * (terrainChunkSize * 2) |> toFloat))
-            }
-
-        chunk chunkX chunkY =
-            DDD.Mesh.Landscape.simple (options chunkX chunkY)
-                |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
-    in
-    case terrain |> Dict.get ( x, y ) of
-        Just _ ->
-            terrain
-
-        Nothing ->
-            terrain |> Dict.insert ( x, y ) (chunk x y)
-
-
-coordsAround n i coords =
-    let
-        value =
-            toFloat i / toFloat n
-
-        theta =
-            degrees (360 * value)
-
-        c =
-            fromPolar ( 1, theta )
-                |> Tuple.mapFirst round
-                |> Tuple.mapSecond round
-    in
-    if i == (n - 1) then
-        c :: coords
-
-    else
-        coordsAround n (i + 1) (c :: coords)
-
-
-
---
+    { model
+        | gridWorld =
+            GridWorld.generate
+                (GridWorld.gridFromCoord model.player.position)
+                model.gridWorld
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -475,19 +442,15 @@ scene drag model =
             (Mat4.makeTranslate (vec3 px (pz px py) py))
             uniforms.rotation
         )
-        :: (model.terrain
-                |> Dict.toList
+        :: (model.gridWorld
+                |> GridWorld.geometry
                 |> List.map
-                    (\( k, mesh ) ->
+                    (\( ( x, y ), mesh ) ->
                         WebGL.entity
                             vertexShader
                             fragmentShader
                             mesh
-                            (terrainChunkUniforms model.camera
-                                ( Tuple.first k * terrainChunkSize * 2 |> toFloat
-                                , Tuple.second k * terrainChunkSize * 2 |> toFloat
-                                )
-                            )
+                            (terrainChunkUniforms model.camera ( x, y ))
                     )
            )
 
