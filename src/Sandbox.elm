@@ -151,7 +151,7 @@ generator ( ix, iy ) ( p1, p2 ) =
                         (Vec2.getX p1 + x + (width / 2))
                         (Vec2.getY p1 + y + (length / 2))
 
-            --                        + toFloat (iy + ix)
+            --                        + (toFloat (iy + ix) * 0.1)
             }
     in
     DDD.Mesh.Landscape.simple options
@@ -423,14 +423,17 @@ view model =
 scene : Vec2 -> Model -> List Entity
 scene drag model =
     let
-        uniforms =
-            sceneUniforms model.camera drag
-
         ( px, py ) =
             ( Vec2.getX model.player.position, Vec2.getY model.player.position )
 
         pz x y =
             landscapeOptions.height * elevation x y + (playerHeight / 2)
+
+        playerPos =
+            vec3 px (pz px py) py
+
+        uniforms =
+            sceneUniforms model.camera playerPos drag
     in
     WebGL.entity
         vertexShader
@@ -439,7 +442,8 @@ scene drag model =
         (playerUniforms
             model.camera
             model.player.direction
-            (Mat4.makeTranslate (vec3 px (pz px py) py))
+            playerPos
+            (Mat4.makeTranslate playerPos)
             uniforms.rotation
         )
         :: (model.gridWorld
@@ -450,18 +454,20 @@ scene drag model =
                             vertexShader
                             fragmentShader
                             mesh
-                            (terrainChunkUniforms model.camera ( x, y ))
+                            (terrainChunkUniforms model.camera playerPos ( x, y ))
                     )
            )
 
 
-terrainChunkUniforms : Camera -> ( Float, Float ) -> Uniforms
-terrainChunkUniforms camera_ ( x, y ) =
+terrainChunkUniforms : Camera -> Vec3 -> ( Float, Float ) -> Uniforms
+terrainChunkUniforms camera_ playerPos ( x, y ) =
     { rotation = Mat4.identity
     , translate = Mat4.makeTranslate (vec3 x 0 y)
     , perspective = perspective
     , camera = camera camera_
     , directionalLight = directionalLight
+    , playerPos = playerPos
+    , receiveShadow = 1.0
     }
 
 
@@ -471,6 +477,8 @@ type alias Uniforms =
     , perspective : Mat4
     , camera : Mat4
     , directionalLight : Vec3
+    , playerPos : Vec3
+    , receiveShadow : Float
     }
 
 
@@ -491,23 +499,27 @@ perspective =
     Mat4.makePerspective 45 aspect 0.01 100
 
 
-sceneUniforms : Camera -> Vec2 -> Uniforms
-sceneUniforms camera_ drag =
+sceneUniforms : Camera -> Vec3 -> Vec2 -> Uniforms
+sceneUniforms camera_ playerPos drag =
     { rotation = Mat4.identity
     , translate = Mat4.identity
     , perspective = perspective
     , camera = camera camera_
     , directionalLight = directionalLight
+    , playerPos = playerPos
+    , receiveShadow = 0.0
     }
 
 
-playerUniforms : Camera -> Vec2 -> Mat4 -> Mat4 -> Uniforms
-playerUniforms camera_ direction position rotation =
+playerUniforms : Camera -> Vec2 -> Vec3 -> Mat4 -> Mat4 -> Uniforms
+playerUniforms camera_ direction playerPos position rotation =
     { rotation = Mat4.makeRotate (atan2 (Vec2.getX direction) (Vec2.getY direction)) (vec3 0 1 0)
     , translate = position
     , perspective = perspective
     , camera = camera camera_
     , directionalLight = directionalLight
+    , playerPos = playerPos
+    , receiveShadow = 0.0
     }
 
 
@@ -533,6 +545,7 @@ vertexShader =
         uniform mat4 rotation;
         uniform mat4 translate;
         uniform vec3 directionalLight;
+        uniform vec3 playerPos;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -541,6 +554,7 @@ vertexShader =
 
 
         void main () {
+            float d = length(position.xz - playerPos.xz) * 0.5;
             gl_Position = perspective * camera * translate * rotation * vec4(position, 1.0);
             
             highp vec3 ambientLight = vec3(0.0, 0.05, 0.01);
@@ -552,7 +566,7 @@ vertexShader =
             v_lighting = ambientLight + (directionalLightColor * directional);
             v_color = color;
             v_normal = normal;
-            v_position = position;
+            v_position = (translate * rotation * vec4(position, 1.0)).xyz;
         }
     |]
 
@@ -567,6 +581,8 @@ fragmentShader =
         uniform mat4 camera;
         uniform mat4 rotation;
         uniform vec3 directionalLight;
+        uniform vec3 playerPos;
+        uniform float receiveShadow;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -574,6 +590,12 @@ fragmentShader =
         varying vec3 v_lighting;
 
         void main () {
-            gl_FragColor = vec4(v_color * v_lighting, 1.0);
+            float s1 = 0.0;
+            float s2 = 0.8;
+            float d = min(s2, length(v_position.xz - playerPos.xz) / s2);
+            float playerShadow = (d + s1) / (1.0 + s1);
+            float shadow = ((receiveShadow * playerShadow) + 1.0) / 2.0;
+            
+            gl_FragColor = vec4(v_color * v_lighting * shadow, 1.0);
         }
     |]
