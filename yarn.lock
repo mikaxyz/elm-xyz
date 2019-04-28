@@ -418,6 +418,13 @@ elm-format@^0.8.1:
   dependencies:
     binwrap "^0.2.0"
 
+elm-json@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/elm-json/-/elm-json-0.2.0.tgz#73c348cea12bc77adf1d34f4a9f9efb824fc108c"
+  integrity sha512-v638kNQI0eHxuEbsCs8ybbjS455gWZrTf6po653s7ay1BNOL4yXF9pR8DT0r6NSqtU+8nYdDYOaGlNH02hKPOQ==
+  dependencies:
+    binwrap "^0.2.0"
+
 elm-test@^0.19.0-rev6:
   version "0.19.0-rev6"
   resolved "https://registry.yarnpkg.com/elm-test/-/elm-test-0.19.0-rev6.tgz#75ce658936b43c5b033bc2db490445c6f96f021e"
