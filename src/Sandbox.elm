@@ -123,7 +123,7 @@ initModel =
         { position = vec2 0 0
         , direction = vec2 0 1
         , movement = vec2 0 0
-        , mesh = DDD.Mesh.Cube.colorful (playerHeight / 8) playerHeight (playerHeight / 8)
+        , mesh = DDD.Mesh.Cube.gray (playerHeight / 8) playerHeight (playerHeight / 8)
         }
     , terrain = Dict.empty
     , gridWorld = GridWorld.init (GridWorld.withGenerator generator)
@@ -219,7 +219,7 @@ moveCamera camera_ model =
         focus =
             model.player.direction
                 |> Vec2.normalize
-                |> Vec2.scale (8 * (camera_.zoom - 1))
+                |> Vec2.scale (12 * (camera_.zoom - 1))
                 |> Vec2.negate
                 |> Vec2.add model.player.position
                 |> Vec2.toRecord
@@ -467,6 +467,7 @@ terrainChunkUniforms camera_ playerPos ( x, y ) =
     , camera = camera camera_
     , directionalLight = directionalLight
     , playerPos = playerPos
+    , cameraFocus = camera_.focus
     , receiveShadow = 1.0
     }
 
@@ -478,6 +479,7 @@ type alias Uniforms =
     , camera : Mat4
     , directionalLight : Vec3
     , playerPos : Vec3
+    , cameraFocus : Vec3
     , receiveShadow : Float
     }
 
@@ -507,6 +509,7 @@ sceneUniforms camera_ playerPos drag =
     , camera = camera camera_
     , directionalLight = directionalLight
     , playerPos = playerPos
+    , cameraFocus = camera_.focus
     , receiveShadow = 0.0
     }
 
@@ -519,6 +522,7 @@ playerUniforms camera_ direction playerPos position rotation =
     , camera = camera camera_
     , directionalLight = directionalLight
     , playerPos = playerPos
+    , cameraFocus = camera_.focus
     , receiveShadow = 0.0
     }
 
@@ -582,6 +586,7 @@ fragmentShader =
         uniform mat4 rotation;
         uniform vec3 directionalLight;
         uniform vec3 playerPos;
+        uniform vec3 cameraFocus;
         uniform float receiveShadow;
 
         varying vec3 v_color;
@@ -590,12 +595,22 @@ fragmentShader =
         varying vec3 v_lighting;
 
         void main () {
+        
+            // Player drop shadow
             float s1 = 0.0;
-            float s2 = 0.8;
-            float d = min(s2, length(v_position.xz - playerPos.xz) / s2);
-            float playerShadow = (d + s1) / (1.0 + s1);
+            float s2 = 0.9;
+            float d = length(v_position.xz - playerPos.xz);
+            float dClamped = min(s2, d / s2);
+            float playerShadow = (dClamped + s1) / (1.0 + s1);
             float shadow = ((receiveShadow * playerShadow) + 1.0) / 2.0;
             
-            gl_FragColor = vec4(v_color * v_lighting * shadow, 1.0);
+            // View area
+            float vDistance = 12.0;
+            float vDiff = length(v_position.xz - cameraFocus.xz);
+            float vShadow = abs(receiveShadow * min(vDistance, vDiff) / vDistance - 1.0);
+            
+            vec4 bColor = receiveShadow * vec4(0.08627451, 0.08627451, 0.11372549, 1.0);
+            vec3 lighting = receiveShadow > 0.0 ? v_lighting : vec3(1,1,1);
+            gl_FragColor = bColor + vec4(1.5 * v_color * lighting * shadow * vShadow, 1.0);
         }
     |]

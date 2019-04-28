@@ -14,7 +14,7 @@ import WebGL exposing (Entity, Mesh, Shader)
 
 
 chunkSize =
-    4.0
+    16.0
 
 
 type GridWorld attr
