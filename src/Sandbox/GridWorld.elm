@@ -2,6 +2,7 @@ module Sandbox.GridWorld exposing
     ( GridWorld
     , chunkSize
     , generate
+    , generateChunks
     , geometry
     , gridFromCoord
     , init
@@ -43,6 +44,27 @@ init generator =
 withGenerator : (( Int, Int ) -> ( Vec2, Vec2 ) -> Mesh attr) -> MeshGenerator attr
 withGenerator generator =
     Generator generator
+
+
+generateChunks : ( Int, Int ) -> ( Int, Int ) -> GridWorld attr -> GridWorld attr
+generateChunks ( x1, y1 ) ( x2, y2 ) gridWorld =
+    generateChunks_ ( x1, y1 ) ( x2, y2 ) ( 0, 0 ) gridWorld
+
+
+generateChunks_ : ( Int, Int ) -> ( Int, Int ) -> ( Int, Int ) -> GridWorld attr -> GridWorld attr
+generateChunks_ ( x1, y1 ) ( x2, y2 ) ( xc, yc ) gridWorld =
+    let
+        world =
+            generate ( x1 + xc, y1 + yc ) gridWorld
+    in
+    if x1 + xc == x2 && y1 + yc == y2 then
+        world
+
+    else if x1 + xc == x2 then
+        generateChunks_ ( x1, y1 ) ( x2, y2 ) ( 0, yc + 1 ) world
+
+    else
+        generateChunks_ ( x1, y1 ) ( x2, y2 ) ( xc + 1, yc ) world
 
 
 geometry : GridWorld attr -> List ( ( Float, Float ), Mesh attr )

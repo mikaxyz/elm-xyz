@@ -126,7 +126,9 @@ initModel =
         , mesh = DDD.Mesh.Cube.gray (playerHeight / 8) playerHeight (playerHeight / 8)
         }
     , terrain = Dict.empty
-    , gridWorld = GridWorld.init (GridWorld.withGenerator generator)
+    , gridWorld =
+        GridWorld.init (GridWorld.withGenerator generator)
+            |> GridWorld.generateChunks ( -2, -2 ) ( 2, 2 )
     }
 
 
