@@ -24,6 +24,7 @@ type Msg
 
 type alias Config msg =
     { tagger : Msg -> msg
+    , keyDown : Key -> msg
     }
 
 
@@ -66,7 +67,10 @@ type alias State =
 subscriptions : Config msg -> Sub msg
 subscriptions config =
     Sub.batch
-        [ Browser.Events.onKeyDown keyDecoder |> Sub.map (\x -> config.tagger (KeyDown x))
+        [ Browser.Events.onKeyDown keyDecoder
+            |> Sub.map (config.tagger << KeyDown)
+        , Browser.Events.onKeyDown keyDecoder
+            |> Sub.map config.keyDown
         , Browser.Events.onKeyUp keyDecoder |> Sub.map (\x -> config.tagger (KeyUp x))
         ]
 

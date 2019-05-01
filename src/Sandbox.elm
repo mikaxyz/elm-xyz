@@ -166,6 +166,7 @@ type Msg
     | Drag Vec2
     | DragEnd Vec2
     | KeyboardMsg Keyboard.Msg
+    | OnKeyDown Keyboard.Key
     | OnPointerMove { x : Int, y : Int }
 
 
@@ -202,7 +203,7 @@ subscriptions model =
     Sub.batch
         --        [ drags
         [ Browser.Events.onAnimationFrameDelta Animate
-        , Keyboard.subscriptions { tagger = KeyboardMsg }
+        , Keyboard.subscriptions { tagger = KeyboardMsg, keyDown = OnKeyDown }
         , onPointerMove OnPointerMove
         ]
 
@@ -398,6 +399,24 @@ update msg model =
             ( { model | keyboard = Keyboard.update msg_ model.keyboard }
             , Cmd.none
             )
+
+        OnKeyDown key ->
+            let
+                _ =
+                    case key of
+                        Keyboard.Space ->
+                            Just
+                                ( model.player.position
+                                , model.player.position
+                                    |> Vec2.toRecord
+                                    |> (\{ x, y } -> elevation x y)
+                                )
+                                |> Debug.log "pos"
+
+                        _ ->
+                            Nothing
+            in
+            ( model, Cmd.none )
 
 
 doc : Model -> Browser.Document Msg
