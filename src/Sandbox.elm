@@ -21,34 +21,51 @@ import WebGL exposing (Entity, Mesh, Shader)
 port onPointerMove : ({ x : Int, y : Int } -> msg) -> Sub msg
 
 
+playerHeight =
+    1
+
+
+landscapeHeight =
+    2
+
+
 color height_ =
     let
-        height =
-            (height_ + 1) / 2
+        normalize min max val =
+            (val - min) / (max - min)
+
+        h =
+            normalize -1 1 height_
+
+        ht =
+            abs (h - 1)
+
+        between y1 y2 =
+            ((ht - (1 - y1)) / (y2 - y1)) * ((h - y2) / (y2 - y1))
 
         water =
-            vec3 0 0 1
+            (ht - 0.7)
+                / 0.3
+                |> clamp 0 1
 
         grass =
-            vec3 0 1 0
+            between 0.1 0.8
+                |> clamp 0 1
 
         cliffs =
-            vec3 0.5 0.52 0.53
+            between 0.7 0.8
+                |> clamp 0 1
 
         snow =
-            vec3 0.99 1 1
+            (h - 0.7)
+                / 0.3
+                |> clamp 0 1
     in
-    if height <= 0.3 then
-        water
-
-    else if height <= 0.6 then
-        grass
-
-    else if height <= 0.7 then
-        cliffs
-
-    else
-        snow
+    vec3 0 0.1 1
+        |> Vec3.scale water
+        |> Vec3.add (vec3 0 1 0 |> Vec3.scale grass)
+        |> Vec3.add (vec3 0.847 0.839 0.811 |> Vec3.scale cliffs)
+        |> Vec3.add (vec3 1 1 1 |> Vec3.scale snow)
 
 
 elevation x y =
@@ -57,29 +74,17 @@ elevation x y =
             42
 
         freq =
-            0.1
+            0.02
 
         e1 =
             Perlin.value2d { seed = seed, freq = freq } x y
     in
     e1
-        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 3 * freq } x y)
-        + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 10 * freq } x y)
-
-
-landscapeOptions : DDD.Mesh.Landscape.Options
-landscapeOptions =
-    { divisions = 15
-    , width = GridWorld.chunkSize / 2
-    , length = GridWorld.chunkSize / 2
-    , height = 2
-    , color = color
-    , elevation = elevation
-    }
-
-
-playerHeight =
-    1
+        + Perlin.value2d { seed = seed, freq = 1.0 * freq } x y
+        + (Perlin.value2d { seed = seed, freq = 5.0 * freq } x y
+            * Perlin.value2d { seed = seed, freq = 8.0 * freq } x y
+          )
+        + (e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 20 * freq } x y)
 
 
 type alias Model =
@@ -142,10 +147,10 @@ generator ( ix, iy ) ( p1, p2 ) =
 
         options : DDD.Mesh.Landscape.Options
         options =
-            { divisions = 31
+            { divisions = 23
             , width = width / 2
             , length = length / 2
-            , height = 2
+            , height = landscapeHeight
             , color = color
             , elevation =
                 \x y ->
@@ -448,7 +453,7 @@ scene drag model =
             ( Vec2.getX model.player.position, Vec2.getY model.player.position )
 
         pz x y =
-            landscapeOptions.height * elevation x y + (playerHeight / 2)
+            landscapeHeight * elevation x y + (playerHeight / 2)
 
         playerPos =
             vec3 px (pz px py) py
@@ -626,12 +631,14 @@ fragmentShader =
             float shadow = ((receiveShadow * playerShadow) + 1.0) / 2.0;
             
             // View area
-            float vDistance = 12.0;
+            float vDistance = 16.0;
             float vDiff = length(v_position.xz - cameraFocus.xz);
             float vShadow = abs(receiveShadow * min(vDistance, vDiff) / vDistance - 1.0);
             
             vec4 bColor = receiveShadow * vec4(0.08627451, 0.08627451, 0.11372549, 1.0);
             vec3 lighting = receiveShadow > 0.0 ? v_lighting : vec3(1,1,1);
-            gl_FragColor = bColor + vec4(1.5 * v_color * lighting * shadow * vShadow, 1.0);
+            gl_FragColor = bColor + vec4(3.0 * v_color * lighting * shadow * (vShadow), 1.0);
+            
+//            gl_FragColor = vec4(v_color , 1.0);
         }
     |]
