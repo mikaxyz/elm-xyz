@@ -26,7 +26,7 @@ playerHeight =
 
 
 landscapeHeight =
-    2
+    10
 
 
 color height_ =
@@ -70,21 +70,17 @@ color height_ =
 
 elevation x y =
     let
-        seed =
-            42
-
-        freq =
-            0.02
-
-        e1 =
-            Perlin.value2d { seed = seed, freq = freq } x y
+        base =
+            Perlin.value2d { seed = 42, freq = 0.01 } x y
+                + Perlin.value2d { seed = 242, freq = 0.005 } x y
     in
-    e1
-        + Perlin.value2d { seed = seed, freq = 1.0 * freq } x y
-        + (Perlin.value2d { seed = seed, freq = 5.0 * freq } x y
-            * Perlin.value2d { seed = seed, freq = 8.0 * freq } x y
+    base
+        + (0.5
+            * Perlin.value2d { seed = 12, freq = 0.05 } x y
+            * Perlin.value2d { seed = 7, freq = 0.09 } x y
           )
-        + (e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 20 * freq } x y)
+        + (0.2 * Perlin.value2d { seed = 2, freq = 0.03 } x y)
+        + (max base 0 * Perlin.value2d { seed = 19, freq = 0.05 } x y)
 
 
 type alias Model =
@@ -133,7 +129,7 @@ initModel =
     , terrain = Dict.empty
     , gridWorld =
         GridWorld.init (GridWorld.withGenerator generator)
-            |> GridWorld.generateChunks ( -2, -2 ) ( 2, 2 )
+            |> GridWorld.generateChunks ( -16, -16 ) ( 16, 16 )
     }
 
 
@@ -147,7 +143,7 @@ generator ( ix, iy ) ( p1, p2 ) =
 
         options : DDD.Mesh.Landscape.Options
         options =
-            { divisions = 23
+            { divisions = 3
             , width = width / 2
             , length = length / 2
             , height = landscapeHeight
@@ -216,22 +212,42 @@ subscriptions model =
 moveCamera : Camera -> Model -> Model
 moveCamera camera_ model =
     let
+        playerY =
+            elevation
+                (model.player.position |> Vec2.getX)
+                (model.player.position |> Vec2.getY)
+                * landscapeHeight
+                + playerHeight
+
+        ( above, behind ) =
+            ( 1, 3 )
+
         position =
             model.player.direction
                 |> Vec2.normalize
-                |> Vec2.scale (8 * camera_.zoom + 8)
+                |> Vec2.scale (4 * camera_.zoom + behind)
                 |> Vec2.sub model.player.position
                 |> Vec2.toRecord
-                |> (\{ x, y } -> vec3 x (20 * camera_.zoom * camera_.zoom + 4) y)
+                |> (\{ x, y } -> vec3 x (playerY + above + 10 * (camera_.zoom ^ 3)) y)
 
         focus =
             model.player.direction
                 |> Vec2.normalize
-                |> Vec2.scale (12 * (camera_.zoom - 1))
+                |> Vec2.scale (20 * (camera_.zoom - 1))
                 |> Vec2.negate
                 |> Vec2.add model.player.position
                 |> Vec2.toRecord
-                |> (\{ x, y } -> vec3 x 0 y)
+                |> (\{ x, y } -> vec3 x (playerY - 1) y)
+
+        --        aboveGround p =
+        --            let
+        --                { x, y, z } =
+        --                    Vec3.toRecord p
+        --
+        --                yAboveGround =
+        --                    max (elevation x z + 3) y
+        --            in
+        --            p |> Vec3.setY yAboveGround
     in
     { model
         | camera =
@@ -356,7 +372,7 @@ generateTerrain model =
     { model
         | gridWorld =
             GridWorld.generate
-                (GridWorld.gridFromCoord model.player.position)
+                (GridWorld.gridFromCoord (model.camera.focus |> (\v -> vec2 (Vec3.getX v) (Vec3.getZ v))))
                 model.gridWorld
     }
 
@@ -477,8 +493,8 @@ scene drag model =
                 |> List.map
                     (\( ( x, y ), mesh ) ->
                         WebGL.entity
-                            vertexShader
-                            fragmentShader
+                            vertexShaderTerrain
+                            fragmentShaderTerrain
                             mesh
                             (terrainChunkUniforms model.camera playerPos ( x, y ))
                     )
@@ -524,7 +540,7 @@ aspect =
 
 
 perspective =
-    Mat4.makePerspective 45 aspect 0.01 100
+    Mat4.makePerspective 60 aspect 0.01 300
 
 
 sceneUniforms : Camera -> Vec3 -> Vec2 -> Uniforms
@@ -568,6 +584,52 @@ vertexShader =
 
         attribute vec3 position;
         attribute vec3 color;
+
+        uniform mat4 perspective;
+        uniform mat4 camera;
+        uniform mat4 translate;
+        uniform mat4 rotation;
+
+        varying vec3 v_color;
+        varying vec3 v_normal;
+        varying vec3 v_position;
+        varying vec3 v_lighting;
+
+
+        void main () {
+            gl_Position = perspective * camera * translate * rotation * vec4(position, 1.0);
+            v_color = color;
+        }
+    |]
+
+
+fragmentShader : Shader {} Uniforms Varyings
+fragmentShader =
+    [glsl|
+        precision mediump float;
+
+        varying vec3 v_color;
+        varying vec3 v_normal;
+        varying vec3 v_position;
+        varying vec3 v_lighting;
+
+        void main () {
+            gl_FragColor = vec4(v_color , 1.0);
+        }
+    |]
+
+
+
+-- TERRAIN
+
+
+vertexShaderTerrain : Shader Vertex Uniforms Varyings
+vertexShaderTerrain =
+    [glsl|
+        precision mediump float;
+
+        attribute vec3 position;
+        attribute vec3 color;
         attribute vec3 normal;
 
         uniform mat4 perspective;
@@ -582,10 +644,14 @@ vertexShader =
         varying vec3 v_position;
         varying highp vec3 v_lighting;
 
-
         void main () {
-            float d = length(position.xz - playerPos.xz) * 0.5;
-            gl_Position = perspective * camera * translate * rotation * vec4(position, 1.0);
+            vec3 wPosition = (translate * rotation * vec4(position, 1.0)).xyz;
+            
+            float d = length(wPosition.xz - playerPos.xz);
+            vec3 yPlanetP = vec3(0.0, -(d * d * d * d * 0.00000002), 0.0);
+            
+            
+            gl_Position = perspective * camera * vec4(wPosition + yPlanetP, 1.0);
             
             highp vec3 ambientLight = vec3(0.0, 0.05, 0.01);
             highp vec3 directionalLightColor = vec3(1, 1, 1);
@@ -601,11 +667,10 @@ vertexShader =
     |]
 
 
-fragmentShader : Shader {} Uniforms Varyings
-fragmentShader =
+fragmentShaderTerrain : Shader {} Uniforms Varyings
+fragmentShaderTerrain =
     [glsl|
         precision mediump float;
-
 
         uniform mat4 perspective;
         uniform mat4 camera;
@@ -631,14 +696,14 @@ fragmentShader =
             float shadow = ((receiveShadow * playerShadow) + 1.0) / 2.0;
             
             // View area
-            float vDistance = 16.0;
-            float vDiff = length(v_position.xz - cameraFocus.xz);
-            float vShadow = abs(receiveShadow * min(vDistance, vDiff) / vDistance - 1.0);
+//            float vDistance = 80.0;
+//            float vDiff = length(v_position.xz - cameraFocus.xz);
+//            float vShadow = abs(receiveShadow * min(vDistance, vDiff) / vDistance - 1.0);
+            float vShadow = 1.0;
             
             vec4 bColor = receiveShadow * vec4(0.08627451, 0.08627451, 0.11372549, 1.0);
             vec3 lighting = receiveShadow > 0.0 ? v_lighting : vec3(1,1,1);
             gl_FragColor = bColor + vec4(3.0 * v_color * lighting * shadow * (vShadow), 1.0);
             
-//            gl_FragColor = vec4(v_color , 1.0);
         }
     |]
