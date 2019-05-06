@@ -89,12 +89,7 @@ type alias Model =
     , drag : Vec2
     , keyboard : Keyboard.State
     , camera : Camera
-    , player :
-        { position : Vec2
-        , direction : Vec2
-        , movement : Vec2
-        , mesh : Mesh Vertex
-        }
+    , player : Player
     , terrain : Dict ( Int, Int ) (Mesh Vertex)
     , gridWorld : GridWorld Vertex
     }
@@ -104,6 +99,21 @@ getDrag model =
     model.dragger
         |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
         |> Maybe.withDefault model.drag
+
+
+type PlayerVerb
+    = Idle
+    | Walking
+    | Running
+
+
+type alias Player =
+    { position : Vec2
+    , direction : Vec2
+    , movement : Vec2
+    , verb : PlayerVerb
+    , mesh : Mesh Vertex
+    }
 
 
 type alias Camera =
@@ -124,6 +134,7 @@ initModel =
         { position = vec2 0 0
         , direction = vec2 0 1
         , movement = vec2 0 0
+        , verb = Idle
         , mesh = DDD.Mesh.Cube.gray (playerHeight / 8) playerHeight (playerHeight / 8)
         }
     , terrain = Dict.empty
@@ -298,9 +309,6 @@ handlePointerMove pointerMove model =
 movePlayer : Model -> Model
 movePlayer model =
     let
-        m =
-            0.3
-
         direction_ =
             model.player.direction
 
@@ -311,7 +319,7 @@ movePlayer model =
             then
                 direction_
                     |> Vec2.normalize
-                    |> Vec2.scale m
+                    |> Just
 
             else if
                 Keyboard.isKeyDown Keyboard.ArrowDown model.keyboard
@@ -320,10 +328,10 @@ movePlayer model =
                 direction_
                     |> Vec2.negate
                     |> Vec2.normalize
-                    |> Vec2.scale m
+                    |> Just
 
             else
-                vec2 0 0
+                Nothing
 
         movementSide =
             if
@@ -333,7 +341,7 @@ movePlayer model =
                 direction_
                     |> (\v -> vec2 (Vec2.getY v) -(Vec2.getX v))
                     |> Vec2.normalize
-                    |> Vec2.scale m
+                    |> Just
 
             else if
                 Keyboard.isKeyDown Keyboard.ArrowRight model.keyboard
@@ -342,22 +350,41 @@ movePlayer model =
                 direction_
                     |> (\v -> vec2 -(Vec2.getY v) (Vec2.getX v))
                     |> Vec2.normalize
-                    |> Vec2.scale m
+                    |> Just
 
             else
-                vec2 0 0
+                Nothing
 
         movement =
-            Vec2.add movementForward movementSide
+            Vec2.add
+                (Maybe.withDefault (vec2 0 0) movementForward)
+                (Maybe.withDefault (vec2 0 0) movementSide)
 
         player_ =
             model.player
+
+        ( verb, speed ) =
+            case
+                ( Keyboard.isKeyDown Keyboard.Shift model.keyboard
+                , movementForward
+                , movementSide
+                )
+            of
+                ( _, Nothing, Nothing ) ->
+                    ( Idle, 0 )
+
+                ( False, _, _ ) ->
+                    ( Walking, 0.3 )
+
+                ( True, _, _ ) ->
+                    ( Running, 1.2 )
     in
     { model
         | player =
             { player_
-                | position = Vec2.add model.player.position movement
+                | position = Vec2.add model.player.position (movement |> Vec2.scale speed)
                 , movement = movement
+                , verb = verb
                 , direction = direction_
             }
     }
@@ -485,8 +512,6 @@ scene drag model =
             model.camera
             model.player.direction
             playerPos
-            (Mat4.makeTranslate playerPos)
-            uniforms.rotation
         )
         :: (model.gridWorld
                 |> GridWorld.geometry
@@ -556,10 +581,10 @@ sceneUniforms camera_ playerPos drag =
     }
 
 
-playerUniforms : Camera -> Vec2 -> Vec3 -> Mat4 -> Mat4 -> Uniforms
-playerUniforms camera_ direction playerPos position rotation =
+playerUniforms : Camera -> Vec2 -> Vec3 -> Uniforms
+playerUniforms camera_ direction playerPos =
     { rotation = Mat4.makeRotate (atan2 (Vec2.getX direction) (Vec2.getY direction)) (vec3 0 1 0)
-    , translate = position
+    , translate = Mat4.makeTranslate playerPos
     , perspective = perspective
     , camera = camera camera_
     , directionalLight = directionalLight
