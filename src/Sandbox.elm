@@ -26,7 +26,7 @@ playerHeight =
 
 
 landscapeHeight =
-    10
+    3
 
 
 color height_ =
@@ -120,7 +120,20 @@ type alias Camera =
     { position : Vec3
     , focus : Vec3
     , zoom : Float
+    , fov : Float
     }
+
+
+startWithChunksOrIsIt =
+    1
+
+
+fovMin =
+    60
+
+
+fovMax =
+    140
 
 
 initModel : Model
@@ -129,7 +142,7 @@ initModel =
     , dragger = Nothing
     , drag = vec2 0 0
     , keyboard = Keyboard.init
-    , camera = Camera (vec3 0 0 0) (vec3 0 0 0) 1.0
+    , camera = Camera (vec3 0 0 0) (vec3 0 0 0) 1 fovMax
     , player =
         { position = vec2 0 0
         , direction = vec2 0 1
@@ -140,7 +153,7 @@ initModel =
     , terrain = Dict.empty
     , gridWorld =
         GridWorld.init (GridWorld.withGenerator generator)
-            |> GridWorld.generateChunks ( -16, -16 ) ( 16, 16 )
+            |> GridWorld.generateChunks ( -startWithChunksOrIsIt, -startWithChunksOrIsIt ) ( startWithChunksOrIsIt, startWithChunksOrIsIt )
     }
 
 
@@ -154,7 +167,7 @@ generator ( ix, iy ) ( p1, p2 ) =
 
         options : DDD.Mesh.Landscape.Options
         options =
-            { divisions = 3
+            { divisions = 8
             , width = width / 2
             , length = length / 2
             , height = landscapeHeight
@@ -223,6 +236,7 @@ subscriptions model =
 moveCamera : Camera -> Model -> Model
 moveCamera camera_ model =
     let
+        playerY : Float
         playerY =
             elevation
                 (model.player.position |> Vec2.getX)
@@ -233,6 +247,7 @@ moveCamera camera_ model =
         ( above, behind ) =
             ( 1, 3 )
 
+        position : Vec3
         position =
             model.player.direction
                 |> Vec2.normalize
@@ -241,15 +256,25 @@ moveCamera camera_ model =
                 |> Vec2.toRecord
                 |> (\{ x, y } -> vec3 x (playerY + above + 10 * (camera_.zoom ^ 3)) y)
 
+        focus : Vec3
         focus =
             model.player.direction
-                |> Vec2.normalize
-                |> Vec2.scale (20 * (camera_.zoom - 1))
-                |> Vec2.negate
+                --|> Vec2.normalize
+                --|> Vec2.scale (20 * (camera_.zoom - 1))
+                --|> Vec2.negate
                 |> Vec2.add model.player.position
                 |> Vec2.toRecord
                 |> (\{ x, y } -> vec3 x (playerY - 1) y)
 
+        --fov : Vec3
+        --fov =
+        --    model.player.direction
+        --        |> Vec2.normalize
+        --        |> Vec2.scale (20 * (camera_.zoom - 1))
+        --        |> Vec2.negate
+        --        |> Vec2.add model.player.position
+        --        |> Vec2.toRecord
+        --        |> (\{ x, y } -> vec3 x (playerY - 1) y)
         --        aboveGround p =
         --            let
         --                { x, y, z } =
@@ -265,6 +290,8 @@ moveCamera camera_ model =
             { camera_
                 | focus = focus
                 , position = position
+
+                --, fov = fov
             }
     }
 
@@ -281,11 +308,12 @@ handlePointerMove pointerMove model =
         camera_ =
             model.camera
 
+        zoom_ : Float
         zoom_ =
             model.camera.zoom
                 |> (\y -> y + dy)
                 |> (\y -> max 0 y)
-                |> (\y -> min 1 y)
+                |> (\y -> min 2 y)
 
         player =
             model.player
@@ -302,7 +330,11 @@ handlePointerMove pointerMove model =
     in
     { model
         | player = { player | direction = vec2 px py }
-        , camera = { camera_ | zoom = zoom_ }
+        , camera =
+            { camera_
+                | zoom = zoom_
+                , fov = fovMax - (model.camera.zoom / 2 * fovMin)
+            }
     }
 
 
@@ -312,6 +344,7 @@ movePlayer model =
         direction_ =
             model.player.direction
 
+        movementForward : Maybe Vec2
         movementForward =
             if
                 Keyboard.isKeyDown Keyboard.ArrowUp model.keyboard
@@ -333,6 +366,7 @@ movePlayer model =
             else
                 Nothing
 
+        movementSide : Maybe Vec2
         movementSide =
             if
                 Keyboard.isKeyDown Keyboard.ArrowLeft model.keyboard
@@ -355,11 +389,13 @@ movePlayer model =
             else
                 Nothing
 
+        movement : Vec2
         movement =
             Vec2.add
                 (Maybe.withDefault (vec2 0 0) movementForward)
                 (Maybe.withDefault (vec2 0 0) movementSide)
 
+        player_ : Player
         player_ =
             model.player
 
@@ -530,7 +566,7 @@ terrainChunkUniforms : Camera -> Vec3 -> ( Float, Float ) -> Uniforms
 terrainChunkUniforms camera_ playerPos ( x, y ) =
     { rotation = Mat4.identity
     , translate = Mat4.makeTranslate (vec3 x 0 y)
-    , perspective = perspective
+    , perspective = perspective camera_.fov
     , camera = camera camera_
     , directionalLight = directionalLight
     , playerPos = playerPos
@@ -564,15 +600,15 @@ aspect =
     toFloat viewport.width / toFloat viewport.height
 
 
-perspective =
-    Mat4.makePerspective 60 aspect 0.01 300
+perspective fov =
+    Mat4.makePerspective fov aspect 0.01 300
 
 
 sceneUniforms : Camera -> Vec3 -> Vec2 -> Uniforms
 sceneUniforms camera_ playerPos drag =
     { rotation = Mat4.identity
     , translate = Mat4.identity
-    , perspective = perspective
+    , perspective = perspective camera_.fov
     , camera = camera camera_
     , directionalLight = directionalLight
     , playerPos = playerPos
@@ -585,7 +621,7 @@ playerUniforms : Camera -> Vec2 -> Vec3 -> Uniforms
 playerUniforms camera_ direction playerPos =
     { rotation = Mat4.makeRotate (atan2 (Vec2.getX direction) (Vec2.getY direction)) (vec3 0 1 0)
     , translate = Mat4.makeTranslate playerPos
-    , perspective = perspective
+    , perspective = perspective camera_.fov
     , camera = camera camera_
     , directionalLight = directionalLight
     , playerPos = playerPos
@@ -673,7 +709,7 @@ vertexShaderTerrain =
             vec3 wPosition = (translate * rotation * vec4(position, 1.0)).xyz;
             
             float d = length(wPosition.xz - playerPos.xz);
-            vec3 yPlanetP = vec3(0.0, -(d * d * d * d * 0.00000002), 0.0);
+            vec3 yPlanetP = vec3(0.0, -(d * d * d * d * 0.00000005), 0.0);
             
             
             gl_Position = perspective * camera * vec4(wPosition + yPlanetP, 1.0);
@@ -720,11 +756,11 @@ fragmentShaderTerrain =
             float playerShadow = (dClamped + s1) / (1.0 + s1);
             float shadow = ((receiveShadow * playerShadow) + 1.0) / 2.0;
             
-            // View area
-//            float vDistance = 80.0;
-//            float vDiff = length(v_position.xz - cameraFocus.xz);
-//            float vShadow = abs(receiveShadow * min(vDistance, vDiff) / vDistance - 1.0);
-            float vShadow = 1.0;
+//             View area
+            float vDistance = 80.0;
+            float vDiff = length(v_position.xz - cameraFocus.xz);
+            float vShadow = abs(receiveShadow * min(vDistance, vDiff) / vDistance - 1.0);
+//            float vShadow = 1.0;
             
             vec4 bColor = receiveShadow * vec4(0.08627451, 0.08627451, 0.11372549, 1.0);
             vec3 lighting = receiveShadow > 0.0 ? v_lighting : vec3(1,1,1);
