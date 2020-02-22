@@ -2,6 +2,7 @@ module DDD.Mesh.Primitives exposing (bone, bone2, face, faceWithNormal)
 
 import DDD.Data.Color as Color exposing (Color)
 import DDD.Data.Vertex as Vertex exposing (Vertex)
+import Math.Vector2 exposing (vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 
 
@@ -21,13 +22,14 @@ face color a b c d =
 faceWithNormal : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
 faceWithNormal color a b c d normal =
     let
-        vertex position =
+        vertex position uv =
             Vertex.vertex position
                 |> Vertex.withNormal normal
                 |> Vertex.withColor (Color.vec3 color)
+                |> Vertex.withUV uv
     in
-    [ ( vertex a, vertex b, vertex c )
-    , ( vertex c, vertex d, vertex a )
+    [ ( vertex a (vec2 0 0), vertex b (vec2 0 1), vertex c (vec2 1 1) )
+    , ( vertex c (vec2 1 1), vertex d (vec2 1 0), vertex a (vec2 0 0) )
     ]
 
 

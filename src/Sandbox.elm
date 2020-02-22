@@ -1,5 +1,6 @@
 port module Sandbox exposing (main)
 
+import Asset.Store
 import Browser
 import Browser.Events
 import DDD.Data.Vertex exposing (Vertex)
@@ -92,6 +93,7 @@ type alias Model =
     , player : Player
     , terrain : Dict ( Int, Int ) (Mesh Vertex)
     , gridWorld : GridWorld Vertex
+    , assets : Asset.Store.Store
     }
 
 
@@ -148,12 +150,13 @@ initModel =
         , direction = vec2 0 1
         , movement = vec2 0 0
         , verb = Idle
-        , mesh = DDD.Mesh.Cube.gray (playerHeight / 8) playerHeight (playerHeight / 8)
+        , mesh = DDD.Mesh.Cube.gray (playerHeight / 1) playerHeight (playerHeight / 1)
         }
     , terrain = Dict.empty
     , gridWorld =
         GridWorld.init (GridWorld.withGenerator generator)
             |> GridWorld.generateChunks ( -startWithChunksOrIsIt, -startWithChunksOrIsIt ) ( startWithChunksOrIsIt, startWithChunksOrIsIt )
+    , assets = Asset.Store.init
     }
 
 
@@ -193,12 +196,20 @@ type Msg
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
     | OnPointerMove { x : Int, y : Int }
+    | AssetLoaded Asset.Store.Content
 
 
 main : Program () Model Msg
 main =
     Browser.document
-        { init = always ( initModel, Cmd.none )
+        { init =
+            always
+                ( initModel
+                , Cmd.batch
+                    [ Asset.Store.loadObj "obj/deer.obj" initModel.assets AssetLoaded
+                    , Asset.Store.loadTexture "obj/deer.obj" initModel.assets AssetLoaded
+                    ]
+                )
         , view = doc
         , update = update
         , subscriptions = subscriptions
@@ -450,6 +461,9 @@ update msg model =
                 |> generateTerrain
             , Cmd.none
             )
+
+        AssetLoaded asset ->
+            ( { model | assets = model.assets |> Asset.Store.addToStore asset }, Cmd.none )
 
         OnPointerMove { x, y } ->
             ( model
