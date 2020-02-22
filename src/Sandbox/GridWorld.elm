@@ -11,7 +11,7 @@ module Sandbox.GridWorld exposing
 
 import Dict exposing (Dict)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
-import WebGL exposing (Entity, Mesh, Shader)
+import WebGL exposing (Mesh)
 
 
 chunkSize =

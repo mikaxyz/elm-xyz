@@ -536,9 +536,6 @@ scene drag model =
 
         playerPos =
             vec3 px (pz px py) py
-
-        uniforms =
-            sceneUniforms model.camera playerPos drag
     in
     WebGL.entity
         vertexShader
@@ -602,19 +599,6 @@ aspect =
 
 perspective fov =
     Mat4.makePerspective fov aspect 0.01 300
-
-
-sceneUniforms : Camera -> Vec3 -> Vec2 -> Uniforms
-sceneUniforms camera_ playerPos drag =
-    { rotation = Mat4.identity
-    , translate = Mat4.identity
-    , perspective = perspective camera_.fov
-    , camera = camera camera_
-    , directionalLight = directionalLight
-    , playerPos = playerPos
-    , cameraFocus = camera_.focus
-    , receiveShadow = 0.0
-    }
 
 
 playerUniforms : Camera -> Vec2 -> Vec3 -> Uniforms
