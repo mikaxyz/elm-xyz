@@ -1,6 +1,6 @@
 module DDD.Mesh.Landscape exposing (Options, simple)
 
-import DDD.Data.Vertex exposing (Vertex)
+import DDD.Data.Vertex as Vertex exposing (Vertex)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 
@@ -35,7 +35,12 @@ simple options =
         vertices =
             points options.divisions (vec2 c1.x c1.y) (vec2 c2.x c2.y)
                 |> List.map (addElevation options f)
-                |> List.map (\( elevation, v, n ) -> Vertex (options.color elevation) v n)
+                |> List.map
+                    (\( elevation, pos, normal ) ->
+                        Vertex.vertex pos
+                            |> Vertex.withColor (options.color elevation)
+                            |> Vertex.withNormal normal
+                    )
     in
     ( vertices, vMap )
 

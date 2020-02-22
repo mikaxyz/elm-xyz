@@ -1,7 +1,7 @@
 module DDD.Parser.Obj exposing (parse)
 
 import Array exposing (Array)
-import DDD.Data.Vertex exposing (Vertex)
+import DDD.Data.Vertex as Vertex exposing (Vertex)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 
 
@@ -95,9 +95,18 @@ verticesFromData { scale, color } data =
                             , vmap.m3.normal |> Maybe.andThen getNormal |> Maybe.withDefault (calculateNormal v3 v1 v2)
                             )
                     in
-                    ( Vertex color (v1 |> Vec3.scale scale) vn1
-                    , Vertex color (v2 |> Vec3.scale scale) vn2
-                    , Vertex color (v3 |> Vec3.scale scale) vn3
+                    ( (v1 |> Vec3.scale scale)
+                        |> Vertex.vertex
+                        |> Vertex.withNormal vn1
+                        |> Vertex.withColor color
+                    , (v2 |> Vec3.scale scale)
+                        |> Vertex.vertex
+                        |> Vertex.withNormal vn2
+                        |> Vertex.withColor color
+                    , (v3 |> Vec3.scale scale)
+                        |> Vertex.vertex
+                        |> Vertex.withNormal vn3
+                        |> Vertex.withColor color
                     )
                         |> Just
 
