@@ -17,6 +17,7 @@ import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Sandbox.GridWorld as GridWorld exposing (GridWorld)
 import WebGL exposing (Entity, Mesh, Shader)
+import WebGL.Texture exposing (Texture)
 
 
 port onPointerMove : ({ x : Int, y : Int } -> msg) -> Sub msg
@@ -93,8 +94,34 @@ type alias Model =
     , player : Player
     , terrain : Dict ( Int, Int ) (Mesh Vertex)
     , gridWorld : GridWorld Vertex
-    , assets : Asset.Store.Store
+    , assets : Asset.Store.Store ObjId TextureId
     }
+
+
+type ObjId
+    = Ball
+
+
+objPath : ObjId -> String
+objPath texture =
+    case texture of
+        Ball ->
+            "obj/Basketball_size6_SF/Basketball_size6_SF.obj"
+
+
+type TextureId
+    = BallDiffuse
+    | BrickWall
+
+
+texturePath : TextureId -> String
+texturePath texture =
+    case texture of
+        BallDiffuse ->
+            "obj/Basketball_size6_SF/Basketball_size6.jpg"
+
+        BrickWall ->
+            "img/brickwall-1.jpg"
 
 
 getDrag model =
@@ -156,7 +183,7 @@ initModel =
     , gridWorld =
         GridWorld.init (GridWorld.withGenerator generator)
             |> GridWorld.generateChunks ( -startWithChunksOrIsIt, -startWithChunksOrIsIt ) ( startWithChunksOrIsIt, startWithChunksOrIsIt )
-    , assets = Asset.Store.init
+    , assets = Asset.Store.init objPath texturePath
     }
 
 
@@ -206,8 +233,9 @@ main =
             always
                 ( initModel
                 , Cmd.batch
-                    [ Asset.Store.loadObj "obj/deer.obj" initModel.assets AssetLoaded
-                    , Asset.Store.loadTexture "obj/deer.obj" initModel.assets AssetLoaded
+                    [ Asset.Store.loadObj Ball initModel.assets AssetLoaded
+                    , Asset.Store.loadTexture BallDiffuse initModel.assets AssetLoaded
+                    , Asset.Store.loadTexture BrickWall initModel.assets AssetLoaded
                     ]
                 )
         , view = doc
@@ -532,15 +560,44 @@ viewport =
 
 view : Model -> Html msg
 view model =
-    WebGL.toHtml
-        [ width viewport.width
-        , height viewport.height
-        ]
-        (scene (getDrag model) model)
+    Maybe.map3
+        SceneConfig
+        --(\ballMesh ->
+        --    \ballTexture ->
+        --        \brickWallTexture ->
+        --            WebGL.toHtml
+        --                [ width viewport.width
+        --                , height viewport.height
+        --                ]
+        --                (scene (getDrag model) model)
+        --)
+        (Asset.Store.mesh Ball model.assets)
+        (Asset.Store.texture BallDiffuse model.assets)
+        (Asset.Store.texture BrickWall model.assets)
+        |> Maybe.map
+            (\config ->
+                WebGL.toHtml
+                    [ width viewport.width
+                    , height viewport.height
+                    ]
+                    (scene config (getDrag model) model)
+            )
+        |> Maybe.withDefault (Html.p [] [ Html.text "LOADING ASSETS..." ])
 
 
-scene : Vec2 -> Model -> List Entity
-scene drag model =
+
+--(scene (getDrag model) model)
+
+
+type alias SceneConfig =
+    { ballMesh : Mesh Vertex
+    , ballTexture : Texture
+    , brickWallTexture : Texture
+    }
+
+
+scene : SceneConfig -> Vec2 -> Model -> List Entity
+scene config drag model =
     let
         ( px, py ) =
             ( Vec2.getX model.player.position, Vec2.getY model.player.position )
@@ -557,9 +614,20 @@ scene drag model =
         model.player.mesh
         (playerUniforms
             model.camera
+            config.brickWallTexture
             model.player.direction
             playerPos
         )
+        :: WebGL.entity
+            vertexShader
+            fragmentShader
+            config.ballMesh
+            (playerUniforms
+                model.camera
+                config.ballTexture
+                model.player.direction
+                (playerPos |> Vec3.add (vec3 0 0.5 0))
+            )
         :: (model.gridWorld
                 |> GridWorld.geometry
                 |> List.map
@@ -568,13 +636,13 @@ scene drag model =
                             vertexShaderTerrain
                             fragmentShaderTerrain
                             mesh
-                            (terrainChunkUniforms model.camera playerPos ( x, y ))
+                            (terrainChunkUniforms model.camera config.brickWallTexture playerPos ( x, y ))
                     )
            )
 
 
-terrainChunkUniforms : Camera -> Vec3 -> ( Float, Float ) -> Uniforms
-terrainChunkUniforms camera_ playerPos ( x, y ) =
+terrainChunkUniforms : Camera -> Texture -> Vec3 -> ( Float, Float ) -> Uniforms
+terrainChunkUniforms camera_ texture playerPos ( x, y ) =
     { rotation = Mat4.identity
     , translate = Mat4.makeTranslate (vec3 x 0 y)
     , perspective = perspective camera_.fov
@@ -583,6 +651,7 @@ terrainChunkUniforms camera_ playerPos ( x, y ) =
     , playerPos = playerPos
     , cameraFocus = camera_.focus
     , receiveShadow = 1.0
+    , texture = texture
     }
 
 
@@ -595,6 +664,7 @@ type alias Uniforms =
     , playerPos : Vec3
     , cameraFocus : Vec3
     , receiveShadow : Float
+    , texture : Texture
     }
 
 
@@ -615,8 +685,8 @@ perspective fov =
     Mat4.makePerspective fov aspect 0.01 300
 
 
-playerUniforms : Camera -> Vec2 -> Vec3 -> Uniforms
-playerUniforms camera_ direction playerPos =
+playerUniforms : Camera -> Texture -> Vec2 -> Vec3 -> Uniforms
+playerUniforms camera_ texture direction playerPos =
     { rotation = Mat4.makeRotate (atan2 (Vec2.getX direction) (Vec2.getY direction)) (vec3 0 1 0)
     , translate = Mat4.makeTranslate playerPos
     , perspective = perspective camera_.fov
@@ -625,6 +695,7 @@ playerUniforms camera_ direction playerPos =
     , playerPos = playerPos
     , cameraFocus = camera_.focus
     , receiveShadow = 0.0
+    , texture = texture
     }
 
 
@@ -633,6 +704,7 @@ type alias Varyings =
     , v_normal : Vec3
     , v_position : Vec3
     , v_lighting : Vec3
+    , v_coord : Vec2
     }
 
 
@@ -643,6 +715,7 @@ vertexShader =
 
         attribute vec3 position;
         attribute vec3 color;
+        attribute vec2 uv;
 
         uniform mat4 perspective;
         uniform mat4 camera;
@@ -653,11 +726,14 @@ vertexShader =
         varying vec3 v_normal;
         varying vec3 v_position;
         varying vec3 v_lighting;
+        varying vec2 v_coord;
+
 
 
         void main () {
             gl_Position = perspective * camera * translate * rotation * vec4(position, 1.0);
             v_color = color;
+            v_coord = uv;
         }
     |]
 
@@ -666,14 +742,22 @@ fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
+        
+        uniform sampler2D texture;
+
 
         varying vec3 v_color;
         varying vec3 v_normal;
         varying vec3 v_position;
         varying vec3 v_lighting;
+        varying vec2 v_coord;
+
 
         void main () {
-            gl_FragColor = vec4(v_color , 1.0);
+        
+            vec4 tex = texture2D(texture, v_coord) * 2.5;
+
+            gl_FragColor = tex * vec4(v_color , 1.0);
         }
     |]
 
@@ -702,6 +786,7 @@ vertexShaderTerrain =
         varying vec3 v_normal;
         varying vec3 v_position;
         varying highp vec3 v_lighting;
+        varying vec2 v_coord;
 
         void main () {
             vec3 wPosition = (translate * rotation * vec4(position, 1.0)).xyz;
@@ -743,6 +828,7 @@ fragmentShaderTerrain =
         varying vec3 v_normal;
         varying vec3 v_position;
         varying vec3 v_lighting;
+        varying vec2 v_coord;
 
         void main () {
         

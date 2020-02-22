@@ -2,6 +2,7 @@ module DDD.Parser.Obj exposing (parse)
 
 import Array exposing (Array)
 import DDD.Data.Vertex as Vertex exposing (Vertex)
+import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 
 
@@ -13,7 +14,7 @@ type alias Options =
 
 type alias Data =
     { geometry : Array Vec3
-    , texture : Array Vec3
+    , texture : Array Vec2
     , normal : Array Vec3
     , vmap3 : List VertMap3
     , errors : List String
@@ -22,7 +23,7 @@ type alias Data =
 
 type ObjData
     = Geometry Vec3
-    | Texture Vec3
+    | Texture Vec2
     | Normal Vec3
     | Vmap3 VertMap3
     | Error String
@@ -86,6 +87,9 @@ verticesFromData { scale, color } data =
                         getNormal i =
                             Array.get (i - 1) data.normal
 
+                        getUv i =
+                            Array.get (i - 1) data.texture
+
                         calculateNormal v1_ v2_ v3_ =
                             Vec3.cross (Vec3.sub v1_ v2_) (Vec3.sub v1_ v3_) |> Vec3.normalize
 
@@ -94,19 +98,28 @@ verticesFromData { scale, color } data =
                             , vmap.m2.normal |> Maybe.andThen getNormal |> Maybe.withDefault (calculateNormal v2 v3 v1)
                             , vmap.m3.normal |> Maybe.andThen getNormal |> Maybe.withDefault (calculateNormal v3 v1 v2)
                             )
+
+                        ( uv1, uv2, uv3 ) =
+                            ( vmap.m1.texture |> Maybe.andThen getUv |> Maybe.withDefault (vec2 0 0)
+                            , vmap.m2.texture |> Maybe.andThen getUv |> Maybe.withDefault (vec2 0 0)
+                            , vmap.m3.texture |> Maybe.andThen getUv |> Maybe.withDefault (vec2 0 0)
+                            )
                     in
                     ( (v1 |> Vec3.scale scale)
                         |> Vertex.vertex
                         |> Vertex.withNormal vn1
                         |> Vertex.withColor color
+                        |> Vertex.withUV uv1
                     , (v2 |> Vec3.scale scale)
                         |> Vertex.vertex
                         |> Vertex.withNormal vn2
                         |> Vertex.withColor color
+                        |> Vertex.withUV uv2
                     , (v3 |> Vec3.scale scale)
                         |> Vertex.vertex
                         |> Vertex.withNormal vn3
                         |> Vertex.withColor color
+                        |> Vertex.withUV uv3
                     )
                         |> Just
 
@@ -159,6 +172,22 @@ parseLine line =
                                 vec3 0 0 0
                    )
 
+        parseVector2 : String -> Vec2
+        parseVector2 str =
+            str
+                |> String.dropLeft 2
+                |> String.trim
+                |> String.split " "
+                |> List.filterMap String.toFloat
+                |> (\x ->
+                        case x of
+                            c1 :: c2 :: _ ->
+                                vec2 c1 c2
+
+                            _ ->
+                                vec2 0 0
+                   )
+
         parseVmaps : String -> VertMap3
         parseVmaps str =
             let
@@ -207,7 +236,7 @@ parseLine line =
             Geometry (parseVector line)
 
         "vt" ->
-            Texture (parseVector line)
+            Texture (parseVector2 line)
 
         "vn" ->
             Normal (parseVector line)

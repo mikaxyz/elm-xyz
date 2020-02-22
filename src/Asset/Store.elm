@@ -5,6 +5,8 @@ module Asset.Store exposing
     , init
     , loadObj
     , loadTexture
+    , mesh
+    , texture
     )
 
 import DDD.Data.Vertex exposing (Vertex)
@@ -18,149 +20,101 @@ import WebGL
 import WebGL.Texture
 
 
-init : Store
-init =
-    Store { assets = Dict.empty }
+init : (obj -> String) -> (texture -> String) -> Store obj texture
+init objPath texturePath =
+    Store
+        { objPath = objPath
+        , texturePath = texturePath
+        , assets = Dict.empty
+        }
 
 
 type Asset
     = Mesh (WebGL.Mesh Vertex)
     | Texture WebGL.Texture.Texture
+    | TextureError WebGL.Texture.Error
 
 
-type Store
-    = Store { assets : Dict String Asset }
+type Store obj texture
+    = Store
+        { objPath : obj -> String
+        , texturePath : texture -> String
+        , assets : Dict String Asset
+        }
 
 
 type Content
-    = Obj String
-    | Tex WebGL.Texture.Texture
+    = Obj String String
+    | Tex String (Result WebGL.Texture.Error WebGL.Texture.Texture)
 
 
-addToStore : Content -> Store -> Store
+texture : texture -> Store obj texture -> Maybe WebGL.Texture.Texture
+texture texture_ (Store { texturePath, assets }) =
+    case assets |> Dict.get (texturePath texture_) of
+        Just (Texture x) ->
+            Just x
+
+        _ ->
+            Nothing
+
+
+mesh : obj -> Store obj texture -> Maybe (WebGL.Mesh Vertex)
+mesh obj (Store { objPath, assets }) =
+    case assets |> Dict.get (objPath obj) of
+        Just (Mesh x) ->
+            Just x
+
+        _ ->
+            Nothing
+
+
+addToStore : Content -> Store obj texture -> Store obj texture
 addToStore content (Store ({ assets } as store)) =
     let
-        asset =
+        ( path, asset ) =
             case content of
-                Obj x ->
-                    DDD.Parser.Obj.parse
-                        { scale = 0.001, color = vec3 1 0.5 0.5 }
+                Obj path_ x ->
+                    ( path_
+                    , DDD.Parser.Obj.parse
+                        { scale = 0.1, color = vec3 1 1 1 }
                         x
                         |> WebGL.triangles
                         |> Mesh
+                    )
 
-                Tex x ->
-                    Texture x
+                Tex path_ result ->
+                    ( path_
+                    , case result of
+                        Ok x ->
+                            Texture x
+
+                        Err error ->
+                            TextureError error
+                    )
     in
-    Store { store | assets = assets |> Dict.insert "asset" asset }
+    Store { store | assets = assets |> Dict.insert path asset }
 
 
-loadObj : String -> Store -> (Content -> msg) -> Cmd msg
-loadObj path store msg =
+loadObj : obj -> Store obj texture -> (Content -> msg) -> Cmd msg
+loadObj obj (Store { objPath }) msg =
     Http.get
-        { url = path
+        { url = objPath obj
         , expect =
             Http.expectString
                 (\x ->
                     x
                         |> Result.withDefault ""
-                        |> Obj
+                        |> Obj (objPath obj)
                         |> msg
                 )
         }
 
 
-loadTexture : String -> Store -> (Result WebGL.Texture.Error Content -> msg) -> Cmd msg
-loadTexture path store msg =
+loadTexture : texture -> Store obj texture -> (Content -> msg) -> Cmd msg
+loadTexture texture_ (Store { texturePath }) msg =
     Task.attempt
         (\result ->
-            result
-                |> Result.map Tex
+            Tex (texturePath texture_) result
                 |> msg
         )
-        (WebGL.Texture.load path)
-
-
-
---Http.get
---    { url = path
---    , expect =
---        Http.expectString
---            (\x ->
---                x
---                    |> Result.withDefault ""
---                    |> Obj
---                    |> msg
---            )
---    }
---
---type Obj
---    = Cat
---    | Deer
---    | Wolf
---    | Tree1
---    | Tree2
---
---
---type LoadedAsset
---    = Asset Obj String
---
---
---type alias Store =
---    { cat : Mesh Vertex
---    , deer : Mesh Vertex
---    , wolf : Mesh Vertex
---    , tree1 : Mesh Vertex
---    , tree2 : Mesh Vertex
---    }
---
---
---init : Store
---init =
---    { cat = DDD.Mesh.Cube.gray 1 1 1
---    , deer = DDD.Mesh.Cube.gray 1 1 1
---    , wolf = DDD.Mesh.Cube.gray 1 1 1
---    , tree1 = DDD.Mesh.Cube.gray 1 1 1
---    , tree2 = DDD.Mesh.Cube.gray 1 1 1
---    }
---
---
---addToStore : { asset : Obj, obj : String } -> Store -> Store
---addToStore { asset, obj } store =
---    let
---        m =
---            DDD.Parser.Obj.parse
---                { scale = 0.001, color = vec3 1 0.5 0.5 }
---                obj
---                |> WebGL.triangles
---    in
---    case asset of
---        Cat ->
---            { store | cat = m }
---
---        Deer ->
---            { store | deer = m }
---
---        Wolf ->
---            { store | wolf = m }
---
---        Tree1 ->
---            { store | wolf = m }
---
---        Tree2 ->
---            { store | wolf = m }
---
---
---load : Obj -> String -> ({ asset : Obj, obj : String } -> msg) -> Cmd msg
---load asset path tagger =
---    Http.get
---        { url = path
---        , expect =
---            Http.expectString
---                (\x ->
---                    tagger
---                        { asset = asset
---                        , obj = x |> Result.withDefault ""
---                        }
---                )
---        }
+        (WebGL.Texture.load (texturePath texture_))
