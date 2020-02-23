@@ -63,9 +63,9 @@ color height_ =
                 / 0.3
                 |> clamp 0 1
     in
-    vec3 0 0.1 1
+    vec3 0.3 0.6 1
         |> Vec3.scale water
-        |> Vec3.add (vec3 0 1 0 |> Vec3.scale grass)
+        |> Vec3.add (vec3 0.3 0.95 0.35 |> Vec3.scale grass)
         |> Vec3.add (vec3 0.847 0.839 0.811 |> Vec3.scale cliffs)
         |> Vec3.add (vec3 1 1 1 |> Vec3.scale snow)
 
@@ -284,7 +284,7 @@ moveCamera camera_ model =
                 + playerHeight
 
         ( above, behind ) =
-            ( 1, 3 )
+            ( 1, 2 )
 
         position : Vec3
         position =
@@ -293,7 +293,7 @@ moveCamera camera_ model =
                 |> Vec2.scale (4 * camera_.zoom + behind)
                 |> Vec2.sub model.player.position
                 |> Vec2.toRecord
-                |> (\{ x, y } -> vec3 x (playerY + above + 10 * (camera_.zoom ^ 3)) y)
+                |> (\{ x, y } -> vec3 x (playerY + above + 2 * (camera_.zoom ^ 3)) y)
 
         focus : Vec3
         focus =
