@@ -10,6 +10,7 @@ module DDD.Scene.Object exposing
     , rotationWithDragX
     , rotationWithDragXY
     , rotationWithDragY
+    , textureWithDefault
     , vertexShader
     , withFragmentShader
     , withMesh
@@ -17,9 +18,11 @@ module DDD.Scene.Object exposing
     , withOptionDragToRotateXY
     , withOptionDragToRotateY
     , withOptionRotationInTime
+    , withOptionTranslateInTime
     , withOptions
     , withPosition
     , withRotation
+    , withTexture
     , withVertexShader
     )
 
@@ -30,6 +33,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh, Shader)
+import WebGL.Texture exposing (Texture)
 
 
 type Object
@@ -49,6 +53,7 @@ type alias ObjectData =
     , rotation : Mat4
     , mesh : Mesh Vertex
     , options : Maybe Options
+    , texture : Maybe Texture
     }
 
 
@@ -82,6 +87,18 @@ withOptionRotationInTime f obj =
                 options
                     |> Maybe.map (\x -> { x | rotation = f })
                     |> Maybe.withDefault { defaultOptions | rotation = f }
+                    |> Just
+            )
+
+
+withOptionTranslateInTime : (Float -> Mat4) -> Object -> Object
+withOptionTranslateInTime f obj =
+    obj
+        |> mapOptions
+            (\options ->
+                options
+                    |> Maybe.map (\x -> { x | translate = f })
+                    |> Maybe.withDefault { defaultOptions | translate = f }
                     |> Just
             )
 
@@ -168,6 +185,11 @@ rotation obj =
     obj |> get .rotation
 
 
+textureWithDefault : Texture -> Object -> Texture
+textureWithDefault default obj =
+    obj |> get .texture |> Maybe.withDefault default
+
+
 rotationWithDrag : Vec2 -> Object -> Object
 rotationWithDrag drag obj =
     obj
@@ -245,6 +267,7 @@ withMesh x =
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
+        , texture = Nothing
         , options = Nothing
         }
         { vertexShader = Nothing
@@ -255,6 +278,11 @@ withMesh x =
 withOptions : Options -> Object -> Object
 withOptions x obj =
     obj |> mapData (\data -> { data | options = Just x })
+
+
+withTexture : Texture -> Object -> Object
+withTexture x obj =
+    obj |> mapData (\data -> { data | texture = Just x })
 
 
 withRotation : Mat4 -> Object -> Object

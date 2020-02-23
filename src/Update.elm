@@ -1,9 +1,11 @@
 module Update exposing (update)
 
+import Asset.Store
 import DDD.Parser.Obj
 import Math.Vector2 as Vec2
 import Model exposing (Model, Msg(..))
 import Scenes.ObjectLoader
+import Scenes.Textures
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -54,3 +56,15 @@ update msg model =
               }
             , Cmd.none
             )
+
+        AssetLoaded asset ->
+            ( model
+                |> (\m -> { m | assets = m.assets |> Asset.Store.addToStore asset })
+                |> (\m -> { m | scene = Scenes.Textures.init m.assets })
+            , Cmd.none
+            )
+
+
+
+--{ model | assets = model.assets |> Asset.Store.addToStore asset }
+--

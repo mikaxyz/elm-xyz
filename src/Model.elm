@@ -9,6 +9,8 @@ module Model exposing
     )
 
 import Array exposing (Array)
+import Asset
+import Asset.Store
 import DDD.Scene as Scene exposing (Scene)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -16,6 +18,7 @@ import Scenes.Landscape
 import Scenes.Light
 import Scenes.ObjectLoader
 import Scenes.Sandbox
+import Scenes.Textures
 
 
 type Msg
@@ -25,6 +28,7 @@ type Msg
     | DragEnd Vec2
     | KeyPressed String
     | GotObj ( { scale : Float, color : Vec3 }, Vec3, String )
+    | AssetLoaded Asset.Store.Content
 
 
 type alias Model =
@@ -34,6 +38,7 @@ type alias Model =
     , scene : Scene
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
+    , assets : Asset.Store.Store Asset.Obj Asset.Texture
     }
 
 
@@ -49,10 +54,19 @@ init =
     , dragger = Nothing
     , drag = vec2 0 0
     , scene = Scenes.Light.init
-    , scenes = [ Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
+    , scenes = [ Textures, Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
+    , assets = Asset.Store.init Asset.objPath Asset.texturePath
     }
         |> loadScene
+        |> (\( model, cmd ) ->
+                ( model
+                , Cmd.batch
+                    [ cmd
+                    , Asset.Store.loadTexture Asset.Placeholder model.assets AssetLoaded
+                    ]
+                )
+           )
 
 
 nextScene : Model -> ( Model, Cmd Msg )
@@ -76,7 +90,8 @@ prevScene model =
 
 
 type ActiveScene
-    = Sandbox
+    = Textures
+    | Sandbox
     | ObjectLoader
     | Light
     | Landscape
@@ -85,6 +100,9 @@ type ActiveScene
 sceneOptions : Model -> Maybe Scene.Options
 sceneOptions model =
     case Array.get model.currentSceneIndex model.scenes of
+        Just Textures ->
+            Scenes.Textures.sceneOptions
+
         Just Sandbox ->
             Scenes.Sandbox.sceneOptions
 
@@ -104,6 +122,17 @@ sceneOptions model =
 loadScene : Model -> ( Model, Cmd Msg )
 loadScene model =
     case Array.get model.currentSceneIndex model.scenes of
+        Just Textures ->
+            { model | scene = Scenes.Textures.init model.assets }
+                |> (\model_ ->
+                        ( model_
+                        , Cmd.batch
+                            [ Asset.Store.loadObj Asset.Ball model_.assets AssetLoaded
+                            , Asset.Store.loadTexture Asset.BallDiffuse model_.assets AssetLoaded
+                            ]
+                        )
+                   )
+
         Just Sandbox ->
             ( { model | scene = Scenes.Sandbox.init }
             , Cmd.none

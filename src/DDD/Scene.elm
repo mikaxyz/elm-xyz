@@ -7,6 +7,8 @@ module DDD.Scene exposing
     , render
     )
 
+import Asset
+import Asset.Store
 import DDD.Data.Vertex exposing (Vertex)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
@@ -16,6 +18,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Mesh, Shader)
+import WebGL.Texture exposing (Texture)
 
 
 directionalLight =
@@ -60,8 +63,8 @@ defaultOptions =
     }
 
 
-render : { width : Int, height : Int } -> Vec2 -> Float -> Maybe Options -> Scene -> List Entity
-render viewport drag theta options scene =
+render : Texture -> { width : Int, height : Int } -> Vec2 -> Float -> Maybe Options -> Asset.Store.Store Asset.Obj Asset.Texture -> Scene -> List Entity
+render defaultTexture viewport drag theta options assets scene =
     let
         uniforms : Float -> Mat4 -> Options -> Uniforms
         uniforms aspectRatio camera options_ =
@@ -71,6 +74,7 @@ render viewport drag theta options scene =
             , camera = camera
             , directionalLight = directionalLight
             , worldMatrix = Mat4.identity
+            , texture = defaultTexture
             }
     in
     renderGraph
@@ -118,6 +122,7 @@ renderGraph drag theta uniforms graph =
                                     | translate = translate
                                     , rotation = rotation
                                     , worldMatrix = worldMatrix
+                                    , texture = object_ |> Object.textureWithDefault uniforms.texture
                                 }
                         in
                         entity uniforms_ object_
@@ -148,6 +153,7 @@ vertexShader =
         varying vec3 vnormal;
         varying vec3 vposition;
         varying vec3 vlighting;
+        varying vec2 vcoord;
 
         void main () {
             gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
@@ -166,6 +172,7 @@ fragmentShader =
         varying vec3 vnormal;
         varying vec3 vposition;
         varying vec3 vlighting;
+        varying vec2 vcoord;
 
         void main () {
             gl_FragColor = vec4(vcolor, 1.0);

@@ -140,6 +140,7 @@ vertexShader =
         varying vec3 vnormal;
         varying vec3 vposition;
         varying vec3 vlighting;
+        varying vec2 vcoord;
 
         void main () {
 
@@ -168,6 +169,7 @@ fragmentShader =
         varying vec3 vnormal;
         varying vec3 vposition;
         varying vec3 vlighting;
+        varying vec2 vcoord;
 
         void main () {
             gl_FragColor = vec4(vcolor * vlighting, 1.0);

@@ -2,6 +2,7 @@ module DDD.Scene.Uniforms exposing (Uniforms)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
+import WebGL.Texture exposing (Texture)
 
 
 type alias Uniforms =
@@ -11,4 +12,5 @@ type alias Uniforms =
     , camera : Mat4
     , directionalLight : Vec3
     , worldMatrix : Mat4
+    , texture : Texture
     }
