@@ -68,9 +68,7 @@ render defaultTexture viewport drag theta options assets scene =
     let
         uniforms : Float -> Mat4 -> Options -> Uniforms
         uniforms aspectRatio camera options_ =
-            { rotation = options_.rotation theta
-            , translate = Mat4.identity
-            , perspective = options_.perspective aspectRatio
+            { perspective = options_.perspective aspectRatio
             , camera = camera
             , directionalLight = directionalLight
             , worldMatrix = Mat4.identity
@@ -108,14 +106,6 @@ renderGraph drag theta uniforms graph =
                                     |> Object.rotationWithDrag drag
                                     |> Object.rotationInTime theta
 
-                            translate =
-                                uniforms.translate
-                                    |> Mat4.translate (Object.position object_)
-
-                            rotation =
-                                Object.rotation object_
-                                    |> Mat4.mul uniforms.rotation
-
                             worldMatrix =
                                 Object.rotation object_
                                     |> Mat4.mul (Mat4.makeTranslate (Object.position object_))
@@ -123,9 +113,7 @@ renderGraph drag theta uniforms graph =
 
                             uniforms_ =
                                 { uniforms
-                                    | translate = translate
-                                    , rotation = rotation
-                                    , worldMatrix = worldMatrix
+                                    | worldMatrix = worldMatrix
                                     , diffuseMap = object_ |> Object.diffuseMapWithDefault uniforms.diffuseMap
                                     , hasDiffuseMap = Object.diffuseMap object_ /= Nothing
                                     , normalMap = object_ |> Object.normalMapWithDefault uniforms.normalMap
@@ -148,7 +136,14 @@ entity uniforms object =
         uniforms
 
 
-vertexShader : Shader Vertex Uniforms Varyings
+vertexShader :
+    Shader Vertex
+        { u
+            | perspective : Mat4
+            , camera : Mat4
+            , worldMatrix : Mat4
+        }
+        Varyings
 vertexShader =
     [glsl|
         precision mediump float;
@@ -160,10 +155,7 @@ vertexShader =
 
         uniform mat4 perspective;
         uniform mat4 camera;
-        uniform mat4 translate;
-        uniform mat4 rotation;
         uniform mat4 worldMatrix;
-        uniform vec3 directionalLight;
 
         varying vec3 vcolor;
         varying vec3 vnormal;
@@ -180,18 +172,35 @@ vertexShader =
     |]
 
 
-fragmentShader : Shader {} Uniforms Varyings
+fragmentShader :
+    Shader {}
+        { u
+            | worldMatrix : Mat4
+
+            --
+            , directionalLight : Vec3
+
+            --
+            , diffuseMap : Texture
+            , hasDiffuseMap : Bool
+            , normalMap : Texture
+            , hasNormalMap : Bool
+            , normalMapIntensity : Float
+        }
+        Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
 
         uniform sampler2D diffuseMap;
+        uniform bool hasDiffuseMap;
+        
         uniform sampler2D normalMap;
         uniform bool hasNormalMap;
-        uniform bool hasDiffuseMap;
+        uniform float normalMapIntensity;
+        
         uniform vec3 directionalLight;
         uniform mat4 worldMatrix;
-        uniform float normalMapIntensity;
 
         varying vec3 vcolor;
         varying vec3 vnormal;

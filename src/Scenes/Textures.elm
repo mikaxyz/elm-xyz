@@ -7,10 +7,7 @@ import DDD.Mesh.Cube
 import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object
-import DDD.Scene.Uniforms exposing (Uniforms)
-import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)

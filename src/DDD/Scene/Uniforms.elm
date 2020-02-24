@@ -6,12 +6,14 @@ import WebGL.Texture exposing (Texture)
 
 
 type alias Uniforms =
-    { rotation : Mat4
-    , translate : Mat4
-    , perspective : Mat4
+    { perspective : Mat4
     , camera : Mat4
-    , directionalLight : Vec3
     , worldMatrix : Mat4
+
+    --
+    , directionalLight : Vec3
+
+    --
     , diffuseMap : Texture
     , hasDiffuseMap : Bool
     , normalMap : Texture
