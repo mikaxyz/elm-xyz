@@ -6,7 +6,7 @@
   "main": "index.html",
   "scripts": {
     "run": "npx http-server -c-1 -a localhost -p 8085",
-    "build": "./node_modules/.bin/elm make ./src/Main.elm --output=./dist/app.js"
+    "build": "./node_modules/.bin/elm make ./src-examples/Main.elm --output=./dist/app.js"
   },
   "author": "me@mika.xyz",
   "license": "ISC",
