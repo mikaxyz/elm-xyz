@@ -7,7 +7,6 @@ module XYZMika.XYZ.Scene exposing
     , render
     )
 
-import Asset
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -62,8 +61,8 @@ defaultOptions =
     }
 
 
-render : Texture -> { width : Int, height : Int } -> Vec2 -> Float -> Maybe Options -> AssetStore.Store Asset.Obj Asset.Texture -> Scene -> List Entity
-render defaultTexture viewport drag theta options assets scene =
+render : Texture -> { width : Int, height : Int } -> Vec2 -> Float -> Maybe Options -> Scene -> List Entity
+render defaultTexture viewport drag theta options scene =
     let
         uniforms : Float -> Mat4 -> Options -> Uniforms
         uniforms aspectRatio camera options_ =

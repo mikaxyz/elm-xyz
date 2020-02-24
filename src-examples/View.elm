@@ -45,6 +45,5 @@ view defaultTexture model =
             (Model.getDrag model)
             model.theta
             (Model.sceneOptions model)
-            model.assets
             model.scene
         )
