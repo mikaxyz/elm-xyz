@@ -5,9 +5,7 @@ import Math.Vector3 exposing (Vec3)
 
 
 type alias Varyings =
-    { vcolor : Vec3
-    , vnormal : Vec3
-    , vposition : Vec3
-    , vlighting : Vec3
-    , vcoord : Vec2
+    { v_color : Vec3
+    , v_normal : Vec3
+    , v_uv : Vec2
     }

@@ -13,9 +13,8 @@ import DDD.Data.Vertex exposing (Vertex)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
 import DDD.Scene.Uniforms exposing (Uniforms)
-import DDD.Scene.Varyings exposing (Varyings)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 as Vec2 exposing (Vec2)
+import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Mesh, Shader)
 import WebGL.Texture exposing (Texture)
@@ -143,7 +142,10 @@ vertexShader :
             , camera : Mat4
             , worldMatrix : Mat4
         }
-        Varyings
+        { v_color : Vec3
+        , v_normal : Vec3
+        , v_uv : Vec2
+        }
 vertexShader =
     [glsl|
         precision mediump float;
@@ -157,17 +159,15 @@ vertexShader =
         uniform mat4 camera;
         uniform mat4 worldMatrix;
 
-        varying vec3 vcolor;
-        varying vec3 vnormal;
-        varying vec3 vposition;
-        varying vec3 vlighting;
-        varying vec2 vcoord;
+        varying vec3 v_color;
+        varying vec2 v_uv;
+        varying vec3 v_normal;
 
         void main () {
             gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
-            vcolor = color;
-            vcoord = uv;
-            vnormal = normal;
+            v_color = color;
+            v_uv = uv;
+            v_normal = normal;
         }
     |]
 
@@ -187,7 +187,10 @@ fragmentShader :
             , hasNormalMap : Bool
             , normalMapIntensity : Float
         }
-        Varyings
+        { v_color : Vec3
+        , v_normal : Vec3
+        , v_uv : Vec2
+        }
 fragmentShader =
     [glsl|
         precision mediump float;
@@ -202,26 +205,24 @@ fragmentShader =
         uniform vec3 directionalLight;
         uniform mat4 worldMatrix;
 
-        varying vec3 vcolor;
-        varying vec3 vnormal;
-        varying vec3 vposition;
-        varying vec3 vlighting;
-        varying vec2 vcoord;
+        varying vec3 v_color;
+        varying vec3 v_normal;
+        varying vec2 v_uv;
 
         void main () {
             vec3 diffuse;
             if(hasDiffuseMap) {
-                diffuse = texture2D(diffuseMap, vcoord).rgb;
+                diffuse = texture2D(diffuseMap, v_uv).rgb;
             } else {
                 diffuse = vec3(1, 1, 1);
             }
             
             vec3 normal;
             if(hasNormalMap) {
-                normal = texture2D(normalMap, vcoord).rgb;
-                normal = vnormal * normalize(normal) * normalMapIntensity;
+                normal = texture2D(normalMap, v_uv).rgb;
+                normal = v_normal * normalize(normal) * normalMapIntensity;
             } else {
-                normal = vnormal;
+                normal = v_normal;
             }
             
             // Lighting
@@ -232,6 +233,6 @@ fragmentShader =
     
             vec3 f_lighting = (directionalLightColor * directional);
 
-            gl_FragColor =  vec4(vcolor * diffuse * f_lighting, 1.0);
+            gl_FragColor =  vec4(v_color * diffuse * f_lighting, 1.0);
         }
     |]
