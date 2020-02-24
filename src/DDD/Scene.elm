@@ -129,6 +129,7 @@ renderGraph drag theta uniforms graph =
                                     , texture = object_ |> Object.textureWithDefault uniforms.texture
                                     , hasTextureMap = Object.textureMap object_ /= Nothing
                                     , normalMap = object_ |> Object.normalMapWithDefault uniforms.normalMap
+                                    , normalMapIntensity = object_ |> Object.normalMapIntensityWithDefault uniforms.normalMapIntensity
                                     , hasNormalMap = Object.normalMap object_ /= Nothing
                                 }
                         in

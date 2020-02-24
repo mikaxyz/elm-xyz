@@ -63,6 +63,7 @@ renderBall config =
         |> Object.withMesh
         |> Object.withTexture config.diffuse
         |> Object.withNormalMap config.normal
+        |> Object.withNormalMapIntensity 10.0
         |> Object.withPosition (vec3 1 0.1 -5)
         |> Object.withOptionRotationInTime
             (\theta ->
