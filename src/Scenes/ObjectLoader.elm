@@ -5,8 +5,6 @@ import DDD.Mesh.Cube
 import DDD.Scene exposing (Options, Scene, defaultScene)
 import DDD.Scene.Graph exposing (Graph(..))
 import DDD.Scene.Object as Object exposing (Object)
-import DDD.Scene.Uniforms exposing (Uniforms)
-import DDD.Scene.Varyings exposing (Varyings)
 import Http
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -20,8 +18,6 @@ init =
             [ Graph
                 (DDD.Mesh.Cube.gray 2 0.1 2
                     |> Object.withMesh
-                    |> Object.withVertexShader vertexShader
-                    |> Object.withFragmentShader fragmentShader
                     |> Object.withPosition (vec3 0 -0.5 0)
                     |> Object.withOptionDragToRotateXY
                 )
@@ -56,8 +52,6 @@ addMesh tris pos scene =
             tris
                 |> WebGL.triangles
                 |> Object.withMesh
-                |> Object.withVertexShader vertexShader
-                |> Object.withFragmentShader fragmentShader
                 |> Object.withPosition (Vec3.add pos (vec3 0 0.05 0))
 
         updated =
@@ -71,56 +65,3 @@ addMesh tris pos scene =
                     scene.graph
     in
     { scene | graph = updated }
-
-
-vertexShader : Shader Vertex Uniforms Varyings
-vertexShader =
-    [glsl|
-        attribute vec3 normal;
-        attribute vec3 position;
-        attribute vec3 color;
-
-        uniform mat4 perspective;
-        uniform mat4 camera;
-        uniform mat4 worldMatrix;
-        uniform vec3 directionalLight;
-
-        varying vec3 vcolor;
-        varying vec3 vnormal;
-        varying vec3 vposition;
-        varying vec3 vlighting;
-        varying vec2 vcoord;
-
-        void main () {
-
-            gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
-
-            highp vec3 ambientLight = vec3(0, 0, 0);
-            highp vec3 directionalLightColor = vec3(1, 1, 1);
-            highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = worldMatrix * vec4(normal, 0.0);
-            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-
-            vlighting = ambientLight + (directionalLightColor * directional);
-            vcolor = color;
-            vnormal = normal;
-            vposition = position;
-        }
-    |]
-
-
-fragmentShader : Shader {} Uniforms Varyings
-fragmentShader =
-    [glsl|
-        precision mediump float;
-
-        varying vec3 vcolor;
-        varying vec3 vnormal;
-        varying vec3 vposition;
-        varying vec3 vlighting;
-        varying vec2 vcoord;
-
-        void main () {
-            gl_FragColor = vec4(vcolor * vlighting, 1.0);
-        }
-    |]

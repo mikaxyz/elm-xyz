@@ -89,6 +89,7 @@ addToStore content (Store ({ assets } as store)) =
                             Texture x
 
                         Err error ->
+                            -- TODO: Dont "swallow" these
                             TextureError error
                     )
     in

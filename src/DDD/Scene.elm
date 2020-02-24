@@ -75,6 +75,10 @@ render defaultTexture viewport drag theta options assets scene =
             , directionalLight = directionalLight
             , worldMatrix = Mat4.identity
             , texture = defaultTexture
+            , hasTextureMap = False
+            , normalMap = defaultTexture
+            , hasNormalMap = False
+            , normalMapIntensity = 2.0
             }
     in
     renderGraph
@@ -123,6 +127,9 @@ renderGraph drag theta uniforms graph =
                                     , rotation = rotation
                                     , worldMatrix = worldMatrix
                                     , texture = object_ |> Object.textureWithDefault uniforms.texture
+                                    , hasTextureMap = Object.textureMap object_ /= Nothing
+                                    , normalMap = object_ |> Object.normalMapWithDefault uniforms.normalMap
+                                    , hasNormalMap = Object.normalMap object_ /= Nothing
                                 }
                         in
                         entity uniforms_ object_
@@ -143,11 +150,19 @@ entity uniforms object =
 vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
+        precision mediump float;
+
         attribute vec3 position;
+        attribute vec3 normal;
         attribute vec3 color;
+        attribute vec2 uv;
+
         uniform mat4 perspective;
         uniform mat4 camera;
+        uniform mat4 translate;
+        uniform mat4 rotation;
         uniform mat4 worldMatrix;
+        uniform vec3 directionalLight;
 
         varying vec3 vcolor;
         varying vec3 vnormal;
@@ -158,7 +173,8 @@ vertexShader =
         void main () {
             gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
             vcolor = color;
-            vposition = position;
+            vcoord = uv;
+            vnormal = normal;
         }
     |]
 
@@ -168,6 +184,14 @@ fragmentShader =
     [glsl|
         precision mediump float;
 
+        uniform sampler2D texture;
+        uniform sampler2D normalMap;
+        uniform bool hasNormalMap;
+        uniform bool hasTextureMap;
+        uniform vec3 directionalLight;
+        uniform mat4 worldMatrix;
+        uniform float normalMapIntensity;
+
         varying vec3 vcolor;
         varying vec3 vnormal;
         varying vec3 vposition;
@@ -175,6 +199,29 @@ fragmentShader =
         varying vec2 vcoord;
 
         void main () {
-            gl_FragColor = vec4(vcolor, 1.0);
+            vec3 tex;
+            if(hasTextureMap) {
+                tex = texture2D(texture, vcoord).rgb;
+            } else {
+                tex = vec3(1, 1, 1);
+            }
+            
+            vec3 normal;
+            if(hasNormalMap) {
+                normal = texture2D(normalMap, vcoord).rgb;
+                normal = vnormal * normalize(normal) * normalMapIntensity;
+            } else {
+                normal = vnormal;
+            }
+            
+            // Lighting
+            highp vec3 directionalLightColor = vec3(1, 1, 1);
+            highp vec3 directionalVector = normalize(directionalLight);
+            highp vec4 transformedNormal = worldMatrix * vec4(normal, 0.0);
+            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+    
+            vec3 f_lighting = (directionalLightColor * directional);
+
+            gl_FragColor =  vec4(vcolor * tex * f_lighting, 1.0);
         }
     |]

@@ -25,16 +25,14 @@ init assets =
     { defaultScene
         | graph =
             [ Graph
-                (DDD.Mesh.Cube.gray 1.5 0.2 1.5
+                (DDD.Mesh.Cube.gray 12 0.2 12
                     |> Object.withMesh
-                    |> Object.withFragmentShader fragmentShader
-                    |> Object.withVertexShader vertexShader
                     |> Object.withPosition (vec3 0 -0.5 0)
                     |> Object.withOptionDragToRotateXY
                 )
                 (getAssets assets |> Maybe.map renderBall |> Maybe.withDefault [])
             ]
-        , camera = Mat4.makeLookAt (vec3 0 1 1.5) (vec3 0 0.3 0) (vec3 0 1 0)
+        , camera = Mat4.makeLookAt (vec3 0 0.5 3) (vec3 0 0.5 0) (vec3 0 1 0)
     }
 
 
@@ -43,9 +41,29 @@ renderBall config =
     [ config.mesh
         |> Object.withMesh
         |> Object.withTexture config.diffuse
-        |> Object.withFragmentShader fragmentShader
-        |> Object.withVertexShader vertexShader
+        |> Object.withPosition (vec3 0.7 0.1 0)
+        |> (\x -> Graph x [])
+    , config.mesh
+        |> Object.withMesh
+        |> Object.withTexture config.diffuse
+        |> Object.withNormalMap config.normal
         |> Object.withPosition (vec3 0 0.1 0)
+        |> (\x -> Graph x [])
+    , config.mesh
+        |> Object.withMesh
+        |> Object.withNormalMap config.normal
+        |> Object.withPosition (vec3 -0.7 0.1 0)
+        |> (\x -> Graph x [])
+    , config.treeMesh
+        |> Object.withMesh
+        |> Object.withTexture config.treeDiffuse
+        |> Object.withPosition (vec3 0 0 -6)
+        |> (\x -> Graph x [])
+    , config.mesh
+        |> Object.withMesh
+        |> Object.withTexture config.diffuse
+        |> Object.withNormalMap config.normal
+        |> Object.withPosition (vec3 1 0.1 -5)
         |> Object.withOptionRotationInTime
             (\theta ->
                 let
@@ -64,81 +82,23 @@ renderBall config =
 type alias Config =
     { mesh : Mesh Vertex
     , diffuse : Texture
+    , normal : Texture
+    , treeMesh : Mesh Vertex
+    , treeDiffuse : Texture
     }
 
 
 getAssets : Store Asset.Obj Asset.Texture -> Maybe Config
 getAssets assets =
-    Maybe.map2
+    Maybe.map5
         Config
         (Asset.Store.mesh Asset.Ball assets)
         (Asset.Store.texture Asset.BallDiffuse assets)
+        (Asset.Store.texture Asset.BallNormal assets)
+        (Asset.Store.mesh Asset.Tree assets)
+        (Asset.Store.texture Asset.TreeDiffuse assets)
 
 
 sceneOptions : Maybe Options
 sceneOptions =
     Nothing
-
-
-vertexShader : Shader Vertex Uniforms Varyings
-vertexShader =
-    [glsl|
-        precision mediump float;
-
-        attribute vec3 position;
-        attribute vec3 normal;
-        attribute vec3 color;
-        attribute vec2 uv;
-
-        uniform mat4 perspective;
-        uniform mat4 camera;
-        uniform mat4 translate;
-        uniform mat4 rotation;
-        uniform mat4 worldMatrix;
-        uniform vec3 directionalLight;
-
-        varying vec3 vcolor;
-        varying vec3 vnormal;
-        varying vec3 vposition;
-        varying vec3 vlighting;
-        varying vec2 vcoord;
-
-        void main () {
-            gl_Position = perspective * camera * translate * rotation * vec4(position, 1.0);
-            
-            highp vec3 ambientLight = vec3(0, 0, 0);
-            highp vec3 directionalLightColor = vec3(1, 1, 1);
-            highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = worldMatrix * vec4(normal, 0.0);
-            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-
-            vlighting = ambientLight + (directionalLightColor * directional);
-            
-            vcolor = color;
-            vcoord = uv;
-        }
-    |]
-
-
-fragmentShader : Shader {} Uniforms Varyings
-fragmentShader =
-    [glsl|
-        precision mediump float;
-        
-        uniform sampler2D texture;
-
-
-        varying vec3 vcolor;
-        varying vec3 vnormal;
-        varying vec3 vposition;
-        varying vec3 vlighting;
-        varying vec2 vcoord;
-
-        void main () {
-        
-            vec4 tex = texture2D(texture, vcoord);
-//            gl_FragColor = vec4(vcolor * vlighting, 1.0);
-
-            gl_FragColor = tex * vec4(vcolor * vlighting , 1.0);
-        }
-    |]

@@ -3,6 +3,8 @@ module DDD.Scene.Object exposing
     , Options
     , fragmentShader
     , mesh
+    , normalMap
+    , normalMapWithDefault
     , position
     , rotation
     , rotationInTime
@@ -10,10 +12,12 @@ module DDD.Scene.Object exposing
     , rotationWithDragX
     , rotationWithDragXY
     , rotationWithDragY
+    , textureMap
     , textureWithDefault
     , vertexShader
     , withFragmentShader
     , withMesh
+    , withNormalMap
     , withOptionDragToRotateX
     , withOptionDragToRotateXY
     , withOptionDragToRotateY
@@ -54,6 +58,7 @@ type alias ObjectData =
     , mesh : Mesh Vertex
     , options : Maybe Options
     , texture : Maybe Texture
+    , normalMap : Maybe Texture
     }
 
 
@@ -185,9 +190,24 @@ rotation obj =
     obj |> get .rotation
 
 
+textureMap : Object -> Maybe Texture
+textureMap obj =
+    obj |> get .texture
+
+
 textureWithDefault : Texture -> Object -> Texture
 textureWithDefault default obj =
     obj |> get .texture |> Maybe.withDefault default
+
+
+normalMap : Object -> Maybe Texture
+normalMap obj =
+    obj |> get .normalMap
+
+
+normalMapWithDefault : Texture -> Object -> Texture
+normalMapWithDefault default obj =
+    obj |> get .normalMap |> Maybe.withDefault default
 
 
 rotationWithDrag : Vec2 -> Object -> Object
@@ -268,6 +288,7 @@ withMesh x =
         , rotation = Mat4.identity
         , mesh = x
         , texture = Nothing
+        , normalMap = Nothing
         , options = Nothing
         }
         { vertexShader = Nothing
@@ -283,6 +304,11 @@ withOptions x obj =
 withTexture : Texture -> Object -> Object
 withTexture x obj =
     obj |> mapData (\data -> { data | texture = Just x })
+
+
+withNormalMap : Texture -> Object -> Object
+withNormalMap x obj =
+    obj |> mapData (\data -> { data | normalMap = Just x })
 
 
 withRotation : Mat4 -> Object -> Object

@@ -63,6 +63,7 @@ init =
                 ( model
                 , Cmd.batch
                     [ cmd
+                    , Asset.Store.loadTexture Asset.Empty model.assets AssetLoaded
                     , Asset.Store.loadTexture Asset.Placeholder model.assets AssetLoaded
                     ]
                 )
@@ -129,6 +130,9 @@ loadScene model =
                         , Cmd.batch
                             [ Asset.Store.loadObj Asset.Ball model_.assets AssetLoaded
                             , Asset.Store.loadTexture Asset.BallDiffuse model_.assets AssetLoaded
+                            , Asset.Store.loadTexture Asset.BallNormal model_.assets AssetLoaded
+                            , Asset.Store.loadObj Asset.Tree model_.assets AssetLoaded
+                            , Asset.Store.loadTexture Asset.TreeDiffuse model_.assets AssetLoaded
                             ]
                         )
                    )

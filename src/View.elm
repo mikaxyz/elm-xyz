@@ -15,7 +15,7 @@ doc : Model -> Browser.Document Msg
 doc model =
     { title = "Elm Web GL Experiment"
     , body =
-        Asset.Store.texture Asset.Placeholder model.assets
+        Asset.Store.texture Asset.Empty model.assets
             |> Maybe.map (\defaultTexture -> view defaultTexture model |> List.singleton)
             |> Maybe.withDefault []
     }
@@ -28,8 +28,8 @@ type alias Config =
 
 
 viewport =
-    { width = 800
-    , height = 600
+    { width = 1600
+    , height = 800
     }
 
 

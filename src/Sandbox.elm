@@ -100,6 +100,7 @@ type alias Model =
 
 type ObjId
     = Ball
+    | Tree
 
 
 objPath : ObjId -> String
@@ -108,10 +109,14 @@ objPath texture =
         Ball ->
             "obj/Basketball_size6_SF/Basketball_size6_SF.obj"
 
+        Tree ->
+            "obj/fat_bottomed_tree/fat_bottomed_tree.obj"
+
 
 type TextureId
     = BallDiffuse
     | BrickWall
+    | TreeDiffuse
 
 
 texturePath : TextureId -> String
@@ -122,6 +127,9 @@ texturePath texture =
 
         BrickWall ->
             "img/brickwall-1.jpg"
+
+        TreeDiffuse ->
+            "obj/fat_bottomed_tree/fat_bottomed_tree.png"
 
 
 getDrag model =
@@ -236,6 +244,8 @@ main =
                     [ Asset.Store.loadObj Ball initModel.assets AssetLoaded
                     , Asset.Store.loadTexture BallDiffuse initModel.assets AssetLoaded
                     , Asset.Store.loadTexture BrickWall initModel.assets AssetLoaded
+                    , Asset.Store.loadObj Tree initModel.assets AssetLoaded
+                    , Asset.Store.loadTexture TreeDiffuse initModel.assets AssetLoaded
                     ]
                 )
         , view = doc
@@ -560,7 +570,7 @@ viewport =
 
 view : Model -> Html msg
 view model =
-    Maybe.map3
+    Maybe.map5
         SceneConfig
         --(\ballMesh ->
         --    \ballTexture ->
@@ -574,6 +584,8 @@ view model =
         (Asset.Store.mesh Ball model.assets)
         (Asset.Store.texture BallDiffuse model.assets)
         (Asset.Store.texture BrickWall model.assets)
+        (Asset.Store.mesh Tree model.assets)
+        (Asset.Store.texture TreeDiffuse model.assets)
         |> Maybe.map
             (\config ->
                 WebGL.toHtml
@@ -593,6 +605,8 @@ type alias SceneConfig =
     { ballMesh : Mesh Vertex
     , ballTexture : Texture
     , brickWallTexture : Texture
+    , treeMesh : Mesh Vertex
+    , treeTexture : Texture
     }
 
 
@@ -627,6 +641,16 @@ scene config drag model =
                 config.ballTexture
                 model.player.direction
                 (playerPos |> Vec3.add (vec3 0 0.5 0))
+            )
+        :: WebGL.entity
+            vertexShaderTerrain
+            fragmentShaderTerrain
+            config.treeMesh
+            (terrainChunkUniforms
+                model.camera
+                config.treeTexture
+                playerPos
+                ( 1, 3 )
             )
         :: (model.gridWorld
                 |> GridWorld.geometry
