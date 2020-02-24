@@ -16,7 +16,6 @@ import Task
 import WebGL
 import WebGL.Texture
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Parser.Obj
 
 
@@ -68,15 +67,15 @@ mesh obj (Store { objPath, assets }) =
             Nothing
 
 
-addToStore : Content -> Store obj texture -> Store obj texture
-addToStore content (Store ({ assets } as store)) =
+addToStore : Float -> Content -> Store obj texture -> Store obj texture
+addToStore scale content (Store ({ assets } as store)) =
     let
         ( path, asset ) =
             case content of
                 Obj path_ x ->
                     ( path_
                     , XYZMika.XYZ.Parser.Obj.parse
-                        { scale = 0.1, color = vec3 1 1 1 }
+                        { scale = scale, color = vec3 1 1 1 }
                         x
                         |> WebGL.triangles
                         |> Mesh

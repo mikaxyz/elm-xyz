@@ -57,9 +57,9 @@ update msg model =
             , Cmd.none
             )
 
-        AssetLoaded asset ->
+        AssetLoaded scale asset ->
             ( model
-                |> (\m -> { m | assets = m.assets |> AssetStore.addToStore asset })
+                |> (\m -> { m | assets = m.assets |> AssetStore.addToStore scale asset })
                 |> (\m -> { m | scene = Scenes.Textures.init m.assets })
             , Cmd.none
             )

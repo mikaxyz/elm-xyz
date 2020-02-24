@@ -28,7 +28,7 @@ type Msg
     | DragEnd Vec2
     | KeyPressed String
     | GotObj ( { scale : Float, color : Vec3 }, Vec3, String )
-    | AssetLoaded AssetStore.Content
+    | AssetLoaded Float AssetStore.Content
 
 
 type alias Model =
@@ -63,8 +63,8 @@ init =
                 ( model
                 , Cmd.batch
                     [ cmd
-                    , AssetStore.loadTexture Asset.Empty model.assets AssetLoaded
-                    , AssetStore.loadTexture Asset.Placeholder model.assets AssetLoaded
+                    , AssetStore.loadTexture Asset.Empty model.assets (AssetLoaded 0.1)
+                    , AssetStore.loadTexture Asset.Placeholder model.assets (AssetLoaded 0.1)
                     ]
                 )
            )
@@ -128,11 +128,11 @@ loadScene model =
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.Ball model_.assets AssetLoaded
-                            , AssetStore.loadTexture Asset.BallDiffuse model_.assets AssetLoaded
-                            , AssetStore.loadTexture Asset.BallNormal model_.assets AssetLoaded
-                            , AssetStore.loadObj Asset.Tree model_.assets AssetLoaded
-                            , AssetStore.loadTexture Asset.TreeDiffuse model_.assets AssetLoaded
+                            [ AssetStore.loadObj Asset.Ball model_.assets (AssetLoaded 0.1)
+                            , AssetStore.loadTexture Asset.BallDiffuse model_.assets (AssetLoaded 0.1)
+                            , AssetStore.loadTexture Asset.BallNormal model_.assets (AssetLoaded 0.1)
+                            , AssetStore.loadObj Asset.Tree model_.assets (AssetLoaded 0.1)
+                            , AssetStore.loadTexture Asset.TreeDiffuse model_.assets (AssetLoaded 0.1)
                             ]
                         )
                    )

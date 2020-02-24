@@ -231,7 +231,7 @@ type Msg
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
     | OnPointerMove { x : Int, y : Int }
-    | AssetLoaded AssetStore.Content
+    | AssetLoaded Float AssetStore.Content
 
 
 main : Program () Model Msg
@@ -241,11 +241,11 @@ main =
             always
                 ( initModel
                 , Cmd.batch
-                    [ AssetStore.loadObj Ball initModel.assets AssetLoaded
-                    , AssetStore.loadTexture BallDiffuse initModel.assets AssetLoaded
-                    , AssetStore.loadTexture BrickWall initModel.assets AssetLoaded
-                    , AssetStore.loadObj Tree initModel.assets AssetLoaded
-                    , AssetStore.loadTexture TreeDiffuse initModel.assets AssetLoaded
+                    [ AssetStore.loadObj Ball initModel.assets (AssetLoaded 0.1)
+                    , AssetStore.loadTexture BallDiffuse initModel.assets (AssetLoaded 0.1)
+                    , AssetStore.loadTexture BrickWall initModel.assets (AssetLoaded 0.1)
+                    , AssetStore.loadObj Tree initModel.assets (AssetLoaded 0.1)
+                    , AssetStore.loadTexture TreeDiffuse initModel.assets (AssetLoaded 0.1)
                     ]
                 )
         , view = doc
@@ -500,8 +500,8 @@ update msg model =
             , Cmd.none
             )
 
-        AssetLoaded asset ->
-            ( { model | assets = model.assets |> AssetStore.addToStore asset }, Cmd.none )
+        AssetLoaded scale asset ->
+            ( { model | assets = model.assets |> AssetStore.addToStore scale asset }, Cmd.none )
 
         OnPointerMove { x, y } ->
             ( model
