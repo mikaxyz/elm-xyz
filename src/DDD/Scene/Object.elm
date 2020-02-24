@@ -1,6 +1,8 @@
 module DDD.Scene.Object exposing
     ( Object
     , Options
+    , diffuseMap
+    , diffuseMapWithDefault
     , fragmentShader
     , mesh
     , normalMap
@@ -13,9 +15,8 @@ module DDD.Scene.Object exposing
     , rotationWithDragX
     , rotationWithDragXY
     , rotationWithDragY
-    , textureMap
-    , textureWithDefault
     , vertexShader
+    , withDiffuseMap
     , withFragmentShader
     , withMesh
     , withNormalMap
@@ -28,7 +29,6 @@ module DDD.Scene.Object exposing
     , withOptions
     , withPosition
     , withRotation
-    , withTexture
     , withVertexShader
     )
 
@@ -59,7 +59,7 @@ type alias ObjectData =
     , rotation : Mat4
     , mesh : Mesh Vertex
     , options : Maybe Options
-    , texture : Maybe Texture
+    , diffuseMap : Maybe Texture
     , normalMap : Maybe Texture
     , normalMapIntensity : Maybe Float
     }
@@ -193,14 +193,14 @@ rotation obj =
     obj |> get .rotation
 
 
-textureMap : Object -> Maybe Texture
-textureMap obj =
-    obj |> get .texture
+diffuseMap : Object -> Maybe Texture
+diffuseMap obj =
+    obj |> get .diffuseMap
 
 
-textureWithDefault : Texture -> Object -> Texture
-textureWithDefault default obj =
-    obj |> get .texture |> Maybe.withDefault default
+diffuseMapWithDefault : Texture -> Object -> Texture
+diffuseMapWithDefault default obj =
+    obj |> get .diffuseMap |> Maybe.withDefault default
 
 
 normalMap : Object -> Maybe Texture
@@ -295,7 +295,7 @@ withMesh x =
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
-        , texture = Nothing
+        , diffuseMap = Nothing
         , normalMap = Nothing
         , normalMapIntensity = Nothing
         , options = Nothing
@@ -310,9 +310,9 @@ withOptions x obj =
     obj |> mapData (\data -> { data | options = Just x })
 
 
-withTexture : Texture -> Object -> Object
-withTexture x obj =
-    obj |> mapData (\data -> { data | texture = Just x })
+withDiffuseMap : Texture -> Object -> Object
+withDiffuseMap x obj =
+    obj |> mapData (\data -> { data | diffuseMap = Just x })
 
 
 withNormalMap : Texture -> Object -> Object

@@ -40,12 +40,12 @@ renderBall : Config -> List Graph
 renderBall config =
     [ config.mesh
         |> Object.withMesh
-        |> Object.withTexture config.diffuse
+        |> Object.withDiffuseMap config.diffuse
         |> Object.withPosition (vec3 0.7 0.1 0)
         |> (\x -> Graph x [])
     , config.mesh
         |> Object.withMesh
-        |> Object.withTexture config.diffuse
+        |> Object.withDiffuseMap config.diffuse
         |> Object.withNormalMap config.normal
         |> Object.withPosition (vec3 0 0.1 0)
         |> (\x -> Graph x [])
@@ -56,12 +56,12 @@ renderBall config =
         |> (\x -> Graph x [])
     , config.treeMesh
         |> Object.withMesh
-        |> Object.withTexture config.treeDiffuse
+        |> Object.withDiffuseMap config.treeDiffuse
         |> Object.withPosition (vec3 0 0 -6)
         |> (\x -> Graph x [])
     , config.mesh
         |> Object.withMesh
-        |> Object.withTexture config.diffuse
+        |> Object.withDiffuseMap config.diffuse
         |> Object.withNormalMap config.normal
         |> Object.withNormalMapIntensity 10.0
         |> Object.withPosition (vec3 1 0.1 -5)

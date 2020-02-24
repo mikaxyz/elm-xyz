@@ -74,8 +74,8 @@ render defaultTexture viewport drag theta options assets scene =
             , camera = camera
             , directionalLight = directionalLight
             , worldMatrix = Mat4.identity
-            , texture = defaultTexture
-            , hasTextureMap = False
+            , diffuseMap = defaultTexture
+            , hasDiffuseMap = False
             , normalMap = defaultTexture
             , hasNormalMap = False
             , normalMapIntensity = 2.0
@@ -126,8 +126,8 @@ renderGraph drag theta uniforms graph =
                                     | translate = translate
                                     , rotation = rotation
                                     , worldMatrix = worldMatrix
-                                    , texture = object_ |> Object.textureWithDefault uniforms.texture
-                                    , hasTextureMap = Object.textureMap object_ /= Nothing
+                                    , diffuseMap = object_ |> Object.diffuseMapWithDefault uniforms.diffuseMap
+                                    , hasDiffuseMap = Object.diffuseMap object_ /= Nothing
                                     , normalMap = object_ |> Object.normalMapWithDefault uniforms.normalMap
                                     , normalMapIntensity = object_ |> Object.normalMapIntensityWithDefault uniforms.normalMapIntensity
                                     , hasNormalMap = Object.normalMap object_ /= Nothing
@@ -185,10 +185,10 @@ fragmentShader =
     [glsl|
         precision mediump float;
 
-        uniform sampler2D texture;
+        uniform sampler2D diffuseMap;
         uniform sampler2D normalMap;
         uniform bool hasNormalMap;
-        uniform bool hasTextureMap;
+        uniform bool hasDiffuseMap;
         uniform vec3 directionalLight;
         uniform mat4 worldMatrix;
         uniform float normalMapIntensity;
@@ -200,11 +200,11 @@ fragmentShader =
         varying vec2 vcoord;
 
         void main () {
-            vec3 tex;
-            if(hasTextureMap) {
-                tex = texture2D(texture, vcoord).rgb;
+            vec3 diffuse;
+            if(hasDiffuseMap) {
+                diffuse = texture2D(diffuseMap, vcoord).rgb;
             } else {
-                tex = vec3(1, 1, 1);
+                diffuse = vec3(1, 1, 1);
             }
             
             vec3 normal;
@@ -223,6 +223,6 @@ fragmentShader =
     
             vec3 f_lighting = (directionalLightColor * directional);
 
-            gl_FragColor =  vec4(vcolor * tex * f_lighting, 1.0);
+            gl_FragColor =  vec4(vcolor * diffuse * f_lighting, 1.0);
         }
     |]

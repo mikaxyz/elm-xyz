@@ -12,8 +12,8 @@ type alias Uniforms =
     , camera : Mat4
     , directionalLight : Vec3
     , worldMatrix : Mat4
-    , texture : Texture
-    , hasTextureMap : Bool
+    , diffuseMap : Texture
+    , hasDiffuseMap : Bool
     , normalMap : Texture
     , hasNormalMap : Bool
     , normalMapIntensity : Float
