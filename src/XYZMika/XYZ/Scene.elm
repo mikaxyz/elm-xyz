@@ -12,11 +12,11 @@ import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Mesh, Shader)
 import WebGL.Texture exposing (Texture)
-import XYZMika.XYZ.AssetStore as AssetStore
-import XYZMika.XYZ.Data.Vertex exposing (Vertex)
+import XYZMika.XYZ.Material as Material exposing (Material(..))
+import XYZMika.XYZ.Material.Advanced
+import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
-import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
 directionalLight =
@@ -63,36 +63,33 @@ defaultOptions =
 
 render : Texture -> { width : Int, height : Int } -> Vec2 -> Float -> Maybe Options -> Scene -> List Entity
 render defaultTexture viewport drag theta options scene =
+    --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
     let
-        uniforms : Float -> Mat4 -> Options -> Uniforms
-        uniforms aspectRatio camera options_ =
-            { perspective = options_.perspective aspectRatio
-            , camera = camera
-            , directionalLight = directionalLight
-            , worldMatrix = Mat4.identity
-            , diffuseMap = defaultTexture
-            , hasDiffuseMap = False
-            , normalMap = defaultTexture
-            , hasNormalMap = False
-            , normalMapIntensity = 2.0
-            }
+        options_ =
+            options |> Maybe.withDefault defaultOptions
+
+        aspectRatio =
+            toFloat viewport.width / toFloat viewport.height
     in
     renderGraph
         drag
         theta
-        (uniforms
-            (toFloat viewport.width / toFloat viewport.height)
-            (scene.camera
-             --                |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
-             --                |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
-            )
-            (options |> Maybe.withDefault defaultOptions)
-        )
+        { camera = scene.camera
+        , perspective = options_.perspective aspectRatio
+        , worldMatrix = Mat4.identity
+        }
+        defaultTexture
         scene.graph
 
 
-renderGraph : Vec2 -> Float -> Uniforms -> List Graph -> List Entity
-renderGraph drag theta uniforms graph =
+renderGraph :
+    Vec2
+    -> Float
+    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 }
+    -> Texture
+    -> List Graph
+    -> List Entity
+renderGraph drag theta uniforms defaultTexture graph =
     graph
         |> List.map
             (\g ->
@@ -108,130 +105,45 @@ renderGraph drag theta uniforms graph =
                                 Object.rotation object_
                                     |> Mat4.mul (Mat4.makeTranslate (Object.position object_))
                                     |> Mat4.mul uniforms.worldMatrix
-
-                            uniforms_ =
-                                { uniforms
-                                    | worldMatrix = worldMatrix
-                                    , diffuseMap = object_ |> Object.diffuseMapWithDefault uniforms.diffuseMap
-                                    , hasDiffuseMap = Object.diffuseMap object_ /= Nothing
-                                    , normalMap = object_ |> Object.normalMapWithDefault uniforms.normalMap
-                                    , normalMapIntensity = object_ |> Object.normalMapIntensityWithDefault uniforms.normalMapIntensity
-                                    , hasNormalMap = Object.normalMap object_ /= Nothing
-                                }
                         in
-                        entity uniforms_ object_
-                            :: renderGraph drag theta uniforms_ children
+                        entity defaultTexture { uniforms | worldMatrix = worldMatrix } object_
+                            :: renderGraph drag theta { uniforms | worldMatrix = worldMatrix } defaultTexture children
             )
         |> List.concat
 
 
-entity : Uniforms -> Object -> Entity
-entity uniforms object =
-    WebGL.entity
-        (Object.vertexShader object |> Maybe.withDefault vertexShader)
-        (Object.fragmentShader object |> Maybe.withDefault fragmentShader)
-        (Object.mesh object)
-        uniforms
+entity : Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 } -> Object -> Entity
+entity defaultTexture uniforms object =
+    case Object.materialName object of
+        Material.Simple ->
+            (\m ->
+                WebGL.entity
+                    (Material.vertexShader m)
+                    (Material.fragmentShader m)
+                    (Object.mesh object)
+                    (Material.uniforms m)
+            )
+                (XYZMika.XYZ.Material.Simple.material uniforms)
 
-
-vertexShader :
-    Shader Vertex
-        { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
-        }
-        { v_color : Vec3
-        , v_normal : Vec3
-        , v_uv : Vec2
-        }
-vertexShader =
-    [glsl|
-        precision mediump float;
-
-        attribute vec3 position;
-        attribute vec3 normal;
-        attribute vec3 color;
-        attribute vec2 uv;
-
-        uniform mat4 perspective;
-        uniform mat4 camera;
-        uniform mat4 worldMatrix;
-
-        varying vec3 v_color;
-        varying vec2 v_uv;
-        varying vec3 v_normal;
-
-        void main () {
-            gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
-            v_color = color;
-            v_uv = uv;
-            v_normal = normal;
-        }
-    |]
-
-
-fragmentShader :
-    Shader {}
-        { u
-            | worldMatrix : Mat4
-
-            --
-            , directionalLight : Vec3
-
-            --
-            , diffuseMap : Texture
-            , hasDiffuseMap : Bool
-            , normalMap : Texture
-            , hasNormalMap : Bool
-            , normalMapIntensity : Float
-        }
-        { v_color : Vec3
-        , v_normal : Vec3
-        , v_uv : Vec2
-        }
-fragmentShader =
-    [glsl|
-        precision mediump float;
-
-        uniform sampler2D diffuseMap;
-        uniform bool hasDiffuseMap;
-        
-        uniform sampler2D normalMap;
-        uniform bool hasNormalMap;
-        uniform float normalMapIntensity;
-        
-        uniform vec3 directionalLight;
-        uniform mat4 worldMatrix;
-
-        varying vec3 v_color;
-        varying vec3 v_normal;
-        varying vec2 v_uv;
-
-        void main () {
-            vec3 diffuse;
-            if(hasDiffuseMap) {
-                diffuse = texture2D(diffuseMap, v_uv).rgb;
-            } else {
-                diffuse = vec3(1, 1, 1);
-            }
-            
-            vec3 normal;
-            if(hasNormalMap) {
-                normal = texture2D(normalMap, v_uv).rgb;
-                normal = v_normal * normalize(normal) * normalMapIntensity;
-            } else {
-                normal = v_normal;
-            }
-            
-            // Lighting
-            highp vec3 directionalLightColor = vec3(1, 1, 1);
-            highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = worldMatrix * vec4(normal, 0.0);
-            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-    
-            vec3 f_lighting = (directionalLightColor * directional);
-
-            gl_FragColor =  vec4(v_color * diffuse * f_lighting, 1.0);
-        }
-    |]
+        Material.Advanced ->
+            (\m ->
+                WebGL.entity
+                    (Material.vertexShader m)
+                    (Material.fragmentShader m)
+                    (Object.mesh object)
+                    (Material.uniforms m)
+            )
+                (XYZMika.XYZ.Material.Advanced.material
+                    -- TODO: Alphabetize these
+                    -- { aCamera, aWorldMatrix, aPerspective, texDiffuse, texHasDiffuse, etc }
+                    { camera = uniforms.camera
+                    , directionalLight = directionalLight
+                    , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
+                    , hasDiffuseMap = Object.diffuseMap object /= Nothing
+                    , hasNormalMap = Object.normalMap object /= Nothing
+                    , normalMap = object |> Object.normalMapWithDefault defaultTexture
+                    , perspective = uniforms.perspective
+                    , worldMatrix = uniforms.worldMatrix
+                    , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
+                    }
+                )

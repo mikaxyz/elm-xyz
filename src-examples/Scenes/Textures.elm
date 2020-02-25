@@ -7,6 +7,7 @@ import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
+import XYZMika.XYZ.Material as Material
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene exposing (Options, Scene, defaultScene)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
@@ -38,22 +39,26 @@ renderBall config =
     [ config.mesh
         |> Object.withMesh
         |> Object.withDiffuseMap config.diffuse
+        |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0.7 0.1 0)
         |> (\x -> Graph x [])
     , config.mesh
         |> Object.withMesh
         |> Object.withDiffuseMap config.diffuse
         |> Object.withNormalMap config.normal
+        |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0 0.1 0)
         |> (\x -> Graph x [])
     , config.mesh
         |> Object.withMesh
         |> Object.withNormalMap config.normal
+        |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 -0.7 0.1 0)
         |> (\x -> Graph x [])
     , config.treeMesh
         |> Object.withMesh
         |> Object.withDiffuseMap config.treeDiffuse
+        |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0 0 -6)
         |> (\x -> Graph x [])
     , config.mesh

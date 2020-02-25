@@ -3,7 +3,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , Options
     , diffuseMap
     , diffuseMapWithDefault
-    , fragmentShader
+    , materialName
     , mesh
     , normalMap
     , normalMapIntensityWithDefault
@@ -15,9 +15,8 @@ module XYZMika.XYZ.Scene.Object exposing
     , rotationWithDragX
     , rotationWithDragXY
     , rotationWithDragY
-    , vertexShader
     , withDiffuseMap
-    , withFragmentShader
+    , withMaterialName
     , withMesh
     , withNormalMap
     , withNormalMapIntensity
@@ -29,29 +28,19 @@ module XYZMika.XYZ.Scene.Object exposing
     , withOptions
     , withPosition
     , withRotation
-    , withVertexShader
     )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import WebGL exposing (Mesh, Shader)
+import WebGL exposing (Mesh)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
-import XYZMika.XYZ.Scene.Varyings exposing (Varyings)
+import XYZMika.XYZ.Material as Material
 
 
 type Object
-    = Mesh ObjectData Shaders
-
-
-type alias VertexShader =
-    Shader Vertex Uniforms Varyings
-
-
-type alias FragmentShader =
-    Shader {} Uniforms Varyings
+    = Mesh ObjectData
 
 
 type alias ObjectData =
@@ -62,6 +51,7 @@ type alias ObjectData =
     , diffuseMap : Maybe Texture
     , normalMap : Maybe Texture
     , normalMapIntensity : Maybe Float
+    , materialName : Material.Name
     }
 
 
@@ -83,8 +73,15 @@ defaultOptions =
 mapOptions : (Maybe Options -> Maybe Options) -> Object -> Object
 mapOptions f obj =
     case obj of
-        Mesh data shaders ->
-            Mesh { data | options = f data.options } shaders
+        Mesh data ->
+            Mesh { data | options = f data.options }
+
+
+getOption : (Maybe Options -> Maybe Options) -> Object -> Object
+getOption f obj =
+    case obj of
+        Mesh data ->
+            Mesh { data | options = f data.options }
 
 
 withOptionRotationInTime : (Float -> Mat4) -> Object -> Object
@@ -166,16 +163,10 @@ rotationWithDragY drag =
         |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
 
 
-type alias Shaders =
-    { vertexShader : Maybe VertexShader
-    , fragmentShader : Maybe FragmentShader
-    }
-
-
 get : (ObjectData -> a) -> Object -> a
 get f obj =
     case obj of
-        Mesh data _ ->
+        Mesh data ->
             f data
 
 
@@ -257,18 +248,9 @@ mesh obj =
     obj |> get .mesh
 
 
-vertexShader : Object -> Maybe VertexShader
-vertexShader obj =
-    case obj of
-        Mesh _ shaders ->
-            shaders.vertexShader
-
-
-fragmentShader : Object -> Maybe FragmentShader
-fragmentShader obj =
-    case obj of
-        Mesh _ shaders ->
-            shaders.fragmentShader
+materialName : Object -> Material.Name
+materialName obj =
+    obj |> get .materialName
 
 
 
@@ -278,15 +260,8 @@ fragmentShader obj =
 mapData : (ObjectData -> ObjectData) -> Object -> Object
 mapData f obj =
     case obj of
-        Mesh data shaders ->
-            Mesh (f data) shaders
-
-
-mapShaders : (Shaders -> Shaders) -> Object -> Object
-mapShaders f obj =
-    case obj of
-        Mesh data shaders ->
-            Mesh data (f shaders)
+        Mesh data ->
+            Mesh (f data)
 
 
 withMesh : Mesh Vertex -> Object
@@ -299,15 +274,18 @@ withMesh x =
         , normalMap = Nothing
         , normalMapIntensity = Nothing
         , options = Nothing
-        }
-        { vertexShader = Nothing
-        , fragmentShader = Nothing
+        , materialName = Material.Simple
         }
 
 
 withOptions : Options -> Object -> Object
 withOptions x obj =
     obj |> mapData (\data -> { data | options = Just x })
+
+
+withMaterialName : Material.Name -> Object -> Object
+withMaterialName x obj =
+    obj |> mapData (\data -> { data | materialName = x })
 
 
 withDiffuseMap : Texture -> Object -> Object
@@ -333,13 +311,3 @@ withRotation x obj =
 withPosition : Vec3 -> Object -> Object
 withPosition x obj =
     obj |> mapData (\data -> { data | position = x })
-
-
-withVertexShader : VertexShader -> Object -> Object
-withVertexShader x obj =
-    obj |> mapShaders (\data -> { data | vertexShader = Just x })
-
-
-withFragmentShader : FragmentShader -> Object -> Object
-withFragmentShader x obj =
-    obj |> mapShaders (\data -> { data | fragmentShader = Just x })
