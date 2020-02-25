@@ -1,24 +1,20 @@
 module Scenes.Textures exposing (init, renderBall, sceneOptions)
 
 import Asset
+import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Material as Material
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene exposing (Options, Scene, defaultScene)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object
 
 
-
---
-
-
-init : Store Asset.Obj Asset.Texture -> Scene
+init : Store Asset.Obj Asset.Texture -> Scene Material.Name
 init assets =
     { defaultScene
         | graph =
@@ -34,7 +30,7 @@ init assets =
     }
 
 
-renderBall : Config -> List Graph
+renderBall : Config -> List (Graph Material.Name)
 renderBall config =
     [ config.mesh
         |> Object.withMesh

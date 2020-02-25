@@ -10,6 +10,7 @@ module Model exposing
 
 import Array exposing (Array)
 import Asset
+import Material
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Scenes.Landscape
@@ -27,7 +28,7 @@ type Msg
     | Drag Vec2
     | DragEnd Vec2
     | KeyPressed String
-    | GotObj ( { scale : Float, color : Vec3 }, Vec3, String )
+    | GotObj (Maybe Material.Name) ( { scale : Float, color : Vec3 }, Vec3, String )
     | AssetLoaded Float AssetStore.Content
 
 
@@ -35,7 +36,7 @@ type alias Model =
     { theta : Float
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
-    , scene : Scene
+    , scene : Scene Material.Name
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
     , assets : AssetStore.Store Asset.Obj Asset.Texture
@@ -151,27 +152,27 @@ loadScene model =
                     { scale = 0.001, color = vec3 1 0.5 0.5 }
                     (vec3 0 0 -0.5)
                     "obj/deer.obj"
-                    GotObj
+                    (GotObj (Just Material.Advanced))
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.3, color = vec3 0.5 0.5 1 }
                     (vec3 -1 1 0)
                     "obj/monkey.obj"
-                    GotObj
+                    (GotObj Nothing)
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 1 1 0.5 }
                     (vec3 0 0 0.5)
                     "obj/cat.obj"
-                    GotObj
+                    (GotObj (Just Material.Advanced))
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 0.5 1 1 }
                     (vec3 0 0 0)
                     "obj/wolf.obj"
-                    GotObj
+                    (GotObj Nothing)
                 , Scenes.ObjectLoader.getObj
                     { scale = 1, color = vec3 0.5 1 0.5 }
                     (vec3 0 0.5 -1.5)
                     "obj/cube.obj"
-                    GotObj
+                    (GotObj Nothing)
                 ]
             )
 

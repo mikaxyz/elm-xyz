@@ -1,12 +1,17 @@
-module XYZMika.XYZ.Material exposing (Material, Name(..), fragmentShader, material, uniforms, vertexShader)
+module XYZMika.XYZ.Material exposing
+    ( Id(..)
+    , fragmentShader
+    , material
+    , uniforms
+    , vertexShader
+    )
 
-import WebGL exposing (Shader)
+import WebGL exposing (Entity, Shader)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 
 
-type Name
-    = Simple
-    | Advanced
+type Id materialId
+    = Id materialId
 
 
 type Material uniforms v

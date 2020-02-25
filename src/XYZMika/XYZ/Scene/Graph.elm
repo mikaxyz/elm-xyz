@@ -3,8 +3,8 @@ module XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object exposing (Object)
 
 
-type Graph
-    = Graph Object (List Graph)
+type Graph materialId
+    = Graph (Object materialId) (List (Graph materialId))
 
 
 

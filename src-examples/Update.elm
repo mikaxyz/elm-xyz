@@ -46,10 +46,11 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        GotObj ( options, pos, str ) ->
+        GotObj material ( options, pos, str ) ->
             ( { model
                 | scene =
                     Scenes.ObjectLoader.addMesh
+                        material
                         (XYZMika.XYZ.Parser.Obj.parse options str)
                         pos
                         model.scene
@@ -63,8 +64,3 @@ update msg model =
                 |> (\m -> { m | scene = Scenes.Textures.init m.assets })
             , Cmd.none
             )
-
-
-
---{ model | assets = model.assets |> Asset.Store.addToStore asset }
---

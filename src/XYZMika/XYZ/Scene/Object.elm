@@ -39,11 +39,11 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material
 
 
-type Object
-    = Mesh ObjectData
+type Object materialId
+    = Mesh (ObjectData materialId)
 
 
-type alias ObjectData =
+type alias ObjectData materialId =
     { position : Vec3
     , rotation : Mat4
     , mesh : Mesh Vertex
@@ -51,7 +51,7 @@ type alias ObjectData =
     , diffuseMap : Maybe Texture
     , normalMap : Maybe Texture
     , normalMapIntensity : Maybe Float
-    , materialName : Material.Name
+    , material : Maybe (Material.Id materialId)
     }
 
 
@@ -70,21 +70,14 @@ defaultOptions =
     }
 
 
-mapOptions : (Maybe Options -> Maybe Options) -> Object -> Object
+mapOptions : (Maybe Options -> Maybe Options) -> Object materialId -> Object materialId
 mapOptions f obj =
     case obj of
         Mesh data ->
             Mesh { data | options = f data.options }
 
 
-getOption : (Maybe Options -> Maybe Options) -> Object -> Object
-getOption f obj =
-    case obj of
-        Mesh data ->
-            Mesh { data | options = f data.options }
-
-
-withOptionRotationInTime : (Float -> Mat4) -> Object -> Object
+withOptionRotationInTime : (Float -> Mat4) -> Object materialId -> Object materialId
 withOptionRotationInTime f obj =
     obj
         |> mapOptions
@@ -96,7 +89,7 @@ withOptionRotationInTime f obj =
             )
 
 
-withOptionTranslateInTime : (Float -> Mat4) -> Object -> Object
+withOptionTranslateInTime : (Float -> Mat4) -> Object materialId -> Object materialId
 withOptionTranslateInTime f obj =
     obj
         |> mapOptions
@@ -108,7 +101,7 @@ withOptionTranslateInTime f obj =
             )
 
 
-withOptionDragToRotateX : Object -> Object
+withOptionDragToRotateX : Object materialId -> Object materialId
 withOptionDragToRotateX obj =
     obj
         |> mapOptions
@@ -120,7 +113,7 @@ withOptionDragToRotateX obj =
             )
 
 
-withOptionDragToRotateY : Object -> Object
+withOptionDragToRotateY : Object materialId -> Object materialId
 withOptionDragToRotateY obj =
     obj
         |> mapOptions
@@ -132,7 +125,7 @@ withOptionDragToRotateY obj =
             )
 
 
-withOptionDragToRotateXY : Object -> Object
+withOptionDragToRotateXY : Object materialId -> Object materialId
 withOptionDragToRotateXY obj =
     obj
         |> mapOptions
@@ -163,7 +156,7 @@ rotationWithDragY drag =
         |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
 
 
-get : (ObjectData -> a) -> Object -> a
+get : (ObjectData materialId -> a) -> Object materialId -> a
 get f obj =
     case obj of
         Mesh data ->
@@ -174,42 +167,42 @@ get f obj =
 -- READ
 
 
-position : Object -> Vec3
+position : Object materialId -> Vec3
 position obj =
     obj |> get .position
 
 
-rotation : Object -> Mat4
+rotation : Object materialId -> Mat4
 rotation obj =
     obj |> get .rotation
 
 
-diffuseMap : Object -> Maybe Texture
+diffuseMap : Object materialId -> Maybe Texture
 diffuseMap obj =
     obj |> get .diffuseMap
 
 
-diffuseMapWithDefault : Texture -> Object -> Texture
+diffuseMapWithDefault : Texture -> Object materialId -> Texture
 diffuseMapWithDefault default obj =
     obj |> get .diffuseMap |> Maybe.withDefault default
 
 
-normalMap : Object -> Maybe Texture
+normalMap : Object materialId -> Maybe Texture
 normalMap obj =
     obj |> get .normalMap
 
 
-normalMapWithDefault : Texture -> Object -> Texture
+normalMapWithDefault : Texture -> Object materialId -> Texture
 normalMapWithDefault default obj =
     obj |> get .normalMap |> Maybe.withDefault default
 
 
-normalMapIntensityWithDefault : Float -> Object -> Float
+normalMapIntensityWithDefault : Float -> Object materialId -> Float
 normalMapIntensityWithDefault default obj =
     obj |> get .normalMapIntensity |> Maybe.withDefault default
 
 
-rotationWithDrag : Vec2 -> Object -> Object
+rotationWithDrag : Vec2 -> Object materialId -> Object materialId
 rotationWithDrag drag obj =
     obj
         |> get .options
@@ -226,7 +219,7 @@ rotationWithDrag drag obj =
         |> Maybe.withDefault obj
 
 
-rotationInTime : Float -> Object -> Object
+rotationInTime : Float -> Object materialId -> Object materialId
 rotationInTime theta obj =
     obj
         |> get .options
@@ -243,28 +236,29 @@ rotationInTime theta obj =
         |> Maybe.withDefault obj
 
 
-mesh : Object -> Mesh Vertex
+mesh : Object materialId -> Mesh Vertex
 mesh obj =
     obj |> get .mesh
 
 
-materialName : Object -> Material.Name
+materialName : Object materialId -> Maybe (Material.Id materialId)
 materialName obj =
-    obj |> get .materialName
+    -- TODO: Just return materialName
+    obj |> get .material
 
 
 
 -- CREATE
 
 
-mapData : (ObjectData -> ObjectData) -> Object -> Object
+mapData : (ObjectData materialId -> ObjectData materialId) -> Object materialId -> Object materialId
 mapData f obj =
     case obj of
         Mesh data ->
             Mesh (f data)
 
 
-withMesh : Mesh Vertex -> Object
+withMesh : Mesh Vertex -> Object materialId
 withMesh x =
     Mesh
         { position = Vec3.vec3 0 0 0
@@ -274,40 +268,40 @@ withMesh x =
         , normalMap = Nothing
         , normalMapIntensity = Nothing
         , options = Nothing
-        , materialName = Material.Simple
+        , material = Nothing
         }
 
 
-withOptions : Options -> Object -> Object
+withOptions : Options -> Object materialId -> Object materialId
 withOptions x obj =
     obj |> mapData (\data -> { data | options = Just x })
 
 
-withMaterialName : Material.Name -> Object -> Object
+withMaterialName : materialId -> Object materialId -> Object materialId
 withMaterialName x obj =
-    obj |> mapData (\data -> { data | materialName = x })
+    obj |> mapData (\data -> { data | material = Just (Material.Id x) })
 
 
-withDiffuseMap : Texture -> Object -> Object
+withDiffuseMap : Texture -> Object materialId -> Object materialId
 withDiffuseMap x obj =
     obj |> mapData (\data -> { data | diffuseMap = Just x })
 
 
-withNormalMap : Texture -> Object -> Object
+withNormalMap : Texture -> Object materialId -> Object materialId
 withNormalMap x obj =
     obj |> mapData (\data -> { data | normalMap = Just x })
 
 
-withNormalMapIntensity : Float -> Object -> Object
+withNormalMapIntensity : Float -> Object materialId -> Object materialId
 withNormalMapIntensity x obj =
     obj |> mapData (\data -> { data | normalMapIntensity = Just x })
 
 
-withRotation : Mat4 -> Object -> Object
+withRotation : Mat4 -> Object materialId -> Object materialId
 withRotation x obj =
     obj |> mapData (\data -> { data | rotation = x })
 
 
-withPosition : Vec3 -> Object -> Object
+withPosition : Vec3 -> Object materialId -> Object materialId
 withPosition x obj =
     obj |> mapData (\data -> { data | position = x })

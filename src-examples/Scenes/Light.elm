@@ -1,5 +1,6 @@
 module Scenes.Light exposing (init, sceneOptions)
 
+import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (Vec3, vec3)
 import XYZMika.XYZ.Mesh.Cube
@@ -12,7 +13,7 @@ speed =
     48
 
 
-init : Scene
+init : Scene Material.Name
 init =
     { defaultScene
         | graph =

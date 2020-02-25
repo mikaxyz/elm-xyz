@@ -14,7 +14,7 @@ branchMultiplier =
     0.05
 
 
-tree : Int -> Int -> List Graph
+tree : Int -> Int -> List (Graph materialId)
 tree i r =
     nodes i r
         |> treeFromNodes 0 []
@@ -35,7 +35,7 @@ nodes i r =
             (nodes (i - 1) -1)
 
 
-treeFromNodes : Float -> List Graph -> Node Branch -> List Graph
+treeFromNodes : Float -> List (Graph materialId) -> Node Branch -> List (Graph materialId)
 treeFromNodes y t node =
     case node of
         Empty ->
@@ -56,7 +56,7 @@ type alias Branch =
     }
 
 
-object : Float -> Branch -> Object
+object : Float -> Branch -> Object materialId
 object t branch =
     bone2 Color.orange Color.blue Color.green (0.3 * branch.l) branch.l
         |> WebGL.triangles

@@ -1,5 +1,6 @@
 module Scenes.Landscape exposing (init, sceneOptions)
 
+import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh, Shader)
@@ -29,7 +30,7 @@ elevation x y =
         + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 10 * freq } x y)
 
 
-init : Scene
+init : Scene Material.Name
 init =
     let
         divisions =
@@ -55,7 +56,7 @@ init =
                 , elevation = elevation
                 }
 
-        normalBone : Vertex -> Graph
+        normalBone : Vertex -> Graph Material.Name
         normalBone v =
             WebGL.lines [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
                 |> Object.withMesh
@@ -73,7 +74,7 @@ init =
                     )
                 |> List.map normalBone
 
-        bone : Vec3 -> Graph
+        bone : Vec3 -> Graph Material.Name
         bone v =
             XYZMika.XYZ.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
                 |> WebGL.triangles

@@ -1,11 +1,42 @@
-module XYZMika.XYZ.Material.Advanced exposing (material)
+module XYZMika.XYZ.Material.Advanced exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
-import Math.Vector3 exposing (Vec3)
-import WebGL exposing (Shader)
+import Math.Vector3 as Vec3 exposing (Vec3)
+import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Material as Material
+import XYZMika.XYZ.Scene.Object as Object exposing (Object)
+
+
+directionalLight : Vec3
+directionalLight =
+    Vec3.fromRecord { x = 1, y = 0.7, z = 0.5 }
+
+
+renderer : Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 } -> Object materialId -> Entity
+renderer defaultTexture uniforms object =
+    (\m ->
+        WebGL.entity
+            (Material.vertexShader m)
+            (Material.fragmentShader m)
+            (Object.mesh object)
+            (Material.uniforms m)
+    )
+        (material
+            -- TODO: Alphabetize these
+            -- { aCamera, aWorldMatrix, aPerspective, texDiffuse, texHasDiffuse, etc }
+            { camera = uniforms.camera
+            , directionalLight = directionalLight
+            , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
+            , hasDiffuseMap = Object.diffuseMap object /= Nothing
+            , hasNormalMap = Object.normalMap object /= Nothing
+            , normalMap = object |> Object.normalMapWithDefault defaultTexture
+            , perspective = uniforms.perspective
+            , worldMatrix = uniforms.worldMatrix
+            , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
+            }
+        )
 
 
 material uniforms =
@@ -140,7 +171,6 @@ fragmentShader =
 
             vec3 f_lighting = (directionalLightColor * directional);
 
-//            gl_FragColor =  vec4(v_color * diffuse * f_lighting, 1.0);
             gl_FragColor =  vec4(v_color * diffuse * f_lighting, 1.0);
         }
     |]

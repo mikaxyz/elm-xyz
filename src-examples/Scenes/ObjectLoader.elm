@@ -1,6 +1,7 @@
 module Scenes.ObjectLoader exposing (addMesh, getObj, init, sceneOptions)
 
 import Http
+import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Shader)
@@ -11,7 +12,7 @@ import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
-init : Scene
+init : Scene Material.Name
 init =
     { defaultScene
         | graph =
@@ -44,14 +45,15 @@ getObj options pos url tagger =
         }
 
 
-addMesh : List ( Vertex, Vertex, Vertex ) -> Vec3 -> Scene -> Scene
-addMesh tris pos scene =
+addMesh : Maybe Material.Name -> List ( Vertex, Vertex, Vertex ) -> Vec3 -> Scene Material.Name -> Scene Material.Name
+addMesh material tris pos scene =
     let
-        graphObject : Object
+        graphObject : Object Material.Name
         graphObject =
             tris
                 |> WebGL.triangles
                 |> Object.withMesh
+                |> (\x -> material |> Maybe.map (\m -> x |> Object.withMaterialName m) |> Maybe.withDefault x)
                 |> Object.withPosition (Vec3.add pos (vec3 0 0.05 0))
 
         updated =

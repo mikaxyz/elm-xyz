@@ -1,10 +1,24 @@
-module XYZMika.XYZ.Material.Simple exposing (material)
+module XYZMika.XYZ.Material.Simple exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
-import WebGL exposing (Shader)
+import WebGL exposing (Entity, Shader)
+import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material
+import XYZMika.XYZ.Scene.Object as Object exposing (Object)
+
+
+renderer : Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 } -> Object materialId -> Entity
+renderer _ uniforms object =
+    (\m ->
+        WebGL.entity
+            (Material.vertexShader m)
+            (Material.fragmentShader m)
+            (Object.mesh object)
+            (Material.uniforms m)
+    )
+        (material uniforms)
 
 
 material uniforms =

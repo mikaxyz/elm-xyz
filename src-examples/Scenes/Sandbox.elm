@@ -1,5 +1,6 @@
 module Scenes.Sandbox exposing (init, sceneOptions)
 
+import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (vec3)
 import XYZMika.XYZ.Mesh.Cube
@@ -13,7 +14,7 @@ import XYZMika.XYZ.Scene.Object as Object
 --
 
 
-init : Scene
+init : Scene Material.Name
 init =
     { defaultScene
         | graph =
