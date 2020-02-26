@@ -1,4 +1,4 @@
-module XYZMika.XYZ.Mesh.Cube exposing (colorful, gray)
+module XYZMika.XYZ.Mesh.Cube exposing (colorful, gray, withColor)
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (..)
@@ -40,6 +40,19 @@ gray =
             Color.grey50
             Color.grey50
             Color.grey50
+        )
+
+
+withColor : Color -> Float -> Float -> Float -> Mesh Vertex
+withColor color =
+    cube
+        (Colors
+            color
+            color
+            color
+            color
+            color
+            color
         )
 
 

@@ -2,6 +2,7 @@ module XYZMika.XYZ.Data.Color exposing
     ( Color
     , blue
     , cyan
+    , eigengrau
     , green
     , grey50
     , magenta
@@ -64,3 +65,7 @@ magenta =
 
 grey50 =
     Color 128 128 128
+
+
+eigengrau =
+    Color 22 22 29
