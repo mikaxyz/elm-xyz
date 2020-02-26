@@ -65,7 +65,13 @@ type alias Renderer materialId u =
     -- TODO: Move into Material.elm
     Maybe (Material.Id materialId)
     -> Texture
-    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 }
+    ->
+        { u
+            | perspective : Mat4
+            , camera : Mat4
+            , worldMatrix : Mat4
+            , uColor : Vec3
+        }
     -> Object materialId
     -> Entity
 
@@ -94,6 +100,7 @@ render defaultTexture viewport drag theta options scene renderer =
         { camera = scene.camera
         , perspective = options_.perspective aspectRatio
         , worldMatrix = Mat4.identity
+        , uColor = vec3 1 1 1
         }
         defaultTexture
         scene.graph
@@ -103,7 +110,7 @@ render defaultTexture viewport drag theta options scene renderer =
 renderGraph :
     Vec2
     -> Float
-    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 }
+    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4, uColor : Vec3 }
     -> Texture
     -> List (Graph materialId)
     -> Renderer materialId u

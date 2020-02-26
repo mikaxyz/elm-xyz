@@ -1,4 +1,4 @@
-module XYZMika.XYZ.Material.Simple exposing (renderer)
+module XYZMika.XYZ.Material.Color exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
@@ -18,7 +18,15 @@ renderer _ uniforms object =
             (Object.mesh object)
             (Material.uniforms m)
     )
-        (material uniforms)
+        (material
+            -- TODO: Alphabetize these
+            -- { aCamera, aWorldMatrix, aPerspective, texDiffuse, texHasDiffuse, etc }
+            { camera = uniforms.camera
+            , perspective = uniforms.perspective
+            , worldMatrix = uniforms.worldMatrix
+            , uColor = Object.colorVec3 object
+            }
+        )
 
 
 material uniforms =
@@ -48,12 +56,13 @@ vertexShader =
         uniform mat4 perspective;
         uniform mat4 camera;
         uniform mat4 worldMatrix;
+        uniform vec3 uColor;
 
         varying vec3 v_color;
 
         void main () {
             gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
-            v_color = color;
+            v_color = color * uColor;
         }
     |]
 
@@ -78,6 +87,6 @@ fragmentShader =
         varying vec3 v_color;
         
         void main () {
-            gl_FragColor =  vec4( v_color, 1.0);
+            gl_FragColor =  vec4(v_color, 1.0);
         }
     |]

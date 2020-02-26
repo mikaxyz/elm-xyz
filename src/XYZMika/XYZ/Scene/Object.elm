@@ -1,6 +1,8 @@
 module XYZMika.XYZ.Scene.Object exposing
     ( Object
     , Options
+    , color
+    , colorVec3
     , diffuseMap
     , diffuseMapWithDefault
     , materialName
@@ -15,6 +17,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , rotationWithDragX
     , rotationWithDragXY
     , rotationWithDragY
+    , withColor
     , withDiffuseMap
     , withMaterialName
     , withMesh
@@ -30,6 +33,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , withRotation
     )
 
+import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -52,6 +56,7 @@ type alias ObjectData materialId =
     , normalMap : Maybe Texture
     , normalMapIntensity : Maybe Float
     , material : Maybe (Material.Id materialId)
+    , color : Color
     }
 
 
@@ -167,6 +172,19 @@ get f obj =
 -- READ
 
 
+color : Object materialId -> Color
+color obj =
+    obj |> get .color
+
+
+colorVec3 : Object materialId -> Vec3
+colorVec3 obj =
+    obj
+        |> get .color
+        |> Color.toRgba
+        |> (\{ red, green, blue } -> vec3 red green blue)
+
+
 position : Object materialId -> Vec3
 position obj =
     obj |> get .position
@@ -269,6 +287,7 @@ withMesh x =
         , normalMapIntensity = Nothing
         , options = Nothing
         , material = Nothing
+        , color = Color.white
         }
 
 
@@ -305,3 +324,8 @@ withRotation x obj =
 withPosition : Vec3 -> Object materialId -> Object materialId
 withPosition x obj =
     obj |> mapData (\data -> { data | position = x })
+
+
+withColor : Color -> Object materialId -> Object materialId
+withColor x obj =
+    obj |> mapData (\data -> { data | color = x })

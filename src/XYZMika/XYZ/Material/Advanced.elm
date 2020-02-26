@@ -14,7 +14,7 @@ directionalLight =
     Vec3.fromRecord { x = 1, y = 0.7, z = 0.5 }
 
 
-renderer : Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 } -> Object materialId -> Entity
+renderer : Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4, uColor : Vec3 } -> Object materialId -> Entity
 renderer defaultTexture uniforms object =
     (\m ->
         WebGL.entity
@@ -35,6 +35,7 @@ renderer defaultTexture uniforms object =
             , perspective = uniforms.perspective
             , worldMatrix = uniforms.worldMatrix
             , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
+            , uColor = Object.colorVec3 object
             }
         )
 
@@ -58,6 +59,7 @@ vertexShader :
             | perspective : Mat4
             , camera : Mat4
             , worldMatrix : Mat4
+            , uColor : Vec3
 
             --
             , directionalLight : Vec3
@@ -85,6 +87,7 @@ vertexShader =
         uniform mat4 perspective;
         uniform mat4 camera;
         uniform mat4 worldMatrix;
+        uniform vec3 uColor;
 
         uniform sampler2D diffuseMap;
         uniform bool hasDiffuseMap;
@@ -101,7 +104,7 @@ vertexShader =
 
         void main () {
             gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
-            v_color = color;
+            v_color = color * uColor;
             v_uv = uv;
             v_normal = normal;
         }
@@ -114,6 +117,7 @@ fragmentShader :
             | perspective : Mat4
             , camera : Mat4
             , worldMatrix : Mat4
+            , uColor : Vec3
 
             --
             , directionalLight : Vec3

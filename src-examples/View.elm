@@ -6,6 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Material
 import Math.Matrix4 exposing (Mat4)
+import Math.Vector3 exposing (Vec3)
 import Model exposing (Model, Msg)
 import WebGL
 import WebGL.Texture exposing (Texture)
@@ -58,7 +59,7 @@ view defaultTexture model =
 renderer :
     Maybe (XYZMika.XYZ.Material.Id Material.Name)
     -> Texture
-    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 }
+    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4, uColor : Vec3 }
     -> Object Material.Name
     -> WebGL.Entity
 renderer name =

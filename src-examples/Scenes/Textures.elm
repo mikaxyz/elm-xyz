@@ -1,6 +1,7 @@
 module Scenes.Textures exposing (init, renderBall, sceneOptions)
 
 import Asset
+import Color
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -19,10 +20,12 @@ init assets =
     { defaultScene
         | graph =
             [ Graph
-                (XYZMika.XYZ.Mesh.Cube.gray 12 0.2 12
+                (XYZMika.XYZ.Mesh.Cube.withColor { r = 255, g = 255, b = 255 } 12 0.2 12
                     |> Object.withMesh
                     |> Object.withPosition (vec3 0 -0.5 0)
                     |> Object.withOptionDragToRotateXY
+                    |> Object.withColor Color.blue
+                    |> Object.withMaterialName Material.Color
                 )
                 (getAssets assets |> Maybe.map renderBall |> Maybe.withDefault [])
             ]
@@ -61,6 +64,8 @@ renderBall config =
         |> Object.withMesh
         |> Object.withDiffuseMap config.diffuse
         |> Object.withNormalMap config.normal
+        |> Object.withColor Color.yellow
+        |> Object.withMaterialName Material.Color
         |> Object.withNormalMapIntensity 10.0
         |> Object.withPosition (vec3 1 0.1 -5)
         |> Object.withOptionRotationInTime
