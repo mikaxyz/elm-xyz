@@ -1,6 +1,7 @@
 module XYZMika.XYZ.AssetStore exposing
     ( Content
     , Store
+    , addMeshToStore
     , addToStore
     , init
     , loadObj
@@ -93,6 +94,11 @@ addToStore scale content (Store ({ assets } as store)) =
                     )
     in
     Store { store | assets = assets |> Dict.insert path asset }
+
+
+addMeshToStore : obj -> WebGL.Mesh Vertex -> Store obj texture -> Store obj texture
+addMeshToStore obj mesh_ (Store ({ objPath, assets } as store)) =
+    Store { store | assets = assets |> Dict.insert (objPath obj) (Mesh mesh_) }
 
 
 loadObj : obj -> Store obj texture -> (Content -> msg) -> Cmd msg
