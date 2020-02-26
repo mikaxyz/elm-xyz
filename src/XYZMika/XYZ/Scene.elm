@@ -1,5 +1,6 @@
 module XYZMika.XYZ.Scene exposing
     ( Options
+    , Renderer
     , Scene
     , defaultScene
     , lightPosition1
@@ -8,8 +9,11 @@ module XYZMika.XYZ.Scene exposing
     )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import XYZMika.XYZ.Material.Simple
+import WebGL exposing (Entity)
+import WebGL.Texture exposing (Texture)
+import XYZMika.XYZ.Material as Material exposing (Id)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
@@ -57,8 +61,25 @@ defaultOptions =
     }
 
 
+type alias Renderer materialId u =
+    -- TODO: Move into Material.elm
+    Maybe (Material.Id materialId)
+    -> Texture
+    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 }
+    -> Object materialId
+    -> Entity
+
+
+render :
+    Texture
+    -> { a | width : Int, height : Int }
+    -> Vec2
+    -> Float
+    -> Maybe Options
+    -> Scene materialId
+    -> Renderer materialId {}
+    -> List Entity
 render defaultTexture viewport drag theta options scene renderer =
-    -- TODO: Fix Type annotation!!!
     --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
     let
         options_ =
@@ -79,8 +100,15 @@ render defaultTexture viewport drag theta options scene renderer =
         renderer
 
 
+renderGraph :
+    Vec2
+    -> Float
+    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4 }
+    -> Texture
+    -> List (Graph materialId)
+    -> Renderer materialId u
+    -> List Entity
 renderGraph drag theta uniforms defaultTexture graph renderer =
-    -- TODO: Fix Type annotation!!!
     graph
         |> List.map
             (\g ->
