@@ -16,6 +16,7 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Material as Material exposing (Id)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
+import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
 directionalLight : Vec3
@@ -61,17 +62,11 @@ defaultOptions =
     }
 
 
-type alias Renderer materialId u =
+type alias Renderer materialId uniforms =
     -- TODO: Move into Material.elm
     Maybe (Material.Id materialId)
     -> Texture
-    ->
-        { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
-            , uColor : Vec3
-        }
+    -> uniforms
     -> Object materialId
     -> Entity
 
@@ -83,7 +78,7 @@ render :
     -> Float
     -> Maybe Options
     -> Scene materialId
-    -> Renderer materialId {}
+    -> Renderer materialId (Uniforms {})
     -> List Entity
 render defaultTexture viewport drag theta options scene renderer =
     --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
@@ -110,10 +105,10 @@ render defaultTexture viewport drag theta options scene renderer =
 renderGraph :
     Vec2
     -> Float
-    -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4, uColor : Vec3 }
+    -> Uniforms u
     -> Texture
     -> List (Graph materialId)
-    -> Renderer materialId u
+    -> Renderer materialId (Uniforms u)
     -> List Entity
 renderGraph drag theta uniforms defaultTexture graph renderer =
     graph

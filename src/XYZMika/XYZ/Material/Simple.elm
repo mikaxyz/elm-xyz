@@ -7,9 +7,10 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
+import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
-renderer : Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4, uColor : Vec3 } -> Object materialId -> Entity
+renderer : Texture -> Uniforms u -> Object materialId -> Entity
 renderer _ uniforms object =
     (\m ->
         WebGL.entity
@@ -30,12 +31,7 @@ material uniforms =
 
 vertexShader :
     Shader Vertex
-        { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
-            , uColor : Vec3
-        }
+        (Uniforms u)
         { v_color : Vec3
         }
 vertexShader =
@@ -58,15 +54,7 @@ vertexShader =
     |]
 
 
-fragmentShader :
-    Shader {}
-        { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
-            , uColor : Vec3
-        }
-        { v_color : Vec3 }
+fragmentShader : Shader {} (Uniforms u) { v_color : Vec3 }
 fragmentShader =
     [glsl|
         precision mediump float;

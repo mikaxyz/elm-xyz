@@ -7,6 +7,7 @@ import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Material as Material
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
+import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
 directionalLight : Vec3
@@ -14,7 +15,7 @@ directionalLight =
     Vec3.fromRecord { x = 1, y = 0.7, z = 0.5 }
 
 
-renderer : Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4, uColor : Vec3 } -> Object materialId -> Entity
+renderer : Texture -> Uniforms u -> Object materialId -> Entity
 renderer defaultTexture uniforms object =
     (\m ->
         WebGL.entity
