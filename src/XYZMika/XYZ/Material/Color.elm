@@ -20,12 +20,12 @@ renderer _ uniforms object =
             (Material.uniforms m)
     )
         (material
-            -- TODO: Alphabetize these
-            -- { aCamera, aWorldMatrix, aPerspective, texDiffuse, texHasDiffuse, etc }
-            { camera = uniforms.camera
-            , perspective = uniforms.perspective
-            , worldMatrix = uniforms.worldMatrix
-            , uColor = Object.colorVec3 object
+            { sceneCamera = uniforms.sceneCamera
+            , scenePerspective = uniforms.scenePerspective
+            , sceneWorldMatrix = uniforms.sceneWorldMatrix
+
+            --
+            , objectColor = Object.colorVec3 object
             }
         )
 
@@ -40,10 +40,12 @@ material uniforms =
 vertexShader :
     Shader Vertex
         { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
-            , uColor : Vec3
+            | sceneCamera : Mat4
+            , scenePerspective : Mat4
+            , sceneWorldMatrix : Mat4
+
+            --
+            , objectColor : Vec3
         }
         { v_color : Vec3
         }
@@ -53,17 +55,17 @@ vertexShader =
 
         attribute vec3 position;
         attribute vec3 color;
-
-        uniform mat4 perspective;
-        uniform mat4 camera;
-        uniform mat4 worldMatrix;
-        uniform vec3 uColor;
+        
+        uniform mat4 sceneCamera;
+        uniform mat4 scenePerspective;
+        uniform mat4 sceneWorldMatrix;
+        uniform vec3 objectColor;
 
         varying vec3 v_color;
 
         void main () {
-            gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
-            v_color = color * uColor;
+            gl_Position = scenePerspective * sceneCamera * sceneWorldMatrix * vec4(position, 1.0);
+            v_color = color * objectColor;
         }
     |]
 
@@ -72,10 +74,6 @@ fragmentShader : Shader {} (Uniforms u) { v_color : Vec3 }
 fragmentShader =
     [glsl|
         precision mediump float;
-
-        uniform mat4 perspective;
-        uniform mat4 camera;
-        uniform mat4 worldMatrix;
 
         varying vec3 v_color;
         

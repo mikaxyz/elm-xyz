@@ -92,9 +92,9 @@ render defaultTexture viewport drag theta options scene renderer =
     renderGraph
         drag
         theta
-        { camera = scene.camera
-        , perspective = options_.perspective aspectRatio
-        , worldMatrix = Mat4.identity
+        { sceneCamera = scene.camera
+        , scenePerspective = options_.perspective aspectRatio
+        , sceneWorldMatrix = Mat4.identity
         }
         defaultTexture
         scene.graph
@@ -121,10 +121,10 @@ renderGraph drag theta uniforms defaultTexture graph renderer =
                                     |> Object.rotationWithDrag drag
                                     |> Object.rotationInTime theta
 
-                            worldMatrix =
+                            sceneWorldMatrix =
                                 Object.rotation object_
                                     |> Mat4.mul (Mat4.makeTranslate (Object.position object_))
-                                    |> Mat4.mul uniforms.worldMatrix
+                                    |> Mat4.mul uniforms.sceneWorldMatrix
 
                             entity uniforms_ =
                                 object
@@ -132,7 +132,7 @@ renderGraph drag theta uniforms defaultTexture graph renderer =
                                     |> renderer
                                     |> (\r -> r defaultTexture uniforms_ object)
                         in
-                        entity { uniforms | worldMatrix = worldMatrix }
-                            :: renderGraph drag theta { uniforms | worldMatrix = worldMatrix } defaultTexture children renderer
+                        entity { uniforms | sceneWorldMatrix = sceneWorldMatrix }
+                            :: renderGraph drag theta { uniforms | sceneWorldMatrix = sceneWorldMatrix } defaultTexture children renderer
             )
         |> List.concat

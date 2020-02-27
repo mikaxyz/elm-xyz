@@ -1,13 +1,12 @@
 module Material exposing (..)
 
-import Math.Matrix4 exposing (Mat4)
-import Math.Vector3 exposing (Vec3)
 import WebGL exposing (Entity)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Material.Advanced
 import XYZMika.XYZ.Material.Color
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene.Object exposing (Object)
+import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
 type Name
@@ -19,12 +18,7 @@ type Name
 renderer :
     Name
     -> Texture
-    ->
-        { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
-        }
+    -> Uniforms u
     -> Object materialId
     -> Entity
 renderer name =

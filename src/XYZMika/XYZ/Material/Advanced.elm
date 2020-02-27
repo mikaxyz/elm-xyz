@@ -27,16 +27,18 @@ renderer defaultTexture uniforms object =
         (material
             -- TODO: Alphabetize these
             -- { aCamera, aWorldMatrix, aPerspective, texDiffuse, texHasDiffuse, etc }
-            { camera = uniforms.camera
+            { sceneCamera = uniforms.sceneCamera
+            , scenePerspective = uniforms.scenePerspective
+            , sceneWorldMatrix = uniforms.sceneWorldMatrix
+
+            --
+            , objectColor = Object.colorVec3 object
             , directionalLight = directionalLight
             , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
             , hasDiffuseMap = Object.diffuseMap object /= Nothing
             , hasNormalMap = Object.normalMap object /= Nothing
             , normalMap = object |> Object.normalMapWithDefault defaultTexture
-            , perspective = uniforms.perspective
-            , worldMatrix = uniforms.worldMatrix
             , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
-            , uColor = Object.colorVec3 object
             }
         )
 
@@ -57,15 +59,13 @@ vertexShader :
         , uv : Vec2
         }
         { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
-            , uColor : Vec3
+            | sceneCamera : Mat4
+            , scenePerspective : Mat4
+            , sceneWorldMatrix : Mat4
 
             --
+            , objectColor : Vec3
             , directionalLight : Vec3
-
-            --
             , diffuseMap : Texture
             , hasDiffuseMap : Bool
             , normalMap : Texture
@@ -85,27 +85,19 @@ vertexShader =
         attribute vec3 normal;
         attribute vec2 uv;
         
-        uniform mat4 perspective;
-        uniform mat4 camera;
-        uniform mat4 worldMatrix;
-        uniform vec3 uColor;
-
-        uniform sampler2D diffuseMap;
-        uniform bool hasDiffuseMap;
-
-        uniform sampler2D normalMap;
-        uniform bool hasNormalMap;
-        uniform float normalMapIntensity;
-
-        uniform vec3 directionalLight;
+        uniform mat4 sceneCamera;
+        uniform mat4 scenePerspective;
+        uniform mat4 sceneWorldMatrix;
+        
+        uniform vec3 objectColor;
 
         varying vec3 v_color;
         varying vec3 v_normal;
         varying vec2 v_uv;
 
         void main () {
-            gl_Position = perspective * camera * worldMatrix * vec4(position, 1.0);
-            v_color = color * uColor;
+            gl_Position = scenePerspective * sceneCamera * sceneWorldMatrix * vec4(position, 1.0);
+            v_color = color * objectColor;
             v_uv = uv;
             v_normal = normal;
         }
@@ -115,14 +107,12 @@ vertexShader =
 fragmentShader :
     Shader {}
         { u
-            | perspective : Mat4
-            , camera : Mat4
-            , worldMatrix : Mat4
+            | sceneCamera : Mat4
+            , scenePerspective : Mat4
+            , sceneWorldMatrix : Mat4
 
             --
             , directionalLight : Vec3
-
-            --
             , diffuseMap : Texture
             , hasDiffuseMap : Bool
             , normalMap : Texture
@@ -137,15 +127,14 @@ fragmentShader =
     [glsl|
         precision mediump float;
 
+        uniform mat4 sceneWorldMatrix;
+        
+        uniform vec3 directionalLight;
         uniform sampler2D diffuseMap;
         uniform bool hasDiffuseMap;
-
         uniform sampler2D normalMap;
         uniform bool hasNormalMap;
         uniform float normalMapIntensity;
-
-        uniform vec3 directionalLight;
-        uniform mat4 worldMatrix;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -170,7 +159,7 @@ fragmentShader =
             // Lighting
             highp vec3 directionalLightColor = vec3(1, 1, 1);
             highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = worldMatrix * vec4(normal, 0.0);
+            highp vec4 transformedNormal = sceneWorldMatrix * vec4(normal, 0.0);
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
 
             vec3 f_lighting = (directionalLightColor * directional);
