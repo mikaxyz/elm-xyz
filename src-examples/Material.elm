@@ -16,7 +16,17 @@ type Name
     | Advanced
 
 
-renderer : Name -> Texture -> { u | perspective : Mat4, camera : Mat4, worldMatrix : Mat4, uColor : Vec3 } -> Object materialId -> Entity
+renderer :
+    Name
+    -> Texture
+    ->
+        { u
+            | perspective : Mat4
+            , camera : Mat4
+            , worldMatrix : Mat4
+        }
+    -> Object materialId
+    -> Entity
 renderer name =
     case name of
         Simple ->

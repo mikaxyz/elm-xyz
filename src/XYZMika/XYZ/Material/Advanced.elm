@@ -118,7 +118,6 @@ fragmentShader :
             | perspective : Mat4
             , camera : Mat4
             , worldMatrix : Mat4
-            , uColor : Vec3
 
             --
             , directionalLight : Vec3

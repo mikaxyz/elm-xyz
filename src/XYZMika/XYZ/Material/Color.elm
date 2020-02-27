@@ -39,7 +39,12 @@ material uniforms =
 
 vertexShader :
     Shader Vertex
-        (Uniforms u)
+        { u
+            | perspective : Mat4
+            , camera : Mat4
+            , worldMatrix : Mat4
+            , uColor : Vec3
+        }
         { v_color : Vec3
         }
 vertexShader =

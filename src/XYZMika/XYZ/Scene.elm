@@ -95,7 +95,6 @@ render defaultTexture viewport drag theta options scene renderer =
         { camera = scene.camera
         , perspective = options_.perspective aspectRatio
         , worldMatrix = Mat4.identity
-        , uColor = vec3 1 1 1
         }
         defaultTexture
         scene.graph
