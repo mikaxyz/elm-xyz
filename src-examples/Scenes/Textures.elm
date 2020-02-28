@@ -20,7 +20,7 @@ init assets =
     { defaultScene
         | graph =
             [ Graph
-                (XYZMika.XYZ.Mesh.Cube.withColor { r = 255, g = 255, b = 255 } 12 0.2 12
+                (XYZMika.XYZ.Mesh.Cube.withColor Color.white 12 0.2 12
                     |> Object.withMesh
                     |> Object.withPosition (vec3 0 -0.5 0)
                     |> Object.withOptionDragToRotateXY

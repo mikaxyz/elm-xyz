@@ -2,7 +2,7 @@ module XYZMika.XYZ.Mesh.Cube exposing (colorful, gray, withColor)
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (..)
-import XYZMika.XYZ.Data.Color as Color exposing (Color)
+import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Primitives exposing (faceWithNormal)
 

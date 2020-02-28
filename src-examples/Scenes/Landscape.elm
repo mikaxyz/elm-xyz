@@ -4,7 +4,7 @@ import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh, Shader)
-import XYZMika.XYZ.Data.Color as Color exposing (Color)
+import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Generator.Perlin as Perlin
 import XYZMika.XYZ.Mesh.Landscape

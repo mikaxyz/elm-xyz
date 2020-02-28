@@ -2,7 +2,7 @@ module XYZMika.XYZ.Mesh.Primitives exposing (bone, bone2, face, faceWithNormal)
 
 import Math.Vector2 exposing (vec2)
 import Math.Vector3 exposing (Vec3, vec3)
-import XYZMika.XYZ.Data.Color as Color exposing (Color)
+import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 
 
@@ -12,7 +12,7 @@ face color a b c d =
         vertex position =
             Vertex.vertex position
                 |> Vertex.withNormal (vec3 0 1 0)
-                |> Vertex.withColor (Color.vec3 color)
+                |> Vertex.withColor (Color.toVec3 color)
     in
     [ ( vertex a, vertex b, vertex c )
     , ( vertex c, vertex d, vertex a )
@@ -25,7 +25,7 @@ faceWithNormal color a b c d normal =
         vertex position uv =
             Vertex.vertex position
                 |> Vertex.withNormal normal
-                |> Vertex.withColor (Color.vec3 color)
+                |> Vertex.withColor (Color.toVec3 color)
                 |> Vertex.withUV uv
     in
     [ ( vertex a (vec2 0 0), vertex b (vec2 0 1), vertex c (vec2 1 1) )
@@ -59,7 +59,7 @@ bone2 color1 color2 color3 thickness length =
         vertex color position =
             Vertex.vertex position
                 |> Vertex.withNormal (vec3 0 1 0)
-                |> Vertex.withColor (Color.vec3 color)
+                |> Vertex.withColor (Color.toVec3 color)
     in
     [ ( vertex color1 top, vertex color2 bottomL1, vertex color2 bottomR1 )
     , ( vertex color1 top, vertex color3 bottomL2, vertex color3 bottomR2 )
