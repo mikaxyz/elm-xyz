@@ -9,7 +9,7 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Generator.Perlin as Perlin
 import XYZMika.XYZ.Mesh.Landscape
 import XYZMika.XYZ.Mesh.Primitives
-import XYZMika.XYZ.Scene exposing (Options, Scene, defaultScene)
+import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
@@ -99,17 +99,15 @@ init =
         helpers =
             normalGuides ++ elevationBones 4
     in
-    { defaultScene
-        | graph =
-            [ landscape
-                |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
-                |> Object.withMesh
-                --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
-                |> Object.withOptionDragToRotateXY
-                |> (\obj -> Graph obj helpers)
-            ]
-        , camera = Mat4.makeLookAt (vec3 0 4 7) (vec3 0 0 0) (vec3 0 1 0)
-    }
+    Scene.init
+        [ landscape
+            |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
+            |> Object.withMesh
+            --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
+            |> Object.withOptionDragToRotateXY
+            |> (\obj -> Graph obj helpers)
+        ]
+        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 4 7) (vec3 0 0 0) (vec3 0 1 0))
 
 
 sceneOptions : Maybe Options

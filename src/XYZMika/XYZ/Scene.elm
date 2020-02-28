@@ -2,10 +2,12 @@ module XYZMika.XYZ.Scene exposing
     ( Options
     , Renderer
     , Scene
-    , defaultScene
+    , init
     , lightPosition1
     , lightPosition2
+    , map
     , render
+    , withCamera
     )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -32,19 +34,31 @@ lightPosition2 =
     vec3 -6 2 3.5
 
 
-type alias Scene materialId =
-    { graph : List (Graph materialId)
-    , camera : Mat4
-    , cameraRotate : Mat4
-    }
+type Scene materialId
+    = Scene
+        { graph : List (Graph materialId)
+        , camera : Mat4
+        , cameraRotate : Mat4
+        }
 
 
-defaultScene : Scene materialId
-defaultScene =
-    { graph = []
-    , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 0 0) (vec3 0 1 0)
-    , cameraRotate = Mat4.identity
-    }
+init : List (Graph materialId) -> Scene materialId
+init graph =
+    Scene
+        { graph = graph
+        , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 0 0) (vec3 0 1 0)
+        , cameraRotate = Mat4.identity
+        }
+
+
+withCamera : Mat4 -> Scene materialId -> Scene materialId
+withCamera x (Scene scene) =
+    Scene { scene | camera = x }
+
+
+map : (Graph materialId -> Graph materialId) -> Scene materialId -> Scene materialId
+map f (Scene scene) =
+    Scene { scene | graph = scene.graph |> List.map f }
 
 
 type alias Options =
@@ -80,7 +94,7 @@ render :
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-render defaultTexture viewport drag theta options scene renderer =
+render defaultTexture viewport drag theta options (Scene scene) renderer =
     --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
     let
         options_ =

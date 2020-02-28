@@ -10,27 +10,25 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Scene exposing (Options, Scene, defaultScene)
+import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object
 
 
 init : Store Asset.Obj Asset.Texture -> Scene Material.Name
 init assets =
-    { defaultScene
-        | graph =
-            [ Graph
-                (XYZMika.XYZ.Mesh.Cube.withColor Color.white 12 0.2 12
-                    |> Object.withMesh
-                    |> Object.withPosition (vec3 0 -0.5 0)
-                    |> Object.withOptionDragToRotateXY
-                    |> Object.withColor Color.blue
-                    |> Object.withMaterialName Material.Color
-                )
-                (getAssets assets |> Maybe.map renderBall |> Maybe.withDefault [])
-            ]
-        , camera = Mat4.makeLookAt (vec3 0 0.5 3) (vec3 0 0.5 0) (vec3 0 1 0)
-    }
+    Scene.init
+        [ Graph
+            (XYZMika.XYZ.Mesh.Cube.withColor Color.white 12 0.2 12
+                |> Object.withMesh
+                |> Object.withPosition (vec3 0 -0.5 0)
+                |> Object.withOptionDragToRotateXY
+                |> Object.withColor Color.blue
+                |> Object.withMaterialName Material.Color
+            )
+            (getAssets assets |> Maybe.map renderBall |> Maybe.withDefault [])
+        ]
+        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0.5 3) (vec3 0 0.5 0) (vec3 0 1 0))
 
 
 renderBall : Config -> List (Graph Material.Name)
