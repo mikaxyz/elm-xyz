@@ -43,12 +43,12 @@ vertexShader =
 
         uniform mat4 sceneCamera;
         uniform mat4 scenePerspective;
-        uniform mat4 sceneWorldMatrix;
+        uniform mat4 sceneMatrix;
 
         varying vec3 v_color;
 
         void main () {
-            gl_Position = scenePerspective * sceneCamera * sceneWorldMatrix * vec4(position, 1.0);
+            gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
             v_color = color;
         }
     |]

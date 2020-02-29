@@ -22,7 +22,7 @@ renderer _ uniforms object =
         (material
             { sceneCamera = uniforms.sceneCamera
             , scenePerspective = uniforms.scenePerspective
-            , sceneWorldMatrix = uniforms.sceneWorldMatrix
+            , sceneMatrix = uniforms.sceneMatrix
 
             --
             , objectColor = Object.colorVec3 object
@@ -42,7 +42,7 @@ vertexShader :
         { u
             | sceneCamera : Mat4
             , scenePerspective : Mat4
-            , sceneWorldMatrix : Mat4
+            , sceneMatrix : Mat4
 
             --
             , objectColor : Vec3
@@ -58,13 +58,13 @@ vertexShader =
         
         uniform mat4 sceneCamera;
         uniform mat4 scenePerspective;
-        uniform mat4 sceneWorldMatrix;
+        uniform mat4 sceneMatrix;
         uniform vec3 objectColor;
 
         varying vec3 v_color;
 
         void main () {
-            gl_Position = scenePerspective * sceneCamera * sceneWorldMatrix * vec4(position, 1.0);
+            gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
             v_color = color * objectColor;
         }
     |]

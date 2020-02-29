@@ -25,11 +25,9 @@ renderer defaultTexture uniforms object =
             (Material.uniforms m)
     )
         (material
-            -- TODO: Alphabetize these
-            -- { aCamera, aWorldMatrix, aPerspective, texDiffuse, texHasDiffuse, etc }
             { sceneCamera = uniforms.sceneCamera
             , scenePerspective = uniforms.scenePerspective
-            , sceneWorldMatrix = uniforms.sceneWorldMatrix
+            , sceneMatrix = uniforms.sceneMatrix
 
             --
             , objectColor = Object.colorVec3 object
@@ -61,7 +59,7 @@ vertexShader :
         { u
             | sceneCamera : Mat4
             , scenePerspective : Mat4
-            , sceneWorldMatrix : Mat4
+            , sceneMatrix : Mat4
 
             --
             , objectColor : Vec3
@@ -87,7 +85,7 @@ vertexShader =
         
         uniform mat4 sceneCamera;
         uniform mat4 scenePerspective;
-        uniform mat4 sceneWorldMatrix;
+        uniform mat4 sceneMatrix;
         
         uniform vec3 objectColor;
 
@@ -96,7 +94,7 @@ vertexShader =
         varying vec2 v_uv;
 
         void main () {
-            gl_Position = scenePerspective * sceneCamera * sceneWorldMatrix * vec4(position, 1.0);
+            gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
             v_color = color * objectColor;
             v_uv = uv;
             v_normal = normal;
@@ -109,7 +107,7 @@ fragmentShader :
         { u
             | sceneCamera : Mat4
             , scenePerspective : Mat4
-            , sceneWorldMatrix : Mat4
+            , sceneMatrix : Mat4
 
             --
             , directionalLight : Vec3
@@ -127,7 +125,7 @@ fragmentShader =
     [glsl|
         precision mediump float;
 
-        uniform mat4 sceneWorldMatrix;
+        uniform mat4 sceneMatrix;
         
         uniform vec3 directionalLight;
         uniform sampler2D diffuseMap;
@@ -159,7 +157,7 @@ fragmentShader =
             // Lighting
             highp vec3 directionalLightColor = vec3(1, 1, 1);
             highp vec3 directionalVector = normalize(directionalLight);
-            highp vec4 transformedNormal = sceneWorldMatrix * vec4(normal, 0.0);
+            highp vec4 transformedNormal = sceneMatrix * vec4(normal, 0.0);
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
 
             vec3 f_lighting = (directionalLightColor * directional);
