@@ -63,7 +63,7 @@ renderBall config =
         |> Object.withDiffuseMap config.diffuse
         |> Object.withNormalMap config.normal
         |> Object.withColor Color.yellow
-        |> Object.withMaterialName Material.Color
+        |> Object.withMaterialName Material.Advanced
         |> Object.withNormalMapIntensity 10.0
         |> Object.withPosition (vec3 1 0.1 -5)
         |> Object.withOptionRotationInTime
@@ -73,9 +73,9 @@ renderBall config =
                         sin (theta * 60)
 
                     y =
-                        r
+                        abs r * 1.5
                 in
-                Mat4.makeTranslate3 0 (abs y * 0.5) 0
+                Mat4.makeTranslate3 0 y 0
             )
         |> (\x -> Graph x [])
     ]
