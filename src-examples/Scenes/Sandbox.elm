@@ -19,13 +19,13 @@ init =
     Scene.init
         [ Graph
             (XYZMika.XYZ.Mesh.Cube.colorful 1 0.2 1
-                |> Object.withMesh
+                |> Object.init
                 |> Object.withPosition (vec3 0 -0.7 0)
                 |> Object.withOptionDragToRotateXY
             )
             [ Graph
                 (XYZMika.XYZ.Mesh.Cube.colorful 0.01 0.01 0.01
-                    |> Object.withMesh
+                    |> Object.init
                     |> Object.withPosition (vec3 0 0.1 0)
                 )
                 (tree 8 0)

@@ -18,34 +18,34 @@ init =
     Scene.init
         [ Graph
             (XYZMika.XYZ.Mesh.Cube.colorful 2 0.2 2
-                |> Object.withMesh
+                |> Object.init
                 |> Object.withMaterialName Material.Advanced
                 |> Object.withPosition (vec3 0 -1 0)
                 |> Object.withOptionDragToRotateY
             )
             [ Graph
                 (XYZMika.XYZ.Mesh.Cube.gray 1 1 1
-                    |> Object.withMesh
+                    |> Object.init
                     |> Object.withMaterialName Material.Advanced
                     |> Object.withPosition (vec3 0 0.6 -0.5)
                     |> Object.withOptionDragToRotateX
                 )
                 [ Graph
                     (XYZMika.XYZ.Mesh.Cube.colorful 0.4 0.2 0.4
-                        |> Object.withMesh
+                        |> Object.init
                         |> Object.withMaterialName Material.Advanced
                         |> Object.withPosition (vec3 0 0.6 0)
                     )
                     []
                 , Graph
                     (XYZMika.XYZ.Mesh.Cube.colorful 0.2 0.4 0.4
-                        |> Object.withMesh
+                        |> Object.init
                         |> Object.withPosition (vec3 0.6 0 0)
                     )
                     []
                 , Graph
                     (XYZMika.XYZ.Mesh.Cube.colorful 0.2 0.4 0.4
-                        |> Object.withMesh
+                        |> Object.init
                         |> Object.withMaterialName Material.Advanced
                         |> Object.withPosition (vec3 -0.6 0 0)
                         |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 -1 0 0))
@@ -53,14 +53,14 @@ init =
                     []
                 , Graph
                     (XYZMika.XYZ.Mesh.Cube.colorful 0.4 0.4 0.2
-                        |> Object.withMesh
+                        |> Object.init
                         |> Object.withPosition (vec3 0 0 0.6)
                         |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 0 0 1))
                     )
                     []
                 , Graph
                     (XYZMika.XYZ.Mesh.Cube.colorful 0.4 0.4 0.2
-                        |> Object.withMesh
+                        |> Object.init
                         |> Object.withPosition (vec3 0 0 -0.6)
                         |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (speed * theta) (vec3 0 0 -1))
                     )
@@ -76,7 +76,7 @@ init =
 light p =
     Graph
         (XYZMika.XYZ.Mesh.Cube.colorful 0.02 0.02 0.02
-            |> Object.withMesh
+            |> Object.init
             |> Object.withPosition p
         )
         []

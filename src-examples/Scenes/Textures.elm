@@ -20,7 +20,7 @@ init assets =
     Scene.init
         [ Graph
             (XYZMika.XYZ.Mesh.Cube.withColor Color.white 12 0.2 12
-                |> Object.withMesh
+                |> Object.init
                 |> Object.withPosition (vec3 0 -0.5 0)
                 |> Object.withOptionDragToRotateXY
                 |> Object.withColor Color.blue
@@ -34,32 +34,32 @@ init assets =
 renderBall : Config -> List (Graph Material.Name)
 renderBall config =
     [ config.mesh
-        |> Object.withMesh
+        |> Object.init
         |> Object.withDiffuseMap config.diffuse
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0.7 0.1 0)
         |> (\x -> Graph x [])
     , config.mesh
-        |> Object.withMesh
+        |> Object.init
         |> Object.withDiffuseMap config.diffuse
         |> Object.withNormalMap config.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0 0.1 0)
         |> (\x -> Graph x [])
     , config.mesh
-        |> Object.withMesh
+        |> Object.init
         |> Object.withNormalMap config.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 -0.7 0.1 0)
         |> (\x -> Graph x [])
     , config.treeMesh
-        |> Object.withMesh
+        |> Object.init
         |> Object.withDiffuseMap config.treeDiffuse
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0 0 -6)
         |> (\x -> Graph x [])
     , config.mesh
-        |> Object.withMesh
+        |> Object.init
         |> Object.withDiffuseMap config.diffuse
         |> Object.withNormalMap config.normal
         |> Object.withColor Color.yellow

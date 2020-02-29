@@ -59,7 +59,7 @@ init =
         normalBone : Vertex -> Graph Material.Name
         normalBone v =
             WebGL.lines [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
-                |> Object.withMesh
+                |> Object.init
                 |> (\obj -> Graph obj [])
 
         normalGuides =
@@ -78,7 +78,7 @@ init =
         bone v =
             XYZMika.XYZ.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
                 |> WebGL.triangles
-                |> Object.withMesh
+                |> Object.init
                 |> Object.withPosition (Vec3.setY -1 v)
                 |> (\obj -> Graph obj [])
 
@@ -102,7 +102,7 @@ init =
     Scene.init
         [ landscape
             |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
-            |> Object.withMesh
+            |> Object.init
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY
             |> (\obj -> Graph obj helpers)

@@ -21,7 +21,7 @@ init =
 rootObject =
     Graph
         (XYZMika.XYZ.Mesh.Cube.gray 2 0.1 2
-            |> Object.withMesh
+            |> Object.init
             |> Object.withPosition (vec3 0 -0.5 0)
             |> Object.withOptionDragToRotateXY
         )
@@ -49,7 +49,7 @@ addMesh : Maybe Material.Name -> List ( Vertex, Vertex, Vertex ) -> Vec3 -> Scen
 addMesh material tris pos scene =
     tris
         |> WebGL.triangles
-        |> Object.withMesh
+        |> Object.init
         |> (\x -> material |> Maybe.map (\m -> x |> Object.withMaterialName m) |> Maybe.withDefault x)
         |> Object.withPosition (Vec3.add pos (vec3 0 0.05 0))
         |> (\x ->
