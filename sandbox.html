@@ -18,8 +18,23 @@
 <body id="game">
 <script src="dist/sandbox.js"></script>
 <script>
-	var app = Elm.Sandbox.init();
-	var e = document.getElementsByTagName('body')[0];
+	const urlParams = new URLSearchParams(window.location.search);
+	var appp = urlParams.get('app');
+	console.log("appp", appp);
+
+	var app;
+
+	if (urlParams.get('app') === "mouse-select") {
+		app = Elm.MouseSelect.init();
+	} else {
+		app = Elm.Sandbox.init();
+		document.addEventListener('pointerlockchange', pointerLockChange, false);
+
+		var e = document.getElementsByTagName('body')[0];
+		e.addEventListener('click', function() {
+			e.requestPointerLock();
+		});
+	}
 
 	function sendPosition(e) {
 		requestAnimationFrame(function (_time) {
@@ -36,12 +51,6 @@
 			document.removeEventListener("mousemove", sendPosition, false);
 		}
 	}
-
-	document.addEventListener('pointerlockchange', pointerLockChange, false);
-
-	e.addEventListener('click', function() {
-		e.requestPointerLock();
-	});
 </script>
 </body>
 </html>
