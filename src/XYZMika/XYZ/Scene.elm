@@ -15,7 +15,6 @@ import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Entity)
 import WebGL.Texture exposing (Texture)
-import XYZMika.XYZ.Material as Material exposing (Id)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -78,7 +77,7 @@ defaultOptions =
 
 type alias Renderer materialId uniforms =
     -- TODO: Move into Material.elm
-    Maybe (Material.Id materialId)
+    Maybe materialId
     -> Texture
     -> uniforms
     -> Object materialId

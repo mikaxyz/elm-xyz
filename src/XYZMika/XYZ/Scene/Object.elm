@@ -64,7 +64,7 @@ type alias ObjectData materialId =
     , diffuseMap : Maybe Texture
     , normalMap : Maybe Texture
     , normalMapIntensity : Maybe Float
-    , material : Maybe (Material.Id materialId)
+    , material : Maybe materialId
     , color : Color
     }
 
@@ -105,7 +105,7 @@ withColor x obj =
 
 withMaterialName : materialId -> Object materialId -> Object materialId
 withMaterialName x obj =
-    obj |> mapData (\data -> { data | material = Just (Material.Id x) })
+    obj |> mapData (\data -> { data | material = Just x })
 
 
 withDiffuseMap : Texture -> Object materialId -> Object materialId
@@ -180,9 +180,8 @@ colorVec3 obj =
         |> (\{ red, green, blue } -> vec3 red green blue)
 
 
-materialName : Object materialId -> Maybe (Material.Id materialId)
+materialName : Object materialId -> Maybe materialId
 materialName obj =
-    -- TODO: Just return materialName
     obj |> get .material
 
 

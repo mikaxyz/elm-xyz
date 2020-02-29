@@ -56,14 +56,14 @@ view defaultTexture model =
 
 
 renderer :
-    Maybe (XYZMika.XYZ.Material.Id Material.Name)
+    Maybe Material.Name
     -> Texture
     -> Uniforms u
     -> Object Material.Name
     -> WebGL.Entity
 renderer name =
     case name of
-        Just (XYZMika.XYZ.Material.Id materialName) ->
+        Just materialName ->
             Material.renderer materialName
 
         Nothing ->

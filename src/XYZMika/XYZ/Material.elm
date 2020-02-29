@@ -1,6 +1,5 @@
 module XYZMika.XYZ.Material exposing
-    ( Id(..)
-    , fragmentShader
+    ( fragmentShader
     , material
     , uniforms
     , vertexShader
@@ -8,10 +7,6 @@ module XYZMika.XYZ.Material exposing
 
 import WebGL exposing (Entity, Shader)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-
-
-type Id materialId
-    = Id materialId
 
 
 type Material uniforms v
