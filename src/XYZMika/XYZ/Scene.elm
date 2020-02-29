@@ -1,6 +1,5 @@
 module XYZMika.XYZ.Scene exposing
     ( Options
-    , Renderer
     , Scene
     , init
     , lightPosition1
@@ -15,6 +14,7 @@ import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Entity)
 import WebGL.Texture exposing (Texture)
+import XYZMika.XYZ.Material exposing (Renderer)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -73,15 +73,6 @@ defaultOptions =
     , translate = always Mat4.identity
     , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
     }
-
-
-type alias Renderer materialId uniforms =
-    -- TODO: Move into Material.elm
-    Maybe materialId
-    -> Texture
-    -> uniforms
-    -> Object materialId
-    -> Entity
 
 
 render :

@@ -1,12 +1,23 @@
 module XYZMika.XYZ.Material exposing
-    ( fragmentShader
+    ( Renderer
+    , fragmentShader
     , material
     , uniforms
     , vertexShader
     )
 
 import WebGL exposing (Entity, Shader)
+import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
+import XYZMika.XYZ.Scene.Object exposing (Object)
+
+
+type alias Renderer materialId uniforms =
+    Maybe materialId
+    -> Texture
+    -> uniforms
+    -> Object materialId
+    -> Entity
 
 
 type Material uniforms v

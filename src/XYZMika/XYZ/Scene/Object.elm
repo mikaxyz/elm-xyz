@@ -49,7 +49,6 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Material as Material
 
 
 type Object materialId
