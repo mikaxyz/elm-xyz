@@ -3,9 +3,12 @@ module Model exposing
     , Msg(..)
     , getDrag
     , init
+    , loadScene
+    , mapRenderOptions
     , nextScene
     , prevScene
     , sceneOptions
+    , updateAssetStore
     )
 
 import Array exposing (Array)
@@ -37,6 +40,7 @@ type alias Model =
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
     , scene : Scene Material.Name
+    , renderOptions : Scene.RenderOptions
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
     , assets : AssetStore.Store Asset.Obj Asset.Texture
@@ -55,6 +59,7 @@ init =
     , dragger = Nothing
     , drag = vec2 0 0
     , scene = Scenes.Light.init
+    , renderOptions = Scene.RenderOptions True False False
     , scenes = [ Textures, Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
@@ -69,6 +74,11 @@ init =
                     ]
                 )
            )
+
+
+mapRenderOptions : (Scene.RenderOptions -> Scene.RenderOptions) -> Model -> Model
+mapRenderOptions f model =
+    { model | renderOptions = f model.renderOptions }
 
 
 nextScene : Model -> ( Model, Cmd Msg )
@@ -119,6 +129,31 @@ sceneOptions model =
 
         Nothing ->
             Nothing
+
+
+updateAssetStore : AssetStore.Store Asset.Obj Asset.Texture -> Model -> Model
+updateAssetStore assets model =
+    { model | assets = assets }
+        |> (\m ->
+                case Array.get m.currentSceneIndex m.scenes of
+                    Just Textures ->
+                        { m | scene = Scenes.Textures.init m.assets }
+
+                    Just Sandbox ->
+                        m
+
+                    Just ObjectLoader ->
+                        m
+
+                    Just Landscape ->
+                        m
+
+                    Just Light ->
+                        m
+
+                    Nothing ->
+                        m
+           )
 
 
 loadScene : Model -> ( Model, Cmd Msg )

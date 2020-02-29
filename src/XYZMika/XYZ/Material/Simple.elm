@@ -1,6 +1,5 @@
-module XYZMika.XYZ.Material.Simple exposing (renderer)
+module XYZMika.XYZ.Material.Simple exposing (fragmentShader, renderer, vertexShader)
 
-import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)

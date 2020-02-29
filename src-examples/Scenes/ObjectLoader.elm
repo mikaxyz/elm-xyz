@@ -4,7 +4,6 @@ import Http
 import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import WebGL exposing (Shader)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
@@ -20,8 +19,8 @@ init =
 
 rootObject =
     Graph
-        (XYZMika.XYZ.Mesh.Cube.gray 2 0.1 2
-            |> Object.init
+        (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 0 -1, vec3 1 0.1 1 )
+            |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.5 0)
             |> Object.withOptionDragToRotateXY
         )
@@ -48,8 +47,7 @@ getObj options pos url tagger =
 addMesh : Maybe Material.Name -> List ( Vertex, Vertex, Vertex ) -> Vec3 -> Scene Material.Name -> Scene Material.Name
 addMesh material tris pos scene =
     tris
-        |> WebGL.triangles
-        |> Object.init
+        |> Object.initWithTriangles
         |> (\x -> material |> Maybe.map (\m -> x |> Object.withMaterialName m) |> Maybe.withDefault x)
         |> Object.withPosition (Vec3.add pos (vec3 0 0.05 0))
         |> (\x ->

@@ -59,8 +59,7 @@ type alias Branch =
 object : Float -> Branch -> Object materialId
 object t branch =
     bone2 Color.orange Color.blue Color.green (0.3 * branch.l) branch.l
-        |> WebGL.triangles
-        |> Object.init
+        |> Object.initWithTriangles
         |> Object.withPosition (vec3 0 0 0)
         |> Object.withRotation
             (Mat4.mul

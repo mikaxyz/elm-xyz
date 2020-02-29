@@ -37,6 +37,21 @@ update msg model =
 
         KeyPressed key ->
             case String.toLower key of
+                "1" ->
+                    ( model |> Model.mapRenderOptions (\x -> { x | showGeometry = not x.showGeometry })
+                    , Cmd.none
+                    )
+
+                "2" ->
+                    ( model |> Model.mapRenderOptions (\x -> { x | showBoundingBoxes = not x.showBoundingBoxes })
+                    , Cmd.none
+                    )
+
+                "3" ->
+                    ( model |> Model.mapRenderOptions (\x -> { x | showBoundingBoxesOverlay = not x.showBoundingBoxesOverlay })
+                    , Cmd.none
+                    )
+
                 "j" ->
                     model |> Model.nextScene
 
@@ -60,7 +75,6 @@ update msg model =
 
         AssetLoaded scale asset ->
             ( model
-                |> (\m -> { m | assets = m.assets |> AssetStore.addToStore scale asset })
-                |> (\m -> { m | scene = Scenes.Textures.init m.assets })
+                |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
             , Cmd.none
             )

@@ -22,6 +22,10 @@ grey lightness =
 --
 
 
+white =
+    Color.white
+
+
 grey50 =
     Color.fromHsla { hue = 0, saturation = 0, lightness = 0.5, alpha = 1 }
 

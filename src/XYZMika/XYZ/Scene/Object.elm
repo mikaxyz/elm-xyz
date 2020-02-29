@@ -1,8 +1,8 @@
 module XYZMika.XYZ.Scene.Object exposing
-    ( Object, init
+    ( Object, init, initWithTriangles
     , withPosition, withRotation, withColor, withMaterialName
     , withDiffuseMap, withNormalMap, withNormalMapIntensity
-    , mesh, position, rotation, color, colorVec3, materialName
+    , mesh, position, rotation, color, colorVec3, materialName, boundingBox
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault, normalMapIntensityWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
@@ -13,7 +13,7 @@ module XYZMika.XYZ.Scene.Object exposing
 
 # Create
 
-@docs Object, init
+@docs Object, init, initWithTriangles
 
 
 ## Modify
@@ -24,7 +24,7 @@ module XYZMika.XYZ.Scene.Object exposing
 
 ## Read
 
-@docs mesh, position, rotation, color, colorVec3, materialName
+@docs mesh, position, rotation, color, colorVec3, materialName, boundingBox
 @docs diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault, normalMapIntensity, normalMapIntensityWithDefault
 
 
@@ -59,6 +59,7 @@ type alias ObjectData materialId =
     { position : Vec3
     , rotation : Mat4
     , mesh : Mesh Vertex
+    , boundingBox : ( Vec3, Vec3 )
     , options : Maybe Options
     , diffuseMap : Maybe Texture
     , normalMap : Maybe Texture
@@ -78,6 +79,7 @@ init x =
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
+        , boundingBox = ( vec3 0 0 0, vec3 0 0 0 )
         , diffuseMap = Nothing
         , normalMap = Nothing
         , normalMapIntensity = Nothing
@@ -85,6 +87,80 @@ init x =
         , material = Nothing
         , color = Color.white
         }
+
+
+initWithTriangles : List ( Vertex, Vertex, Vertex ) -> Object materialId
+initWithTriangles x =
+    Mesh
+        { position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.triangles x
+        , boundingBox = getBounds x
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , normalMapIntensity = Nothing
+        , options = Nothing
+        , material = Nothing
+        , color = Color.white
+        }
+
+
+getBounds : List ( Vertex, Vertex, Vertex ) -> ( Vec3, Vec3 )
+getBounds vs =
+    vs
+        |> List.map
+            (\( v1, v2, v3 ) ->
+                ( Vec3.toRecord v1.position
+                , Vec3.toRecord v2.position
+                , Vec3.toRecord v3.position
+                )
+            )
+        |> List.foldl
+            (\( p1, p2, p3 ) ->
+                \( a1, a2 ) ->
+                    let
+                        xMin =
+                            a1.x
+                                |> min p1.x
+                                |> min p2.x
+                                |> min p3.x
+
+                        xMax =
+                            a2.x
+                                |> max p1.x
+                                |> max p2.x
+                                |> max p3.x
+
+                        yMin =
+                            a1.y
+                                |> min p1.y
+                                |> min p2.y
+                                |> min p3.y
+
+                        yMax =
+                            a2.y
+                                |> max p1.y
+                                |> max p2.y
+                                |> max p3.y
+
+                        zMin =
+                            a1.z
+                                |> min p1.z
+                                |> min p2.z
+                                |> min p3.z
+
+                        zMax =
+                            a2.z
+                                |> max p1.z
+                                |> max p2.z
+                                |> max p3.z
+                    in
+                    ( { x = xMin, y = yMin, z = zMin }
+                    , { x = xMax, y = yMax, z = zMax }
+                    )
+            )
+            ( Vec3.toRecord (vec3 0 0 0), Vec3.toRecord (vec3 0 0 0) )
+        |> Tuple.mapBoth Vec3.fromRecord Vec3.fromRecord
 
 
 withPosition : Vec3 -> Object materialId -> Object materialId
@@ -149,6 +225,11 @@ get f obj =
 
 
 -- Read
+
+
+boundingBox : Object materialId -> ( Vec3, Vec3 )
+boundingBox obj =
+    obj |> get .boundingBox
 
 
 mesh : Object materialId -> Mesh Vertex

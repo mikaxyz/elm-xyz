@@ -1,4 +1,9 @@
-module XYZMika.XYZ.Mesh.Primitives exposing (bone, bone2, face, faceWithNormal)
+module XYZMika.XYZ.Mesh.Primitives exposing
+    ( bone
+    , bone2
+    , quad
+    , quadWithNormal
+    )
 
 import Math.Vector2 exposing (vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -6,8 +11,8 @@ import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 
 
-face : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
-face color a b c d =
+quad : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
+quad color a b c d =
     let
         vertex position =
             Vertex.vertex position
@@ -19,8 +24,8 @@ face color a b c d =
     ]
 
 
-faceWithNormal : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
-faceWithNormal color a b c d normal =
+quadWithNormal : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
+quadWithNormal color a b c d normal =
     let
         vertex position uv =
             Vertex.vertex position

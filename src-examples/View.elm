@@ -46,6 +46,7 @@ view defaultTexture model =
         ]
         (Scene.render
             defaultTexture
+            model.renderOptions
             viewport
             (Model.getDrag model)
             model.theta

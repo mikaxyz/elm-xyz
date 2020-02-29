@@ -1,5 +1,6 @@
 module XYZMika.XYZ.Scene exposing
     ( Options
+    , RenderOptions
     , Scene
     , init
     , lightPosition1
@@ -12,9 +13,13 @@ module XYZMika.XYZ.Scene exposing
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import WebGL exposing (Entity)
+import WebGL exposing (Entity, Shader)
+import WebGL.Settings
+import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Material exposing (Renderer)
+import XYZMika.XYZ.Material.Simple
+import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -75,8 +80,16 @@ defaultOptions =
     }
 
 
+type alias RenderOptions =
+    { showGeometry : Bool
+    , showBoundingBoxes : Bool
+    , showBoundingBoxesOverlay : Bool
+    }
+
+
 render :
     Texture
+    -> RenderOptions
     -> { a | width : Int, height : Int }
     -> Vec2
     -> Float
@@ -84,7 +97,7 @@ render :
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-render defaultTexture viewport drag theta options (Scene scene) renderer =
+render defaultTexture renderOptions viewport drag theta options (Scene scene) renderer =
     --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
     let
         options_ =
@@ -96,6 +109,7 @@ render defaultTexture viewport drag theta options (Scene scene) renderer =
     renderGraph
         drag
         theta
+        renderOptions
         { sceneCamera = scene.camera
         , scenePerspective = options_.perspective aspectRatio
         , sceneMatrix = Mat4.identity
@@ -108,12 +122,13 @@ render defaultTexture viewport drag theta options (Scene scene) renderer =
 renderGraph :
     Vec2
     -> Float
+    -> RenderOptions
     -> Uniforms u
     -> Texture
     -> List (Graph materialId)
     -> Renderer materialId (Uniforms u)
     -> List Entity
-renderGraph drag theta uniforms defaultTexture graph renderer =
+renderGraph drag theta renderOptions uniforms defaultTexture graph renderer =
     graph
         |> List.map
             (\g ->
@@ -130,13 +145,55 @@ renderGraph drag theta uniforms defaultTexture graph renderer =
                                     |> Mat4.mul (Mat4.makeTranslate (Object.position object_))
                                     |> Mat4.mul uniforms.sceneMatrix
 
+                            entity : Uniforms u -> Entity
                             entity uniforms_ =
                                 object
                                     |> Object.materialName
                                     |> renderer
                                     |> (\r -> r defaultTexture uniforms_ object)
+
+                            boundingBox : Uniforms u -> Entity
+                            boundingBox uniforms_ =
+                                let
+                                    vertices =
+                                        object
+                                            |> Object.boundingBox
+                                            |> XYZMika.XYZ.Mesh.Cube.pairsColorfulWithBounds
+
+                                    options =
+                                        if renderOptions.showBoundingBoxesOverlay then
+                                            [ WebGL.Settings.DepthTest.always
+                                                { write = True
+                                                , near = 0
+                                                , far = 1
+                                                }
+                                            ]
+
+                                        else
+                                            [ WebGL.Settings.DepthTest.default ]
+                                in
+                                WebGL.entityWith
+                                    options
+                                    XYZMika.XYZ.Material.Simple.vertexShader
+                                    XYZMika.XYZ.Material.Simple.fragmentShader
+                                    (WebGL.lines vertices)
+                                    uniforms_
                         in
-                        entity { uniforms | sceneMatrix = sceneMatrix }
-                            :: renderGraph drag theta { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+                        case ( renderOptions.showGeometry, renderOptions.showBoundingBoxes ) of
+                            ( True, True ) ->
+                                entity { uniforms | sceneMatrix = sceneMatrix }
+                                    :: boundingBox { uniforms | sceneMatrix = sceneMatrix }
+                                    :: renderGraph drag theta renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+
+                            ( True, False ) ->
+                                entity { uniforms | sceneMatrix = sceneMatrix }
+                                    :: renderGraph drag theta renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+
+                            ( False, True ) ->
+                                boundingBox { uniforms | sceneMatrix = sceneMatrix }
+                                    :: renderGraph drag theta renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+
+                            _ ->
+                                []
             )
         |> List.concat

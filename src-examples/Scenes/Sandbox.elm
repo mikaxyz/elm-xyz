@@ -18,8 +18,8 @@ init : Scene Material.Name
 init =
     Scene.init
         [ Graph
-            (XYZMika.XYZ.Mesh.Cube.colorful 1 0.2 1
-                |> Object.init
+            (XYZMika.XYZ.Mesh.Cube.withBoundsColorful ( vec3 -0.5 -0.2 -0.5, vec3 0.5 0.2 0.5 )
+                |> Object.initWithTriangles
                 |> Object.withPosition (vec3 0 -0.7 0)
                 |> Object.withOptionDragToRotateXY
             )

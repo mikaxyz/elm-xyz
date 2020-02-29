@@ -8,6 +8,7 @@ module XYZMika.XYZ.AssetStore exposing
     , loadTexture
     , mesh
     , texture
+    , vertices
     )
 
 import Dict exposing (Dict)
@@ -30,7 +31,7 @@ init objPath texturePath =
 
 
 type Asset
-    = Mesh (WebGL.Mesh Vertex)
+    = Mesh (List ( Vertex, Vertex, Vertex )) (WebGL.Mesh Vertex)
     | Texture WebGL.Texture.Texture
     | TextureError WebGL.Texture.Error
 
@@ -61,8 +62,18 @@ texture texture_ (Store { texturePath, assets }) =
 mesh : obj -> Store obj texture -> Maybe (WebGL.Mesh Vertex)
 mesh obj (Store { objPath, assets }) =
     case assets |> Dict.get (objPath obj) of
-        Just (Mesh x) ->
+        Just (Mesh v x) ->
             Just x
+
+        _ ->
+            Nothing
+
+
+vertices : obj -> Store obj texture -> Maybe (List ( Vertex, Vertex, Vertex ))
+vertices obj (Store { objPath, assets }) =
+    case assets |> Dict.get (objPath obj) of
+        Just (Mesh v x) ->
+            Just v
 
         _ ->
             Nothing
@@ -78,8 +89,7 @@ addToStore scale content (Store ({ assets } as store)) =
                     , XYZMika.XYZ.Parser.Obj.parse
                         { scale = scale, color = vec3 1 1 1 }
                         x
-                        |> WebGL.triangles
-                        |> Mesh
+                        |> (\triangles -> Mesh triangles (WebGL.triangles triangles))
                     )
 
                 Tex path_ result ->
@@ -98,7 +108,7 @@ addToStore scale content (Store ({ assets } as store)) =
 
 addMeshToStore : obj -> WebGL.Mesh Vertex -> Store obj texture -> Store obj texture
 addMeshToStore obj mesh_ (Store ({ objPath, assets } as store)) =
-    Store { store | assets = assets |> Dict.insert (objPath obj) (Mesh mesh_) }
+    Store { store | assets = assets |> Dict.insert (objPath obj) (Mesh [] mesh_) }
 
 
 loadObj : obj -> Store obj texture -> (Content -> msg) -> Cmd msg
