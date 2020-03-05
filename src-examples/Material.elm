@@ -2,6 +2,7 @@ module Material exposing (..)
 
 import WebGL exposing (Entity)
 import WebGL.Texture exposing (Texture)
+import XYZMika.XYZ.Material as Material
 import XYZMika.XYZ.Material.Advanced
 import XYZMika.XYZ.Material.Color
 import XYZMika.XYZ.Material.Simple
@@ -17,6 +18,7 @@ type Name
 
 renderer :
     Name
+    -> Material.Options
     -> Texture
     -> Uniforms u
     -> Object materialId

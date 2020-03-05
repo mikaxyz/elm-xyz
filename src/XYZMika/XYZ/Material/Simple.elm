@@ -9,8 +9,8 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
-renderer : Texture -> Uniforms u -> Object materialId -> Entity
-renderer _ uniforms object =
+renderer : Material.Options -> Texture -> Uniforms u -> Object materialId -> Entity
+renderer _ _ uniforms object =
     (\m ->
         WebGL.entity
             (Material.vertexShader m)

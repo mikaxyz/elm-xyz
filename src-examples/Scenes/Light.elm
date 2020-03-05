@@ -73,19 +73,8 @@ init =
                     []
                 ]
             ]
-        , light Scene.lightPosition1
-        , light Scene.lightPosition2
         ]
         |> Scene.withCamera (Mat4.makeLookAt (vec3 0 1 4) (vec3 0 0 0) (vec3 0 1 0))
-
-
-light p =
-    Graph
-        (XYZMika.XYZ.Mesh.Cube.colorful 0.02 0.02 0.02
-            |> Object.init
-            |> Object.withPosition p
-        )
-        []
 
 
 sceneOptions : Maybe Options

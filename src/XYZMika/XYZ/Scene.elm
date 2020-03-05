@@ -2,22 +2,21 @@ module XYZMika.XYZ.Scene exposing
     ( Options
     , RenderOptions
     , Scene
+    , direction
     , init
-    , lightPosition1
-    , lightPosition2
     , map
     , render
     , withCamera
+    , withRendererOptions
     )
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import WebGL exposing (Entity, Shader)
-import WebGL.Settings
 import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
-import XYZMika.XYZ.Material exposing (Renderer)
+import XYZMika.XYZ.Material as Renderer exposing (Renderer)
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
@@ -25,17 +24,15 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
-directionalLight : Vec3
-directionalLight =
-    Vec3.fromRecord { x = 1, y = 0.7, z = 0.5 }
-
-
-lightPosition1 =
-    vec3 -4 3 3
-
-
-lightPosition2 =
-    vec3 -6 2 3.5
+direction : { right : Vec3, left : Vec3, up : Vec3, down : Vec3, forward : Vec3, backward : Vec3 }
+direction =
+    { right = vec3 1 0 0
+    , left = vec3 -1 0 0
+    , up = vec3 0 1 0
+    , down = vec3 0 -1 0
+    , forward = vec3 0 0 -1
+    , backward = vec3 0 0 1
+    }
 
 
 type Scene materialId
@@ -43,7 +40,13 @@ type Scene materialId
         { graph : List (Graph materialId)
         , camera : Mat4
         , cameraRotate : Mat4
+        , rendererOptions : Renderer.Options
         }
+
+
+withRendererOptions : Renderer.Options -> Scene materialId -> Scene materialId
+withRendererOptions rendererOptions (Scene scene) =
+    Scene { scene | rendererOptions = rendererOptions }
 
 
 init : List (Graph materialId) -> Scene materialId
@@ -52,6 +55,7 @@ init graph =
         { graph = graph
         , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 0 0) (vec3 0 1 0)
         , cameraRotate = Mat4.identity
+        , rendererOptions = Renderer.defaultOptions
         }
 
 
@@ -109,6 +113,7 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
     renderGraph
         drag
         theta
+        scene.rendererOptions
         renderOptions
         { sceneCamera = scene.camera
         , scenePerspective = options_.perspective aspectRatio
@@ -122,13 +127,14 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
 renderGraph :
     Vec2
     -> Float
+    -> Renderer.Options
     -> RenderOptions
     -> Uniforms u
     -> Texture
     -> List (Graph materialId)
     -> Renderer materialId (Uniforms u)
     -> List Entity
-renderGraph drag theta renderOptions uniforms defaultTexture graph renderer =
+renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture graph renderer =
     graph
         |> List.map
             (\g ->
@@ -150,7 +156,7 @@ renderGraph drag theta renderOptions uniforms defaultTexture graph renderer =
                                 object
                                     |> Object.materialName
                                     |> renderer
-                                    |> (\r -> r defaultTexture uniforms_ object)
+                                    |> (\r -> r rendererOptions defaultTexture uniforms_ object)
 
                             boundingBox : Uniforms u -> Entity
                             boundingBox uniforms_ =
@@ -183,15 +189,15 @@ renderGraph drag theta renderOptions uniforms defaultTexture graph renderer =
                             ( True, True ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix }
                                     :: boundingBox { uniforms | sceneMatrix = sceneMatrix }
-                                    :: renderGraph drag theta renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
 
                             ( True, False ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix }
-                                    :: renderGraph drag theta renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
 
                             ( False, True ) ->
                                 boundingBox { uniforms | sceneMatrix = sceneMatrix }
-                                    :: renderGraph drag theta renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
 
                             _ ->
                                 []

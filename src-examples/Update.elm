@@ -3,9 +3,10 @@ module Update exposing (update)
 import Math.Vector2 as Vec2
 import Model exposing (Model, Msg(..))
 import Scenes.ObjectLoader
-import Scenes.Textures
 import XYZMika.XYZ.AssetStore as AssetStore
+import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
+import XYZMika.XYZ.Scene
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -37,6 +38,53 @@ update msg model =
 
         KeyPressed key ->
             case String.toLower key of
+                "x" ->
+                    ( model
+                        |> Model.mapRendererOptions
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.down)
+                    , Cmd.none
+                    )
+
+                "w" ->
+                    ( model
+                        |> Model.mapRendererOptions
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.up)
+                    , Cmd.none
+                    )
+
+                "d" ->
+                    ( model
+                        |> Model.mapRendererOptions
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.right)
+                    , Cmd.none
+                    )
+
+                "a" ->
+                    ( model
+                        |> Model.mapRendererOptions
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.left)
+                    , Cmd.none
+                    )
+
+                "e" ->
+                    ( model
+                        |> Model.mapRendererOptions
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.forward)
+                    , Cmd.none
+                    )
+
+                "z" ->
+                    ( model
+                        |> Model.mapRendererOptions
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.backward)
+                    , Cmd.none
+                    )
+
+                "s" ->
+                    ( model |> Model.mapRendererOptions (always XYZMika.XYZ.Material.defaultOptions)
+                    , Cmd.none
+                    )
+
                 "1" ->
                     ( model |> Model.mapRenderOptions (\x -> { x | showGeometry = not x.showGeometry })
                     , Cmd.none

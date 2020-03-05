@@ -1,19 +1,40 @@
 module XYZMika.XYZ.Material exposing
-    ( Renderer
+    ( Options
+    , Renderer
+    , defaultOptions
     , fragmentShader
     , material
+    , setDirectionalLight
     , uniforms
     , vertexShader
     )
 
+import Math.Vector3 as Vec3 exposing (Vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Scene.Object exposing (Object)
 
 
+type alias Options =
+    { lights : { directional : Vec3 }
+    }
+
+
+defaultOptions : { lights : { directional : Vec3 } }
+defaultOptions =
+    { lights = { directional = Vec3.fromRecord { x = -1, y = -0.7, z = -0.3 } }
+    }
+
+
+setDirectionalLight : Vec3 -> Options -> Options
+setDirectionalLight x options =
+    (\lights -> { options | lights = { lights | directional = x } }) options.lights
+
+
 type alias Renderer materialId uniforms =
     Maybe materialId
+    -> Options
     -> Texture
     -> uniforms
     -> Object materialId

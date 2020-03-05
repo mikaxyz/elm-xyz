@@ -51,13 +51,14 @@ view defaultTexture model =
             (Model.getDrag model)
             model.theta
             (Model.sceneOptions model)
-            model.scene
+            (model.scene |> Scene.withRendererOptions model.rendererOptions)
             renderer
         )
 
 
 renderer :
     Maybe Material.Name
+    -> XYZMika.XYZ.Material.Options
     -> Texture
     -> Uniforms u
     -> Object Material.Name

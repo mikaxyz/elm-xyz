@@ -2,7 +2,7 @@ module XYZMika.XYZ.Material.Advanced exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Vector3 exposing (Vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Material as Material
@@ -10,13 +10,8 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
-directionalLight : Vec3
-directionalLight =
-    Vec3.fromRecord { x = 1, y = 0.7, z = 0.5 }
-
-
-renderer : Texture -> Uniforms u -> Object materialId -> Entity
-renderer defaultTexture uniforms object =
+renderer : Material.Options -> Texture -> Uniforms u -> Object materialId -> Entity
+renderer options defaultTexture uniforms object =
     (\m ->
         WebGL.entity
             (Material.vertexShader m)
@@ -31,7 +26,7 @@ renderer defaultTexture uniforms object =
 
             --
             , objectColor = Object.colorVec3 object
-            , directionalLight = directionalLight
+            , directionalLight = options.lights.directional
             , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
             , hasDiffuseMap = Object.diffuseMap object /= Nothing
             , hasNormalMap = Object.normalMap object /= Nothing

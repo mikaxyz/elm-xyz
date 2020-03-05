@@ -5,6 +5,7 @@ module Model exposing
     , init
     , loadScene
     , mapRenderOptions
+    , mapRendererOptions
     , nextScene
     , prevScene
     , sceneOptions
@@ -22,6 +23,7 @@ import Scenes.ObjectLoader
 import Scenes.Sandbox
 import Scenes.Textures
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
+import XYZMika.XYZ.Material
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 
 
@@ -40,6 +42,7 @@ type alias Model =
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
     , scene : Scene Material.Name
+    , rendererOptions : XYZMika.XYZ.Material.Options
     , renderOptions : Scene.RenderOptions
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
@@ -59,6 +62,7 @@ init =
     , dragger = Nothing
     , drag = vec2 0 0
     , scene = Scenes.Light.init
+    , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.RenderOptions True False False
     , scenes = [ Textures, Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
@@ -79,6 +83,11 @@ init =
 mapRenderOptions : (Scene.RenderOptions -> Scene.RenderOptions) -> Model -> Model
 mapRenderOptions f model =
     { model | renderOptions = f model.renderOptions }
+
+
+mapRendererOptions : (XYZMika.XYZ.Material.Options -> XYZMika.XYZ.Material.Options) -> Model -> Model
+mapRendererOptions f model =
+    { model | rendererOptions = f model.rendererOptions }
 
 
 nextScene : Model -> ( Model, Cmd Msg )
