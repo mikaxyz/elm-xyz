@@ -18,17 +18,17 @@ init : Scene Material.Name
 init =
     Scene.init
         [ Graph
-            (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 -0.1 -1, vec3 1 0.1 1 )
+            (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 -0.6 -1, vec3 1 -0.5 1 )
                 |> Object.initWithTriangles
                 |> Object.withMaterialName Material.Advanced
-                |> Object.withPosition (vec3 0 -1 0)
+                --|> Object.withPosition (vec3 0 -0.5 0)
                 |> Object.withOptionDragToRotateY
             )
             [ Graph
                 (XYZMika.XYZ.Mesh.Cube.withBoundsAndColor Color.lightPurple ( vec3 -0.5 -0.5 -0.5, vec3 0.5 0.5 0.5 )
                     |> Object.initWithTriangles
                     |> Object.withMaterialName Material.Advanced
-                    |> Object.withPosition (vec3 0 0.6 -0.5)
+                    |> Object.withPosition (vec3 0 0 0)
                     |> Object.withOptionDragToRotateX
                 )
                 [ Graph
@@ -74,7 +74,7 @@ init =
                 ]
             ]
         ]
-        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 1 4) (vec3 0 0 0) (vec3 0 1 0))
+        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 4) (vec3 0 0 0) (vec3 0 1 0))
 
 
 sceneOptions : Maybe Options

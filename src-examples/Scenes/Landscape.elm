@@ -103,6 +103,7 @@ init =
         [ landscape
             |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
             |> Object.init
+            |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY
             |> (\obj -> Graph obj helpers)
