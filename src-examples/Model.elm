@@ -19,6 +19,7 @@ import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Scenes.Landscape
 import Scenes.Light
+import Scenes.NormalMapping
 import Scenes.ObjectLoader
 import Scenes.Sandbox
 import Scenes.Textures
@@ -64,7 +65,7 @@ init =
     , scene = Scenes.Light.init
     , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.RenderOptions True False False
-    , scenes = [ Textures, Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
+    , scenes = [ NormalMapping, Textures, Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     }
@@ -111,7 +112,8 @@ prevScene model =
 
 
 type ActiveScene
-    = Textures
+    = NormalMapping
+    | Textures
     | Sandbox
     | ObjectLoader
     | Light
@@ -121,6 +123,9 @@ type ActiveScene
 sceneOptions : Model -> Maybe Scene.Options
 sceneOptions model =
     case Array.get model.currentSceneIndex model.scenes of
+        Just NormalMapping ->
+            Scenes.NormalMapping.sceneOptions
+
         Just Textures ->
             Scenes.Textures.sceneOptions
 
@@ -145,6 +150,9 @@ updateAssetStore assets model =
     { model | assets = assets }
         |> (\m ->
                 case Array.get m.currentSceneIndex m.scenes of
+                    Just NormalMapping ->
+                        { m | scene = Scenes.NormalMapping.init m.assets }
+
                     Just Textures ->
                         { m | scene = Scenes.Textures.init m.assets }
 
@@ -168,6 +176,24 @@ updateAssetStore assets model =
 loadScene : Model -> ( Model, Cmd Msg )
 loadScene model =
     case Array.get model.currentSceneIndex model.scenes of
+        Just NormalMapping ->
+            { model | scene = Scenes.NormalMapping.init model.assets }
+                |> (\model_ ->
+                        { model_
+                            | rendererOptions =
+                                model_.rendererOptions
+                                    |> XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
+                        }
+                   )
+                |> (\model_ ->
+                        ( model_
+                        , Cmd.batch
+                            [ AssetStore.loadObj Asset.Cube model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.CubeDiffuse model_.assets (AssetLoaded 1)
+                            ]
+                        )
+                   )
+
         Just Textures ->
             { model | scene = Scenes.Textures.init model.assets }
                 |> (\model_ ->

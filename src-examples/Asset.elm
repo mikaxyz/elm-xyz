@@ -4,6 +4,7 @@ module Asset exposing (..)
 type Obj
     = Ball
     | Tree
+    | Cube
 
 
 objPath : Obj -> String
@@ -15,6 +16,9 @@ objPath texture =
         Tree ->
             "obj/fat_bottomed_tree/fat_bottomed_tree.obj"
 
+        Cube ->
+            "obj/uvcube/uvcube.obj"
+
 
 type Texture
     = Empty
@@ -22,6 +26,7 @@ type Texture
     | BallDiffuse
     | BallNormal
     | TreeDiffuse
+    | CubeDiffuse
 
 
 texturePath : Texture -> String
@@ -41,3 +46,6 @@ texturePath texture =
 
         TreeDiffuse ->
             "obj/fat_bottomed_tree/fat_bottomed_tree.png"
+
+        CubeDiffuse ->
+            "obj/uvcube/uvcube.png"
