@@ -103,15 +103,23 @@ cornersWithBounds ( v1, v2 ) =
 
         vr2 =
             v2 |> Vec3.toRecord
+
+        vMin =
+            vec3 (min vr1.x vr2.x) (min vr1.y vr2.y) (min vr1.z vr2.z)
+                |> Vec3.toRecord
+
+        vMax =
+            vec3 (max vr1.x vr2.x) (max vr1.y vr2.y) (max vr1.z vr2.z)
+                |> Vec3.toRecord
     in
-    { frontTopLeft = vec3 vr1.x vr2.y vr2.z
-    , frontTopRight = vec3 vr2.x vr2.y vr2.z
-    , frontBottomLeft = vec3 vr1.x vr1.y vr2.z
-    , frontBottomRight = vec3 vr2.x vr1.y vr2.z
-    , backTopLeft = vec3 vr1.x vr2.y vr1.z
-    , backTopRight = vec3 vr2.x vr2.y vr1.z
-    , backBottomLeft = vec3 vr1.x vr1.y vr1.z
-    , backBottomRight = vec3 vr2.x vr1.y vr1.z
+    { frontTopLeft = vec3 vMin.x vMax.y vMax.z
+    , frontTopRight = vec3 vMax.x vMax.y vMax.z
+    , frontBottomLeft = vec3 vMin.x vr1.y vMax.z
+    , frontBottomRight = vec3 vMax.x vr1.y vMax.z
+    , backTopLeft = vec3 vMin.x vMax.y vMin.z
+    , backTopRight = vec3 vMax.x vMax.y vMin.z
+    , backBottomLeft = vec3 vMin.x vr1.y vMin.z
+    , backBottomRight = vec3 vMax.x vr1.y vMin.z
     }
 
 
@@ -195,7 +203,7 @@ withBoundsAndColors colors ( v1, v2 ) =
             quadWithNormal colors.front c.frontTopRight c.frontTopLeft c.frontBottomLeft c.frontBottomRight (vec3 0 0 1)
 
         back =
-            quadWithNormal colors.back c.backTopRight c.backTopLeft c.backBottomLeft c.backBottomRight (vec3 0 0 -1)
+            quadWithNormal colors.back c.backTopLeft c.backTopRight c.backBottomRight c.backBottomLeft (vec3 0 0 -1)
 
         left =
             quadWithNormal colors.left c.frontTopLeft c.frontBottomLeft c.backBottomLeft c.backTopLeft (vec3 -1 0 0)
