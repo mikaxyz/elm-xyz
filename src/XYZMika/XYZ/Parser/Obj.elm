@@ -24,9 +24,20 @@ type alias IndexedData =
     , normalMap : List ( Int, Int, Int )
     , uvMap : List ( Int, Int, Int )
     , indices : List VertMap
+    , textureIndexMap : Dict Int Int
+    , normalIndexMap : Dict Int Int
+    , vmap3 : List VertMap3
 
     --, tmap : Array (Int, Int, Int)
     }
+
+
+
+--type alias VertCollected =
+--    { geometry : Vec3
+--    , texture : Vec3
+--    , normal : Vec3
+--    }
 
 
 type alias Data =
@@ -100,6 +111,9 @@ parseIndexed options input =
                 []
                 []
                 []
+                Dict.empty
+                Dict.empty
+                []
 
         data : IndexedData
         data =
@@ -143,6 +157,19 @@ insertIndexedData line data =
         Vmap3 { m1, m2, m3 } ->
             { data
                 | vertexMap = (( m1.geometry, m2.geometry, m3.geometry ) |> Debug.log "vmap") :: data.vertexMap
+                , vmap3 = VertMap3 m1 m2 m3 :: data.vmap3
+                , normalIndexMap =
+                    Maybe.map3
+                        (\n1 n2 n3 ->
+                            data.normalIndexMap
+                                |> Dict.insert m1.geometry n1
+                                |> Dict.insert m2.geometry n2
+                                |> Dict.insert m2.geometry n3
+                        )
+                        m1.normal
+                        m2.normal
+                        m3.normal
+                        |> Maybe.withDefault data.normalIndexMap
                 , indices =
                     VertMap m1.geometry m1.texture m1.normal
                         :: VertMap m2.geometry m2.texture m2.normal
@@ -220,8 +247,8 @@ verticesIndexedFromData { scale, color } data =
         vertexFromIndices { geometry, texture, normal } =
             Array.get geometry data.vertices
                 |> Maybe.map (\v -> ( geometry, toVertex normal texture v ))
-                |> Debug.log "VERTEX"
 
+        --|> Debug.log "VERTEX"
         --case
         --    ( Array.get (geometry - 1) data.vertices
         --    , Array.get (geometry - 1) data.vertices
@@ -315,14 +342,13 @@ verticesIndexedFromData { scale, color } data =
             xxx
                 |> Dict.fromList
 
-        _ =
-            data.vertexMap
-                |> List.length
-                |> Debug.log "data.vertexMap"
-
-        _ =
-            unique |> Dict.values |> List.length |> Debug.log "UNIQUE"
-
+        --_ =
+        --    data.vertexMap
+        --        |> List.length
+        --        |> Debug.log "data.vertexMap"
+        --
+        --_ =
+        --    unique |> Dict.values |> List.length |> Debug.log "UNIQUE"
         toTriangle : ( Int, Int, Int ) -> Maybe ( Vertex, Vertex, Vertex )
         toTriangle ( v1, v2, v3 ) =
             case
@@ -341,32 +367,41 @@ verticesIndexedFromData { scale, color } data =
         verts =
             Dict.empty
 
+        toVertexWithUvAndNormal : Vec3 -> Vec2 -> Vec3 -> Vertex
+        toVertexWithUvAndNormal v uv normal =
+            Vertex.vertex v
+                |> Vertex.withColor (Color.cyan |> Color.toVec3)
+                |> Vertex.withUV uv
+                |> Vertex.withNormal normal
+
+        --|> (\vertex ->
+        --        uv
+        --            --|> Maybe.andThen (\x -> Array.get x data.uvs)
+        --            |> Maybe.map (\uv_ -> Vertex.withUV uv_ vertex)
+        --            |> Maybe.withDefault vertex
+        --   )
         storeVertex i store =
-            data.vertices
-                |> Array.get i
-                |> Maybe.map (\v -> Dict.insert i (Vertex.vertex v |> Vertex.withColor (Color.cyan |> Color.toVec3)) store)
+            Maybe.map3 (\p uv normal -> Dict.insert i (toVertexWithUvAndNormal p uv normal) store)
+                (Array.get i data.vertices)
+                (Array.get i data.uvs |> Debug.log ("uv    : " ++ String.fromInt i))
+                (Array.get i data.normals |> Debug.log ("normal: " ++ String.fromInt i))
                 |> Maybe.withDefault store
 
-        collectVerts : Dict Int Vertex -> List ( Int, Int, Int ) -> Dict Int Vertex
-        collectVerts store source =
+        collectVertices : Dict Int Vertex -> List ( Int, Int, Int ) -> Dict Int Vertex
+        collectVertices store source =
             case source of
                 ( i1, i2, i3 ) :: rest ->
-                    --case (Dict.get i1 store, Dict.get i2 store, Dict.get i3 store) of
-                    --    Just existing ->
-                    --        collectVerts store rest
-                    --
-                    --    Nothing ->
                     store
                         |> storeVertex i1
                         |> storeVertex i2
                         |> storeVertex i3
-                        |> (\s -> collectVerts s rest)
+                        |> (\s -> collectVertices s rest)
 
                 [] ->
                     store
 
         collected =
-            collectVerts Dict.empty data.vertexMap |> Dict.values
+            collectVertices Dict.empty data.vertexMap |> Dict.values
 
         _ =
             Debug.log "collected" (List.length collected)
@@ -377,7 +412,7 @@ verticesIndexedFromData { scale, color } data =
     --    |> List.map Tuple.second
     ( collected
     , data.vertexMap
-        |> List.map (\x -> Debug.log "vmap" x)
+      --|> List.map (\x -> Debug.log "vmap" x)
       --|> List.map (\( v1, v2, v3 ) -> Debug.log "vmap" ( v1 - 1, v2 - 1, v3 - 1 ))
     )
 
