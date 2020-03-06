@@ -8,6 +8,7 @@ type alias Vertex =
     { position : Vec3
     , color : Vec3
     , normal : Vec3
+    , tangent : Vec3
     , uv : Vec2
     , meta :
         { hasColor : Bool
@@ -22,6 +23,7 @@ vertex pos =
     { position = pos
     , color = vec3 1 1 1
     , normal = vec3 0 0 0
+    , tangent = vec3 0 0 0
     , uv = vec2 0 0
     , meta =
         { hasColor = False
@@ -39,6 +41,11 @@ withColor x ({ meta } as v) =
 withNormal : Vec3 -> Vertex -> Vertex
 withNormal x ({ meta } as v) =
     { v | normal = x, meta = { meta | hasNormal = True } }
+
+
+withTangent : Vec3 -> Vertex -> Vertex
+withTangent x ({ meta } as v) =
+    { v | tangent = x }
 
 
 withUV : Vec2 -> Vertex -> Vertex

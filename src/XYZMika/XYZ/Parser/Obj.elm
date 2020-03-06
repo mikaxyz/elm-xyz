@@ -1,9 +1,10 @@
 module XYZMika.XYZ.Parser.Obj exposing (parse, parseIndexed)
 
 import Array exposing (Array)
-import Dict
+import Dict exposing (Dict)
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import XYZMika.Color as Color
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 
 
@@ -196,13 +197,13 @@ verticesIndexedFromData { scale, color } data =
                 |> Vertex.withColor color
                 |> (\vertex ->
                         normal
-                            |> Maybe.andThen (\x -> Array.get (x - 1) data.normals)
+                            |> Maybe.andThen (\x -> Array.get x data.normals)
                             |> Maybe.map (\normal_ -> Vertex.withNormal normal_ vertex)
                             |> Maybe.withDefault vertex
                    )
                 |> (\vertex ->
                         uv
-                            |> Maybe.andThen (\x -> Array.get (x - 1) data.uvs)
+                            |> Maybe.andThen (\x -> Array.get x data.uvs)
                             |> Maybe.map (\uv_ -> Vertex.withUV uv_ vertex)
                             |> Maybe.withDefault vertex
                    )
@@ -217,7 +218,7 @@ verticesIndexedFromData { scale, color } data =
         --   )
         vertexFromIndices : VertMap -> Maybe ( Int, Vertex )
         vertexFromIndices { geometry, texture, normal } =
-            Array.get (geometry - 1) data.vertices
+            Array.get geometry data.vertices
                 |> Maybe.map (\v -> ( geometry, toVertex normal texture v ))
                 |> Debug.log "VERTEX"
 
@@ -316,19 +317,68 @@ verticesIndexedFromData { scale, color } data =
 
         _ =
             data.vertexMap
-                |> List.map (\x -> Debug.log "vmap" x)
                 |> List.length
                 |> Debug.log "data.vertexMap"
 
         _ =
             unique |> Dict.values |> List.length |> Debug.log "UNIQUE"
+
+        toTriangle : ( Int, Int, Int ) -> Maybe ( Vertex, Vertex, Vertex )
+        toTriangle ( v1, v2, v3 ) =
+            case
+                ( data.vertices |> Array.get v1
+                , data.vertices |> Array.get v2
+                , data.vertices |> Array.get v3
+                )
+            of
+                ( Just p1, Just p2, Just p3 ) ->
+                    Just ( Vertex.vertex p1, Vertex.vertex p2, Vertex.vertex p3 )
+
+                _ ->
+                    Nothing
+
+        verts : Dict Int Vertex
+        verts =
+            Dict.empty
+
+        storeVertex i store =
+            data.vertices
+                |> Array.get i
+                |> Maybe.map (\v -> Dict.insert i (Vertex.vertex v |> Vertex.withColor (Color.cyan |> Color.toVec3)) store)
+                |> Maybe.withDefault store
+
+        collectVerts : Dict Int Vertex -> List ( Int, Int, Int ) -> Dict Int Vertex
+        collectVerts store source =
+            case source of
+                ( i1, i2, i3 ) :: rest ->
+                    --case (Dict.get i1 store, Dict.get i2 store, Dict.get i3 store) of
+                    --    Just existing ->
+                    --        collectVerts store rest
+                    --
+                    --    Nothing ->
+                    store
+                        |> storeVertex i1
+                        |> storeVertex i2
+                        |> storeVertex i3
+                        |> (\s -> collectVerts s rest)
+
+                [] ->
+                    store
+
+        collected =
+            collectVerts Dict.empty data.vertexMap |> Dict.values
+
+        _ =
+            Debug.log "collected" (List.length collected)
     in
-    ( unique |> Dict.values
-      --( data.indices
-      --    |> List.filterMap vertexFromIndices
-      --    |> List.map Tuple.second
+    --( unique |> Dict.values
+    --( data.indices
+    --    |> List.filterMap vertexFromIndices
+    --    |> List.map Tuple.second
+    ( collected
     , data.vertexMap
-        |> List.map (\( v1, v2, v3 ) -> Debug.log "vmap" ( v1 - 1, v2 - 1, v3 - 1 ))
+        |> List.map (\x -> Debug.log "vmap" x)
+      --|> List.map (\( v1, v2, v3 ) -> Debug.log "vmap" ( v1 - 1, v2 - 1, v3 - 1 ))
     )
 
 
@@ -342,18 +392,18 @@ verticesFromData { scale, color } data =
         verticesFromVmap3 : VertMap3 -> Maybe ( Vertex, Vertex, Vertex )
         verticesFromVmap3 vmap =
             case
-                ( Array.get (vmap.m1.geometry - 1) data.geometry
-                , Array.get (vmap.m2.geometry - 1) data.geometry
-                , Array.get (vmap.m3.geometry - 1) data.geometry
+                ( Array.get vmap.m1.geometry data.geometry
+                , Array.get vmap.m2.geometry data.geometry
+                , Array.get vmap.m3.geometry data.geometry
                 )
             of
                 ( Just v1, Just v2, Just v3 ) ->
                     let
                         getNormal i =
-                            Array.get (i - 1) data.normal
+                            Array.get i data.normal
 
                         getUv i =
-                            Array.get (i - 1) data.texture
+                            Array.get i data.texture
 
                         calculateNormal v1_ v2_ v3_ =
                             Vec3.cross (Vec3.sub v1_ v2_) (Vec3.sub v1_ v3_) |> Vec3.normalize
@@ -453,6 +503,12 @@ parseLine line =
                                 vec2 0 0
                    )
 
+        zeroIndexVmap : VertMap -> VertMap
+        zeroIndexVmap { geometry, texture, normal } =
+            VertMap (geometry - 1)
+                (texture |> Maybe.map (\x -> x - 1))
+                (normal |> Maybe.map (\x -> x - 1))
+
         parseVmaps : String -> VertMap3
         parseVmaps str =
             let
@@ -484,6 +540,7 @@ parseLine line =
                                         -- TOOD: Add to errors instead
                                         VertMap 0 Nothing Nothing
                             )
+                        |> List.map zeroIndexVmap
             in
             case vmaps of
                 v1 :: v2 :: v3 :: _ ->

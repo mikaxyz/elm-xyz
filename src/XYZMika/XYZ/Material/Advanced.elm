@@ -48,6 +48,7 @@ vertexShader :
         { color : Vec3
         , meta : { hasColor : Bool, hasNormal : Bool, hasUV : Bool }
         , normal : Vec3
+        , tangent : Vec3
         , position : Vec3
         , uv : Vec2
         }
@@ -76,6 +77,7 @@ vertexShader =
         attribute vec3 position;
         attribute vec3 color;
         attribute vec3 normal;
+        attribute vec3 tangent;
         attribute vec2 uv;
         
         uniform mat4 sceneCamera;
