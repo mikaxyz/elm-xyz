@@ -151,7 +151,7 @@ fragmentShader =
 
             // Lighting
             highp vec3 directionalLightColor = vec3(1, 1, 1);
-            highp vec3 directionalVector = normalize(directionalLight);
+            highp vec3 directionalVector = -normalize(directionalLight);
             highp vec4 transformedNormal = sceneMatrix * vec4(normal, 0.0);
             highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
 
