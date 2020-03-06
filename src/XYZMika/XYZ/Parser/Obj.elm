@@ -1,6 +1,7 @@
-module XYZMika.XYZ.Parser.Obj exposing (parse)
+module XYZMika.XYZ.Parser.Obj exposing (parse, parseIndexed)
 
 import Array exposing (Array)
+import Dict
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
@@ -9,6 +10,21 @@ import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 type alias Options =
     { scale : Float
     , color : Vec3
+    }
+
+
+type alias IndexedData =
+    { vertices : Array Vec3
+    , normals : Array Vec3
+    , uvs : Array Vec2
+
+    -- TODO: Remove. Only keep indices...
+    , vertexMap : List ( Int, Int, Int )
+    , normalMap : List ( Int, Int, Int )
+    , uvMap : List ( Int, Int, Int )
+    , indices : List VertMap
+
+    --, tmap : Array (Int, Int, Int)
     }
 
 
@@ -69,6 +85,255 @@ parse options input =
             Debug.log "ERRORS" data.errors
     in
     verticesFromData options data
+
+
+parseIndexed : Options -> String -> ( List Vertex, List ( Int, Int, Int ) )
+parseIndexed options input =
+    let
+        init =
+            IndexedData
+                Array.empty
+                Array.empty
+                Array.empty
+                []
+                []
+                []
+                []
+
+        data : IndexedData
+        data =
+            String.lines input
+                |> List.foldl insertIndexedData init
+
+        --|> Debug.log "data"
+        _ =
+            [ ( "vertices ", Array.length data.vertices )
+            , ( "vertexMap   ", List.length data.vertexMap )
+            , ( "normals  ", Array.length data.normals )
+            , ( "normalMap    ", List.length data.normalMap )
+            , ( "uvs  ", Array.length data.uvs )
+            , ( "uvMap    ", List.length data.uvMap )
+
+            --
+            , ( "indices    ", List.length data.indices )
+
+            --, ( "errors   ", List.length data.errors )
+            ]
+                |> List.map (\( m, v ) -> Debug.log m v)
+
+        --_ =
+        --    Debug.log "ERRORS" data.errors
+    in
+    verticesIndexedFromData options data
+
+
+insertIndexedData : String -> IndexedData -> IndexedData
+insertIndexedData line data =
+    case parseLine line of
+        Geometry vs ->
+            { data | vertices = data.vertices |> Array.push vs }
+
+        Texture vs ->
+            { data | uvs = data.uvs |> Array.push vs }
+
+        Normal vs ->
+            { data | normals = data.normals |> Array.push vs }
+
+        Vmap3 { m1, m2, m3 } ->
+            { data
+                | vertexMap = (( m1.geometry, m2.geometry, m3.geometry ) |> Debug.log "vmap") :: data.vertexMap
+                , indices =
+                    VertMap m1.geometry m1.texture m1.normal
+                        :: VertMap m2.geometry m2.texture m2.normal
+                        :: VertMap m3.geometry m3.texture m3.normal
+                        :: data.indices
+            }
+                |> (\data_ ->
+                        Maybe.map3
+                            (\i1 i2 i3 ->
+                                { data_
+                                    | normalMap = ( i1, i2, i3 ) :: data_.normalMap
+                                }
+                            )
+                            m1.normal
+                            m2.normal
+                            m3.normal
+                   )
+                |> Maybe.withDefault data
+                |> (\data_ ->
+                        Maybe.map3
+                            (\i1 i2 i3 ->
+                                { data_
+                                    | uvMap = ( i1, i2, i3 ) :: data_.uvMap
+                                }
+                            )
+                            m1.texture
+                            m2.texture
+                            m3.texture
+                   )
+                |> Maybe.withDefault data
+
+        Error str ->
+            let
+                _ =
+                    Debug.log "ERROR" str
+            in
+            data
+
+
+
+--{ data | errors = str :: data.errors }
+
+
+verticesIndexedFromData : Options -> IndexedData -> ( List Vertex, List ( Int, Int, Int ) )
+verticesIndexedFromData { scale, color } data =
+    let
+        toVertex : Maybe Int -> Maybe Int -> Vec3 -> Vertex
+        toVertex normal uv v =
+            v
+                |> Vec3.scale scale
+                |> Vertex.vertex
+                |> Vertex.withColor color
+                |> (\vertex ->
+                        normal
+                            |> Maybe.andThen (\x -> Array.get (x - 1) data.normals)
+                            |> Maybe.map (\normal_ -> Vertex.withNormal normal_ vertex)
+                            |> Maybe.withDefault vertex
+                   )
+                |> (\vertex ->
+                        uv
+                            |> Maybe.andThen (\x -> Array.get (x - 1) data.uvs)
+                            |> Maybe.map (\uv_ -> Vertex.withUV uv_ vertex)
+                            |> Maybe.withDefault vertex
+                   )
+
+        --|> (\vertex ->
+        --        normal
+        --            |> Maybe.map (\normal_ ->
+        --                (Array.get (normal_ - 1) data.normals)
+        --                |> Maybe.map ()
+        --                vertex |> Vertex.withNormal normal_)
+        --            |> Maybe.withDefault vertex
+        --   )
+        vertexFromIndices : VertMap -> Maybe ( Int, Vertex )
+        vertexFromIndices { geometry, texture, normal } =
+            Array.get (geometry - 1) data.vertices
+                |> Maybe.map (\v -> ( geometry, toVertex normal texture v ))
+                |> Debug.log "VERTEX"
+
+        --case
+        --    ( Array.get (geometry - 1) data.vertices
+        --    , Array.get (geometry - 1) data.vertices
+        --    , Array.get (geometry - 1) data.vertices
+        --    )
+        --of
+        --    ( Just p1, Just p2, Just p3 ) ->
+        --        [ p1, p2, p3 ] |> List.map toVertex
+        --position
+        --    |> Vec3.scale scale
+        --    |> Vertex.vertex
+        --    |> Vertex.withColor color
+        --    |> (\vertex ->
+        --            data.normals
+        --                |> Array.get (normal - 1)
+        --                |> Maybe.map (\x -> vertex |> Vertex.withNormal x)
+        --                |> Maybe.withDefault vertex
+        --       )
+        --    |> (\vertex ->
+        --            data.uvs
+        --                |> Array.get (uv - 1)
+        --                |> Maybe.map (\x -> vertex |> Vertex.withUV x)
+        --                |> Maybe.withDefault vertex
+        --       )
+        --    |> Debug.log ("VERT: " ++ String.fromInt v)
+        --    |> Just
+        --_ ->
+        --    []
+        --_ =
+        --    data.vertices |> Array.map (\asd -> Debug.log "VERTS" asd)
+        vertices : List ( Int, Vertex )
+        vertices =
+            data.indices
+                |> List.filterMap vertexFromIndices
+
+        --|> Array.fromList
+        --averageTriangle : List Vertex -> Vertex
+        averageVertex : List Vertex -> Vertex
+        averageVertex vs =
+            vs
+                |> List.foldl
+                    (\x acc ->
+                        { acc
+                            | position = x.position
+                            , uv = x.uv
+                            , normal = acc.normal |> Vec3.add x.normal |> Vec3.normalize
+
+                            --, normal = x.normal
+                        }
+                    )
+                    (Vertex.vertex Vec3.i)
+
+        xxx : List ( Int, Vertex )
+        xxx =
+            data.vertexMap
+                |> List.map
+                    (\( v1, v2, v3 ) ->
+                        let
+                            vs1 =
+                                vertices
+                                    |> List.filter (\( i, _ ) -> i == v1)
+                                    |> List.map Tuple.second
+                                    |> averageVertex
+                                    |> Tuple.pair v1
+
+                            vs2 =
+                                vertices
+                                    |> List.filter (\( i, _ ) -> i == v2)
+                                    |> List.map Tuple.second
+                                    |> averageVertex
+                                    |> Tuple.pair v2
+
+                            vs3 =
+                                vertices
+                                    |> List.filter (\( i, _ ) -> i == v3)
+                                    |> List.map Tuple.second
+                                    |> averageVertex
+                                    |> Tuple.pair v3
+
+                            _ =
+                                Debug.log "( v1, v2, v3 )" ( v1, v2, v3 )
+
+                            --_ =
+                            --    Debug.log "vs" (vs |> List.length)
+                        in
+                        [ vs1, vs2, vs3 ]
+                    )
+                |> List.concat
+
+        unique =
+            xxx
+                |> Dict.fromList
+
+        _ =
+            data.vertexMap
+                |> List.map (\x -> Debug.log "vmap" x)
+                |> List.length
+                |> Debug.log "data.vertexMap"
+
+        _ =
+            unique |> Dict.values |> List.length |> Debug.log "UNIQUE"
+    in
+    ( unique |> Dict.values
+      --( data.indices
+      --    |> List.filterMap vertexFromIndices
+      --    |> List.map Tuple.second
+    , data.vertexMap
+        |> List.map (\( v1, v2, v3 ) -> Debug.log "vmap" ( v1 - 1, v2 - 1, v3 - 1 ))
+    )
+
+
+
+--( data.vertices |> Array.toList |> List.map toVertex, data.vertexMap )
 
 
 verticesFromData : Options -> Data -> List ( Vertex, Vertex, Vertex )

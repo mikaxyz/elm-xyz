@@ -9,6 +9,7 @@ module XYZMika.XYZ.AssetStore exposing
     , mesh
     , texture
     , vertices
+    , verticesIndexed
     )
 
 import Dict exposing (Dict)
@@ -31,7 +32,7 @@ init objPath texturePath =
 
 
 type Asset
-    = Mesh (List ( Vertex, Vertex, Vertex )) (WebGL.Mesh Vertex)
+    = Mesh (List ( Vertex, Vertex, Vertex )) ( List Vertex, List ( Int, Int, Int ) ) (WebGL.Mesh Vertex)
     | Texture WebGL.Texture.Texture
     | TextureError WebGL.Texture.Error
 
@@ -62,7 +63,7 @@ texture texture_ (Store { texturePath, assets }) =
 mesh : obj -> Store obj texture -> Maybe (WebGL.Mesh Vertex)
 mesh obj (Store { objPath, assets }) =
     case assets |> Dict.get (objPath obj) of
-        Just (Mesh v x) ->
+        Just (Mesh v iv x) ->
             Just x
 
         _ ->
@@ -72,8 +73,18 @@ mesh obj (Store { objPath, assets }) =
 vertices : obj -> Store obj texture -> Maybe (List ( Vertex, Vertex, Vertex ))
 vertices obj (Store { objPath, assets }) =
     case assets |> Dict.get (objPath obj) of
-        Just (Mesh v x) ->
+        Just (Mesh v iv x) ->
             Just v
+
+        _ ->
+            Nothing
+
+
+verticesIndexed : obj -> Store obj texture -> Maybe ( List Vertex, List ( Int, Int, Int ) )
+verticesIndexed obj (Store { objPath, assets }) =
+    case assets |> Dict.get (objPath obj) of
+        Just (Mesh _ iv _) ->
+            Just iv
 
         _ ->
             Nothing
@@ -86,10 +97,14 @@ addToStore scale content (Store ({ assets } as store)) =
             case content of
                 Obj path_ x ->
                     ( path_
-                    , XYZMika.XYZ.Parser.Obj.parse
-                        { scale = scale, color = vec3 1 1 1 }
-                        x
-                        |> (\triangles -> Mesh triangles (WebGL.triangles triangles))
+                    , ( XYZMika.XYZ.Parser.Obj.parse
+                            { scale = scale, color = vec3 1 1 1 }
+                            x
+                      , XYZMika.XYZ.Parser.Obj.parseIndexed
+                            { scale = scale, color = vec3 1 1 1 }
+                            x
+                      )
+                        |> (\( triangles, trianglesIndexed ) -> Mesh triangles trianglesIndexed (WebGL.triangles triangles))
                     )
 
                 Tex path_ result ->
@@ -100,7 +115,7 @@ addToStore scale content (Store ({ assets } as store)) =
 
                         Err error ->
                             -- TODO: Dont "swallow" these
-                            TextureError error
+                            TextureError (Debug.log "error" error)
                     )
     in
     Store { store | assets = assets |> Dict.insert path asset }
@@ -108,7 +123,7 @@ addToStore scale content (Store ({ assets } as store)) =
 
 addMeshToStore : obj -> WebGL.Mesh Vertex -> Store obj texture -> Store obj texture
 addMeshToStore obj mesh_ (Store ({ objPath, assets } as store)) =
-    Store { store | assets = assets |> Dict.insert (objPath obj) (Mesh [] mesh_) }
+    Store { store | assets = assets |> Dict.insert (objPath obj) (Mesh [] ( [], [] ) mesh_) }
 
 
 loadObj : obj -> Store obj texture -> (Content -> msg) -> Cmd msg

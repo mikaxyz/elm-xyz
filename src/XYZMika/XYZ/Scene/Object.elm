@@ -6,6 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault, normalMapIntensityWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
+    , initWithIndexedTriangles
     )
 
 {-|
@@ -103,6 +104,11 @@ initWithTriangles x =
         , material = Nothing
         , color = Color.white
         }
+
+
+initWithIndexedTriangles : ( List Vertex, List ( Int, Int, Int ) ) -> Object materialId
+initWithIndexedTriangles ( v, i ) =
+    init (WebGL.indexedTriangles v i)
 
 
 getBounds : List ( Vertex, Vertex, Vertex ) -> ( Vec3, Vec3 )
