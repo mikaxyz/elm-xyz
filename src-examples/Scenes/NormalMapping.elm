@@ -30,7 +30,7 @@ init assets =
         |> Maybe.map render
         |> Maybe.withDefault []
         |> Scene.init
-        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 3) (vec3 0 0 0) (vec3 0 1 0))
+        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 5) (vec3 0 0 0) (vec3 0 1 0))
 
 
 render : Assets -> List (Graph Material.Name)
@@ -91,6 +91,20 @@ render cube =
         |> Object.withOptionDragToRotateXY
         |> Object.withColor Color.blue
         |> Object.withDiffuseMap cube.diffuse
+        |> Object.withMaterialName Material.Advanced
+        |> objectToGraph
+    , cube.vertices
+        |> Object.initWithTriangles
+        |> Object.withPosition (vec3 -1.5 0 0)
+        |> Object.withOptionDragToRotateXY
+        |> Object.withDiffuseMap cube.diffuse
+        |> Object.withMaterialName Material.Advanced
+        |> objectToGraph
+    , cube.vertices
+        |> Object.initWithTriangles
+        |> Object.withPosition (vec3 1.5 0 0)
+        |> Object.withOptionDragToRotateXY
+        |> Object.withColor Color.yellow
         |> Object.withMaterialName Material.Advanced
         |> objectToGraph
     ]

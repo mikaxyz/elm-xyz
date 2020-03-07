@@ -8,22 +8,17 @@ import XYZMika.Color as Color
 import XYZMika.XYZ.Data.Vertex as Vertex
 
 
+log : String -> a -> a
+log m a =
+    if 1 == 1 then
+        Debug.log m a
+
+    else
+        a
+
+
 type alias Index =
     Int
-
-
-
---
---type V
---    = V Vec3
---
---
---type T
---    = T Vec2
---
---
---type N
---    = N Vec3
 
 
 type VertexIndices
@@ -35,14 +30,30 @@ type VertexIndices
 
 type Vertex
     = V Vec3
+    | VT Vec3 Vec2
+    | VN Vec3 Vec3
+    | VTN Vec3 Vec2 Vec3
 
 
+toVertex : { scale : Float, color : Vec3 } -> Vertex -> Vertex.Vertex
+toVertex { scale, color } x =
+    case x of
+        V v ->
+            Vertex.vertex (v |> Vec3.scale scale)
+                |> Vertex.withColor color
 
---type Triangle
---    = Triangle ( Vertex, Vertex, Vertex )
---type alias Obj =
---    { triangles : Dict Index Triangle
---    }
+        VT v uv ->
+            Vertex.vertex (v |> Vec3.scale scale)
+                |> Vertex.withUV uv
+
+        VN v normal ->
+            Vertex.vertex (v |> Vec3.scale scale)
+                |> Vertex.withNormal normal
+
+        VTN v uv normal ->
+            Vertex.vertex (v |> Vec3.scale scale)
+                |> Vertex.withUV uv
+                |> Vertex.withNormal normal
 
 
 type alias Options =
@@ -60,11 +71,6 @@ type ObjData
     | Error String
 
 
-
---type alias VertMap3 =
---    { m1 : VertMap, m2 : VertMap, m3 : VertMap }
-
-
 type alias VertMap =
     { v : Int
     , vt : Maybe Int
@@ -72,49 +78,130 @@ type alias VertMap =
     }
 
 
+parse : Options -> String -> List ( Vertex.Vertex, Vertex.Vertex, Vertex.Vertex )
+parse options input =
+    String.lines input
+        |> List.map parseLine
+        |> toVertices
+        |> List.map (\( v1, v2, v3 ) -> ( toVertex options v1, toVertex options v2, toVertex options v3 ))
+
+
 parseIndexed : Options -> String -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
 parseIndexed options input =
     String.lines input
         |> List.map parseLine
-        --|> List.map (Debug.log "line")
-        |> toIndexedData
-        --|> List.map (Debug.log "data")
+        --|> List.map (log "line")
+        |> toVertices
+        --|> List.map (log "data")
         |> always ( [], [] )
 
 
-toIndexedData : List ObjData -> List ( Vertex, Vertex, Vertex )
-toIndexedData data =
+toVertices : List ObjData -> List ( Vertex, Vertex, Vertex )
+toVertices data =
     let
-        --toVertex { v, vt, vn } =
-        --    Vertex v vt vn
-        isVmap x =
-            case x of
-                Vmap3 _ _ _ ->
-                    True
+        geometry =
+            data
+                |> List.filterMap mapGeometry
+                |> Array.fromList
 
-                _ ->
-                    False
+        uvs =
+            data
+                |> List.filterMap mapTexture
+                |> Array.fromList
 
-        toVertex : ( VertMap, VertMap, VertMap ) -> ( Vertex, Vertex, Vertex )
-        toVertex x =
-            ( V Vec3.i, V Vec3.i, V Vec3.i )
+        normals =
+            data
+                |> List.filterMap mapNormal
+                |> Array.fromList
 
-        toVertmap : ObjData -> Maybe ( VertMap, VertMap, VertMap )
-        toVertmap x =
-            case x of
-                Vmap3 v1 v2 v3 ->
-                    Just ( v1, v2, v3 )
+        toVertexData : VertMap -> Maybe Vertex
+        toVertexData { v, vt, vn } =
+            case ( v, vt, vn ) of
+                ( iGeometry, Nothing, Nothing ) ->
+                    Maybe.map V (Array.get iGeometry geometry)
 
-                _ ->
-                    Nothing
+                ( iGeometry, Just iUv, Nothing ) ->
+                    Maybe.map2
+                        VT
+                        (Array.get iGeometry geometry)
+                        (Array.get iUv uvs)
+
+                ( iGeometry, Nothing, Just iNormal ) ->
+                    Maybe.map2
+                        VN
+                        (Array.get iGeometry geometry)
+                        (Array.get iNormal normals)
+
+                ( iGeometry, Just iUv, Just iNormal ) ->
+                    Maybe.map3
+                        VTN
+                        (Array.get iGeometry geometry)
+                        (Array.get iUv uvs)
+                        (Array.get iNormal normals)
+
+        toTriangles : ( VertMap, VertMap, VertMap ) -> Maybe ( Vertex, Vertex, Vertex )
+        toTriangles ( m1, m2, m3 ) =
+            Maybe.map3
+                (\x y z -> ( x, y, z ))
+                (toVertexData m1)
+                (toVertexData m2)
+                (toVertexData m3)
     in
     data
-        |> List.filterMap toVertmap
-        |> List.map (Debug.log "data")
-        |> List.map toVertex
+        |> List.filterMap mapVertMap
+        |> List.map (log "VertMap")
+        |> List.filterMap toTriangles
+        |> List.indexedMap (\i x -> log ((i |> String.fromInt |> String.padLeft 2 '0') ++ ": Vertex") x)
 
 
 
+--|> List.length
+--|> log "Vertices count"
+--|> always []
+
+
+mapVertMap : ObjData -> Maybe ( VertMap, VertMap, VertMap )
+mapVertMap x =
+    case x of
+        Vmap3 v1 v2 v3 ->
+            Just ( v1, v2, v3 )
+
+        _ ->
+            Nothing
+
+
+mapGeometry : ObjData -> Maybe Vec3
+mapGeometry x =
+    case x of
+        Geometry v ->
+            Just v
+
+        _ ->
+            Nothing
+
+
+mapTexture : ObjData -> Maybe Vec2
+mapTexture x =
+    case x of
+        Texture v ->
+            Just v
+
+        _ ->
+            Nothing
+
+
+mapNormal : ObjData -> Maybe Vec3
+mapNormal x =
+    case x of
+        Normal v ->
+            Just v
+
+        _ ->
+            Nothing
+
+
+
+--|> List.map apply
 --case data of
 --    Vmap3 v1 v2 v3 ->
 --        ( toVertex v1, toVertex v2, toVertex v3 )
@@ -161,60 +248,16 @@ parseLine line =
                 (vt |> Maybe.map (\x -> x - 1))
                 (vn |> Maybe.map (\x -> x - 1))
 
-        --parseVmaps : String -> VertMap3
-        --parseVmaps str =
-        --    let
-        --        -- TOOD: Handle quads?
-        --        vmaps =
-        --            str
-        --                |> String.dropLeft 2
-        --                |> String.trim
-        --                |> String.split " "
-        --                |> List.map
-        --                    (\vm ->
-        --                        let
-        --                            v =
-        --                                vm
-        --                                    |> String.split "/"
-        --                                    |> List.map String.toInt
-        --                        in
-        --                        case v of
-        --                            c1 :: c2 :: c3 :: _ ->
-        --                                VertMap (c1 |> Maybe.withDefault 0) c2 c3
-        --
-        --                            c1 :: c2 :: _ ->
-        --                                VertMap (c1 |> Maybe.withDefault 0) c2 Nothing
-        --
-        --                            c1 :: _ ->
-        --                                VertMap (c1 |> Maybe.withDefault 0) Nothing Nothing
-        --
-        --                            _ ->
-        --                                -- TOOD: Add to errors instead
-        --                                VertMap 0 Nothing Nothing
-        --                    )
-        --                |> List.map zeroIndexVmap
-        --    in
-        --    case vmaps of
-        --        v1 :: v2 :: v3 :: _ ->
-        --            VertMap3 v1 v2 v3
-        --
-        --        _ ->
-        --            -- TOOD: Add to errors instead
-        --            VertMap3
-        --                (VertMap 0 Nothing Nothing)
-        --                (VertMap 0 Nothing Nothing)
-        --                (VertMap 0 Nothing Nothing)
         parseVertMap : String -> Maybe VertMap
         parseVertMap x =
             case String.split "/" x |> List.map String.toInt of
                 v :: t :: n :: [] ->
                     v
-                        |> Maybe.map (\v_ -> VertMap v_ t n)
+                        |> Maybe.map (\v_ -> VertMap v_ t n |> zeroIndexVmap)
 
                 _ ->
                     Nothing
 
-        --|> Maybe.withDefault
         parseVertMaps : String -> Maybe ( VertMap, VertMap, VertMap )
         parseVertMaps x =
             case x |> String.split " " of
@@ -238,20 +281,11 @@ parseLine line =
         'v' :: 'n' :: ' ' :: _ ->
             Normal (parseVector line)
 
-        --'f' :: ' ' :: v1 :: '/' :: t1 :: '/' :: n1 :: '/' :: ' ' :: v2 :: '/' :: t2 :: '/' :: n2 :: '/' :: ' ' :: v3 :: '/' :: t3 :: '/' :: n3 :: '/' :: ' ' ->
         'f' :: ' ' :: data ->
             parseVertMaps (String.fromList data)
                 |> Maybe.map (\( m1, m2, m3 ) -> Vmap3 m1 m2 m3)
                 |> Maybe.withDefault (Error <| "Could not parse triangle indices from line: " ++ line)
 
-        --    Maybe.map3
-        --        Vmap3
-        --        (parseVertMap (String.fromList v1))
-        --        (parseVertMap m2)
-        --        (parseVertMap m3)
-        --        |> Maybe.withDefault (Error <| "Could not parse triangle indices from line: " ++ line)
-        --Vmap3 (parseVertMap m1) (parseVertMap m2) (parseVertMap m3)
-        --Vmap3 (parseVmaps line)
         'o' :: ' ' :: rest ->
             Ignored <| "o: " ++ String.fromList rest
 
@@ -275,8 +309,3 @@ parseLine line =
 
         x ->
             Error <| "Unknown entity: " ++ String.fromList x
-
-
-parse : Options -> String -> List ( Vertex.Vertex, Vertex.Vertex, Vertex.Vertex )
-parse options input =
-    []
