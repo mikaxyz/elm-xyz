@@ -104,7 +104,7 @@ render cube =
         |> Object.initWithTriangles
         |> Object.withPosition (vec3 1.5 0 0)
         |> Object.withOptionDragToRotateXY
-        |> Object.withColor Color.yellow
+        |> Object.withColor Color.grey
         |> Object.withMaterialName Material.Advanced
         |> objectToGraph
     ]

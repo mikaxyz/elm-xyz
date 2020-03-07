@@ -1,9 +1,10 @@
-module XYZMika.XYZ.Parser.Obj exposing (parse, parseIndexed)
+module XYZMika.XYZ.Parser.Obj exposing (parse)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Set
 import XYZMika.Color as Color
 import XYZMika.XYZ.Data.Vertex as Vertex
 
@@ -28,29 +29,33 @@ type VertexIndices
     | PositionUvNormal Index Index Index
 
 
+type Indexed a
+    = Indexed a Index
+
+
 type Vertex
-    = V Vec3
-    | VT Vec3 Vec2
-    | VN Vec3 Vec3
-    | VTN Vec3 Vec2 Vec3
+    = V (Indexed Vec3)
+    | VT (Indexed Vec3) (Indexed Vec2)
+    | VN (Indexed Vec3) (Indexed Vec3)
+    | VTN (Indexed Vec3) (Indexed Vec2) (Indexed Vec3)
 
 
 toVertex : { scale : Float, color : Vec3 } -> Vertex -> Vertex.Vertex
 toVertex { scale, color } x =
     case x of
-        V v ->
+        V (Indexed v vi) ->
             Vertex.vertex (v |> Vec3.scale scale)
                 |> Vertex.withColor color
 
-        VT v uv ->
+        VT (Indexed v vi) (Indexed uv uvi) ->
             Vertex.vertex (v |> Vec3.scale scale)
                 |> Vertex.withUV uv
 
-        VN v normal ->
+        VN (Indexed v vi) (Indexed normal normali) ->
             Vertex.vertex (v |> Vec3.scale scale)
                 |> Vertex.withNormal normal
 
-        VTN v uv normal ->
+        VTN (Indexed v vi) (Indexed uv uvi) (Indexed normal normali) ->
             Vertex.vertex (v |> Vec3.scale scale)
                 |> Vertex.withUV uv
                 |> Vertex.withNormal normal
@@ -78,21 +83,48 @@ type alias VertMap =
     }
 
 
-parse : Options -> String -> List ( Vertex.Vertex, Vertex.Vertex, Vertex.Vertex )
+type alias Output =
+    { triangles : List ( Vertex.Vertex, Vertex.Vertex, Vertex.Vertex )
+    , indexedTriangles : ( List Vertex.Vertex, List ( Int, Int, Int ) )
+    }
+
+
+parse : Options -> String -> Output
 parse options input =
     String.lines input
         |> List.map parseLine
         |> toVertices
-        |> List.map (\( v1, v2, v3 ) -> ( toVertex options v1, toVertex options v2, toVertex options v3 ))
+        |> (\vertices ->
+                { triangles = vertices |> List.map (\( v1, v2, v3 ) -> ( toVertex options v1, toVertex options v2, toVertex options v3 ))
+                , indexedTriangles = toVerticesWithIndex vertices
+                }
+           )
 
 
-parseIndexed : Options -> String -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
-parseIndexed options input =
-    String.lines input
-        |> List.map parseLine
-        --|> List.map (log "line")
-        |> toVertices
-        --|> List.map (log "data")
+
+--parseIndexed : Options -> String -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
+--parseIndexed options input =
+--    String.lines input
+--        |> List.map parseLine
+--        --|> List.map (log "line")
+--        |> toVertices
+--        --|> List.map (log "data")
+--        |> always ( [], [] )
+
+
+toVerticesWithIndex : List ( Vertex, Vertex, Vertex ) -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
+toVerticesWithIndex vertices =
+    vertices
+        --|> List.foldl (\x (vertices, indicies) ->
+        --let
+        --    case x of
+        --        (v1, v2, v3) ->
+        --        if List.member v1 vertices then
+        --
+        --in
+        --    acc
+        --
+        --) ( [], [] )
         |> always ( [], [] )
 
 
@@ -118,23 +150,23 @@ toVertices data =
         toVertexData { v, vt, vn } =
             case ( v, vt, vn ) of
                 ( iGeometry, Nothing, Nothing ) ->
-                    Maybe.map V (Array.get iGeometry geometry)
+                    Maybe.map (\p -> V (Indexed p iGeometry)) (Array.get iGeometry geometry)
 
                 ( iGeometry, Just iUv, Nothing ) ->
                     Maybe.map2
-                        VT
+                        (\p uv -> VT (Indexed p iGeometry) (Indexed uv iUv))
                         (Array.get iGeometry geometry)
                         (Array.get iUv uvs)
 
                 ( iGeometry, Nothing, Just iNormal ) ->
                     Maybe.map2
-                        VN
+                        (\p normal -> VN (Indexed p iGeometry) (Indexed normal iNormal))
                         (Array.get iGeometry geometry)
                         (Array.get iNormal normals)
 
                 ( iGeometry, Just iUv, Just iNormal ) ->
                     Maybe.map3
-                        VTN
+                        (\p uv normal -> VTN (Indexed p iGeometry) (Indexed uv iUv) (Indexed normal iNormal))
                         (Array.get iGeometry geometry)
                         (Array.get iUv uvs)
                         (Array.get iNormal normals)
@@ -149,7 +181,7 @@ toVertices data =
     in
     data
         |> List.filterMap mapVertMap
-        |> List.map (log "VertMap")
+        --|> List.map (log "VertMap")
         |> List.filterMap toTriangles
         |> List.indexedMap (\i x -> log ((i |> String.fromInt |> String.padLeft 2 '0') ++ ": Vertex") x)
 

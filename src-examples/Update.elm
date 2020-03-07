@@ -114,7 +114,7 @@ update msg model =
                 | scene =
                     Scenes.ObjectLoader.addMesh
                         material
-                        (XYZMika.XYZ.Parser.Obj.parse options str)
+                        (XYZMika.XYZ.Parser.Obj.parse options str).triangles
                         pos
                         model.scene
               }

@@ -97,14 +97,8 @@ addToStore scale content (Store ({ assets } as store)) =
             case content of
                 Obj path_ x ->
                     ( path_
-                    , ( XYZMika.XYZ.Parser.Obj.parse
-                            { scale = scale, color = vec3 1 1 1 }
-                            x
-                      , XYZMika.XYZ.Parser.Obj.parseIndexed
-                            { scale = scale, color = vec3 1 1 1 }
-                            x
-                      )
-                        |> (\( triangles, trianglesIndexed ) -> Mesh triangles trianglesIndexed (WebGL.triangles triangles))
+                    , XYZMika.XYZ.Parser.Obj.parse { scale = scale, color = vec3 1 1 1 } x
+                        |> (\{ triangles, indexedTriangles } -> Mesh triangles indexedTriangles (WebGL.triangles triangles))
                     )
 
                 Tex path_ result ->
