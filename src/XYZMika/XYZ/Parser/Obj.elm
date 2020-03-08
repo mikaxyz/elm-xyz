@@ -6,16 +6,8 @@ import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set
 import XYZMika.Color as Color
+import XYZMika.Debug as Dbug
 import XYZMika.XYZ.Data.Vertex as Vertex
-
-
-log : String -> a -> a
-log m a =
-    if 1 == 1 then
-        Debug.log m a
-
-    else
-        a
 
 
 type alias Index =
@@ -50,15 +42,18 @@ toVertex { scale, color } x =
         VT (Indexed v vi) (Indexed uv uvi) ->
             Vertex.vertex (v |> Vec3.scale scale)
                 |> Vertex.withUV uv
+                |> Vertex.withColor color
 
         VN (Indexed v vi) (Indexed normal normali) ->
             Vertex.vertex (v |> Vec3.scale scale)
                 |> Vertex.withNormal normal
+                |> Vertex.withColor color
 
         VTN (Indexed v vi) (Indexed uv uvi) (Indexed normal normali) ->
             Vertex.vertex (v |> Vec3.scale scale)
                 |> Vertex.withUV uv
                 |> Vertex.withNormal normal
+                |> Vertex.withColor color
 
 
 type alias Options =
@@ -95,8 +90,16 @@ parse options input =
         |> List.map parseLine
         |> toVertices
         |> (\vertices ->
-                { triangles = vertices |> List.map (\( v1, v2, v3 ) -> ( toVertex options v1, toVertex options v2, toVertex options v3 ))
-                , indexedTriangles = toVerticesWithIndex vertices
+                { triangles =
+                    vertices
+                        |> List.map
+                            (\( v1, v2, v3 ) ->
+                                ( toVertex options v1
+                                , toVertex options v2
+                                , toVertex options v3
+                                )
+                            )
+                , indexedTriangles = toVerticesWithIndex options vertices
                 }
            )
 
@@ -106,26 +109,105 @@ parse options input =
 --parseIndexed options input =
 --    String.lines input
 --        |> List.map parseLine
---        --|> List.map (log "line")
+--        --|> List.map (Dbug.log "line")
 --        |> toVertices
---        --|> List.map (log "data")
+--        --|> List.map (Dbug.log "data")
 --        |> always ( [], [] )
 
 
-toVerticesWithIndex : List ( Vertex, Vertex, Vertex ) -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
-toVerticesWithIndex vertices =
-    vertices
-        --|> List.foldl (\x (vertices, indicies) ->
-        --let
-        --    case x of
-        --        (v1, v2, v3) ->
-        --        if List.member v1 vertices then
-        --
-        --in
-        --    acc
-        --
-        --) ( [], [] )
-        |> always ( [], [] )
+toVerticesWithIndex : Options -> List ( Vertex, Vertex, Vertex ) -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
+toVerticesWithIndex options vertices =
+    let
+        toVertex_ =
+            toVertex options
+
+        uvIndex : Vertex -> Int
+        uvIndex x =
+            case x of
+                V (Indexed v vi) ->
+                    -1
+
+                VT (Indexed v vi) (Indexed uv uvi) ->
+                    uvi
+
+                VN (Indexed v vi) (Indexed normal normali) ->
+                    -1
+
+                VTN (Indexed v vi) (Indexed uv uvi) (Indexed normal normali) ->
+                    uvi
+
+        positionIndex : Vertex -> Int
+        positionIndex x =
+            case x of
+                V (Indexed v vi) ->
+                    vi
+
+                VT (Indexed v vi) (Indexed uv uvi) ->
+                    vi
+
+                VN (Indexed v vi) (Indexed normal normali) ->
+                    vi
+
+                VTN (Indexed v vi) (Indexed uv uvi) (Indexed normal normali) ->
+                    vi
+
+        indexAndVertex : ( Vertex, Vertex, Vertex ) -> ( ( Int, Vertex ), ( Int, Vertex ), ( Int, Vertex ) )
+        indexAndVertex ( v1, v2, v3 ) =
+            ( ( positionIndex v1, v1 )
+            , ( positionIndex v2, v2 )
+            , ( positionIndex v3, v3 )
+            )
+
+        addToStore : List ( Vertex, Vertex, Vertex ) -> ( List Vertex.Vertex, List ( Int, Int, Int ) ) -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
+        addToStore x ( verts, indices ) =
+            case x of
+                a :: rest ->
+                    a
+                        |> indexAndVertex
+                        |> (\( ( i1, v1 ), ( i2, v2 ), ( i3, v3 ) ) ->
+                                ( toVertex_ v1 :: toVertex_ v2 :: toVertex_ v3 :: verts
+                                , ( i1, i2, i3 ) :: indices
+                                )
+                           )
+                        |> addToStore rest
+
+                _ ->
+                    ( verts, indices )
+
+        addToStore2 :
+            Int
+            -> Int
+            -> List ( Vertex, Vertex, Vertex )
+            -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
+            -> ( Int, List ( Vertex, Vertex, Vertex ), ( List Vertex.Vertex, List ( Int, Int, Int ) ) )
+        addToStore2 index limit x ( verts, indices ) =
+            case ( index < limit, x ) of
+                ( True, a :: rest ) ->
+                    a
+                        |> indexAndVertex
+                        |> (\( ( i1, v1 ), ( i2, v2 ), ( i3, v3 ) ) ->
+                                ( toVertex_ v1 :: toVertex_ v2 :: toVertex_ v3 :: verts
+                                , ( index, index + 1, index + 2 ) :: indices
+                                )
+                           )
+                        |> addToStore2 (index + 3) limit rest
+
+                ( False, rest ) ->
+                    ( index, rest, ( verts, indices ) )
+
+                ( _, [] ) ->
+                    ( index, [], ( verts, indices ) )
+
+        batch =
+            9999
+    in
+    -- TODO: This is not tail call recursive. Find fix. Do it in batches for now...
+    addToStore2 0 batch vertices ( [], [] )
+        |> (\( index, work, store ) -> addToStore2 index (batch * 2) work store)
+        |> (\( index, work, store ) -> addToStore2 index (batch * 3) work store)
+        |> (\( index, work, store ) -> addToStore2 index (batch * 4) work store)
+        |> (\( index, work, store ) -> addToStore2 index (batch * 5) work store)
+        |> (\( _, _, store ) -> store)
 
 
 toVertices : List ObjData -> List ( Vertex, Vertex, Vertex )
@@ -180,15 +262,16 @@ toVertices data =
                 (toVertexData m3)
     in
     data
+        --|> List.map (Dbug.log "data")
         |> List.filterMap mapVertMap
-        --|> List.map (log "VertMap")
+        --|> List.map (Dbug.log "VertMap")
         |> List.filterMap toTriangles
-        |> List.indexedMap (\i x -> log ((i |> String.fromInt |> String.padLeft 2 '0') ++ ": Vertex") x)
+        |> List.indexedMap (\i x -> Dbug.log ((i |> String.fromInt |> String.padLeft 2 '0') ++ ": Triangle") x)
 
 
 
 --|> List.length
---|> log "Vertices count"
+--|> Dbug.log "Vertices count"
 --|> always []
 
 
@@ -287,12 +370,20 @@ parseLine line =
                     v
                         |> Maybe.map (\v_ -> VertMap v_ t n |> zeroIndexVmap)
 
-                _ ->
+                v :: t :: [] ->
+                    v
+                        |> Maybe.map (\v_ -> VertMap v_ t Nothing |> zeroIndexVmap)
+
+                xxx ->
+                    let
+                        _ =
+                            Dbug.log "No idea" xxx
+                    in
                     Nothing
 
         parseVertMaps : String -> Maybe ( VertMap, VertMap, VertMap )
         parseVertMaps x =
-            case x |> String.split " " of
+            case x |> String.trim |> String.split " " of
                 m1 :: m2 :: m3 :: [] ->
                     Maybe.map3
                         (\vm1 vm2 vm3 -> ( vm1, vm2, vm3 ))

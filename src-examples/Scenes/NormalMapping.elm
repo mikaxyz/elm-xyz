@@ -61,8 +61,7 @@ render cube =
                     (\v ->
                         { v
                             | color = vec3 0.8 0.2 0.2
-
-                            --, normal = Vec3.scale 0.2 v.normal
+                            , normal = Vec3.scale 0.2 v.normal
                         }
                     )
                 |> List.map normalBone
@@ -89,7 +88,6 @@ render cube =
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 0 0 0)
         |> Object.withOptionDragToRotateXY
-        |> Object.withColor Color.blue
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withMaterialName Material.Advanced
         |> objectToGraph

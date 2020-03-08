@@ -17,6 +17,7 @@ import XYZMika.XYZ.Scene.Object as Object
 
 type alias BallAssets =
     { vertices : List ( Vertex, Vertex, Vertex )
+    , verticesIndexed : ( List Vertex, List ( Int, Int, Int ) )
     , mesh : Mesh Vertex
     , diffuse : Texture
     , normal : Texture
@@ -58,8 +59,8 @@ render ball tree =
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0.7 0 0)
         |> (\x -> Graph x [])
-    , ball.vertices
-        |> Object.initWithTriangles
+    , ball.verticesIndexed
+        |> Object.initWithIndexedTriangles
         |> Object.withDiffuseMap ball.diffuse
         |> Object.withNormalMap ball.normal
         |> Object.withMaterialName Material.Advanced
@@ -108,9 +109,10 @@ render ball tree =
 
 getBallAssets : Store Asset.Obj Asset.Texture -> Maybe BallAssets
 getBallAssets assets =
-    Maybe.map4
+    Maybe.map5
         BallAssets
         (AssetStore.vertices Asset.Ball assets)
+        (AssetStore.verticesIndexed Asset.Ball assets)
         (AssetStore.mesh Asset.Ball assets)
         (AssetStore.texture Asset.BallDiffuse assets)
         (AssetStore.texture Asset.BallNormal assets)
