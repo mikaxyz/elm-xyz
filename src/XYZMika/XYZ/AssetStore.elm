@@ -18,6 +18,7 @@ import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
 import WebGL.Texture
+import XYZMika.Debug as Dbug
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Parser.Obj
 
@@ -109,7 +110,7 @@ addToStore scale content (Store ({ assets } as store)) =
 
                         Err error ->
                             -- TODO: Dont "swallow" these
-                            TextureError (Debug.log "error" error)
+                            TextureError (Dbug.todo "error" error)
                     )
     in
     Store { store | assets = assets |> Dict.insert path asset }

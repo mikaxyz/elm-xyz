@@ -6,7 +6,9 @@
   "main": "index.html",
   "scripts": {
     "run": "npx http-server -c-1 -a localhost -p 8085",
-    "build": "./node_modules/.bin/elm make ./src-examples/Main.elm --output=./dist/app.js"
+    "build_dev": "./src/XYZMika/Debug/run.sh debug && ./node_modules/.bin/elm make ./src-examples/Main.elm --output=./dist/app.js",
+    "build_debugger": "./src/XYZMika/Debug/run.sh debug && ./node_modules/.bin/elm make ./src-examples/Main.elm --output=./dist/app.js --debug",
+    "build": "./src/XYZMika/Debug/run.sh && ./node_modules/.bin/elm make ./src-examples/Main.elm --output=./dist/app.js"
   },
   "author": "me@mika.xyz",
   "license": "ISC",
