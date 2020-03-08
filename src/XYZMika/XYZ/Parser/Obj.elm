@@ -99,7 +99,10 @@ parse options input =
                                 , toVertex options v3
                                 )
                             )
-                , indexedTriangles = toVerticesWithIndex options vertices
+                , indexedTriangles =
+                    toVerticesWithIndex options vertices
+                        |> Tuple.mapFirst (\x -> Dbug.log "vertex count" (List.length x) |> always x)
+                        |> Tuple.mapSecond (\x -> Dbug.log "face count" (List.length x) |> always x)
                 }
            )
 

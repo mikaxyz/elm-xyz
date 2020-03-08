@@ -30,7 +30,7 @@ init assets =
         |> Maybe.map render
         |> Maybe.withDefault []
         |> Scene.init
-        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 5) (vec3 0 0 0) (vec3 0 1 0))
+        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 3.5) (vec3 0 0 0) (vec3 0 1 0))
 
 
 render : Assets -> List (Graph Material.Name)
@@ -81,9 +81,10 @@ render cube =
     [ positionHandle 0.02 (Vec3.vec3 0 0 0)
         |> Object.withOptionDragToRotateXY
         |> (\x -> Graph x normalGuides)
-    , positionHandle 0.02 (Vec3.vec3 0 0 0)
-        |> Object.withOptionDragToRotateXY
-        |> (\x -> Graph x (cube.vertices |> wireframe |> List.map objectToGraph))
+
+    --, positionHandle 0.02 (Vec3.vec3 0 0 0)
+    --    |> Object.withOptionDragToRotateXY
+    --    |> (\x -> Graph x (cube.vertices |> wireframe |> List.map objectToGraph))
     , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 0 0 0)
