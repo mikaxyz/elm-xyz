@@ -176,38 +176,27 @@ toVerticesWithIndex options vertices =
 
         addToStore2 :
             Int
-            -> Int
             -> List ( Vertex, Vertex, Vertex )
             -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
-            -> ( Int, List ( Vertex, Vertex, Vertex ), ( List Vertex.Vertex, List ( Int, Int, Int ) ) )
-        addToStore2 index limit x ( verts, indices ) =
-            case ( index < limit, x ) of
-                ( True, a :: rest ) ->
-                    a
-                        |> indexAndVertex
-                        |> (\( ( i1, v1 ), ( i2, v2 ), ( i3, v3 ) ) ->
-                                ( toVertex_ v1 :: toVertex_ v2 :: toVertex_ v3 :: verts
-                                , ( index, index + 1, index + 2 ) :: indices
-                                )
-                           )
-                        |> addToStore2 (index + 3) limit rest
+            -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
+        addToStore2 index x ( verts, indices ) =
+            case x of
+                a :: rest ->
+                    addToStore2 (index + 3)
+                        rest
+                        (a
+                            |> indexAndVertex
+                            |> (\( ( i1, v1 ), ( i2, v2 ), ( i3, v3 ) ) ->
+                                    ( toVertex_ v1 :: toVertex_ v2 :: toVertex_ v3 :: verts
+                                    , ( index, index + 1, index + 2 ) :: indices
+                                    )
+                               )
+                        )
 
-                ( False, rest ) ->
-                    ( index, rest, ( verts, indices ) )
-
-                ( _, [] ) ->
-                    ( index, [], ( verts, indices ) )
-
-        batch =
-            9999
+                [] ->
+                    ( verts, indices )
     in
-    -- TODO: This is not tail call recursive. Find fix. Do it in batches for now...
-    addToStore2 0 batch vertices ( [], [] )
-        |> (\( index, work, store ) -> addToStore2 index (batch * 2) work store)
-        |> (\( index, work, store ) -> addToStore2 index (batch * 3) work store)
-        |> (\( index, work, store ) -> addToStore2 index (batch * 4) work store)
-        |> (\( index, work, store ) -> addToStore2 index (batch * 5) work store)
-        |> (\( _, _, store ) -> store)
+    addToStore2 0 vertices ( [], [] )
 
 
 toVertices : List ObjData -> List ( Vertex, Vertex, Vertex )
