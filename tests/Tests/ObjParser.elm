@@ -1,12 +1,10 @@
 module Tests.ObjParser exposing (suite)
 
-import DDD.Data.Vertex exposing (Vertex)
-import DDD.Parser.Obj as Obj
 import Expect exposing (Expectation)
-import Fuzz exposing (..)
 import Math.Vector3 exposing (vec3)
-import Parser
 import Test exposing (..)
+import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
+import XYZMika.XYZ.Parser.Obj as Obj
 
 
 suite : Test
@@ -27,15 +25,18 @@ suite =
                             |> String.join "\n"
 
                     expected =
-                        [ ( Vertex color (vec3 -1 1 0) (vec3 0 0 -1)
-                          , Vertex color (vec3 1 1 0) (vec3 0 0 -1)
-                          , Vertex color (vec3 1 -1 0) (vec3 0 0 -1)
+                        [ ( Vertex.vertex (vec3 -1 1 0)
+                                |> Vertex.withColor color
+                          , Vertex.vertex (vec3 1 1 0)
+                                |> Vertex.withColor color
+                          , Vertex.vertex (vec3 1 -1 0)
+                                |> Vertex.withColor color
                           )
                         ]
                 in
                 Expect.equal
                     expected
-                    (Obj.parse { scale = 1, color = color } input)
+                    (Obj.parse { scale = 1, color = color } input).triangles
         , skip <|
             --  TODO: handle/triangulate quads
             test "parses faces with 4 vertices"
@@ -55,17 +56,23 @@ suite =
                                 |> String.join "\n"
 
                         expected =
-                            [ ( Vertex color (vec3 -1 1 0) (vec3 0 0 -1)
-                              , Vertex color (vec3 1 1 0) (vec3 0 0 -1)
-                              , Vertex color (vec3 1 -1 0) (vec3 0 0 -1)
+                            [ ( Vertex.vertex (vec3 -1 1 0)
+                                    |> Vertex.withColor color
+                              , Vertex.vertex (vec3 1 1 0)
+                                    |> Vertex.withColor color
+                              , Vertex.vertex (vec3 1 -1 0)
+                                    |> Vertex.withColor color
                               )
-                            , ( Vertex color (vec3 1 -1 0) (vec3 0 0 -1)
-                              , Vertex color (vec3 -1 -1 0) (vec3 0 0 -1)
-                              , Vertex color (vec3 1 1 0) (vec3 0 0 -1)
+                            , ( Vertex.vertex (vec3 1 -1 0)
+                                    |> Vertex.withColor color
+                              , Vertex.vertex (vec3 -1 -1 0)
+                                    |> Vertex.withColor color
+                              , Vertex.vertex (vec3 1 1 0)
+                                    |> Vertex.withColor color
                               )
                             ]
                     in
                     Expect.equal
                         expected
-                        (Obj.parse { scale = 1, color = color } input)
+                        (Obj.parse { scale = 1, color = color } input).triangles
         ]

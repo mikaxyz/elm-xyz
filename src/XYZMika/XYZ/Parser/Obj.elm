@@ -440,6 +440,10 @@ parseLine line =
                     v
                         |> Maybe.map (\v_ -> VertMap v_ t Nothing |> zeroIndexVmap)
 
+                v :: [] ->
+                    v
+                        |> Maybe.map (\v_ -> VertMap v_ Nothing Nothing |> zeroIndexVmap)
+
                 xxx ->
                     let
                         _ =
