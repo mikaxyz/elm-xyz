@@ -1,8 +1,8 @@
 {
-  "name": "elm-weg-gl-experimant",
+  "name": "mikaxyz-xyz",
   "private": true,
-  "version": "1.0.0",
-  "description": "Elm Web GL Experiments",
+  "version": "0.0.1",
+  "description": "My Elm Web GL utilities",
   "main": "index.html",
   "scripts": {
     "run": "npx http-server -c-1 -a localhost -p 8085",
