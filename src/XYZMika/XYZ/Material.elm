@@ -1,5 +1,6 @@
 module XYZMika.XYZ.Material exposing
-    ( Options
+    ( Material
+    , Options
     , Renderer
     , defaultOptions
     , fragmentShader

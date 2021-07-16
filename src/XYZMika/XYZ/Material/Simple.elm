@@ -4,23 +4,32 @@ import Math.Vector3 exposing (Vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Material as Material
+import XYZMika.XYZ.Material as Material exposing (Material)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
+type alias Varyings =
+    { v_color : Vec3
+    }
+
+
 renderer : Material.Options -> Texture -> Uniforms u -> Object materialId -> Entity
 renderer _ _ uniforms object =
-    (\m ->
-        WebGL.entity
-            (Material.vertexShader m)
-            (Material.fragmentShader m)
-            (Object.mesh object)
-            (Material.uniforms m)
-    )
-        (material uniforms)
+    material uniforms
+        |> toEntity object
 
 
+toEntity : Object materialId -> Material uniforms v -> Entity
+toEntity object mat =
+    WebGL.entity
+        (Material.vertexShader mat)
+        (Material.fragmentShader mat)
+        (Object.mesh object)
+        (Material.uniforms mat)
+
+
+material : Uniforms u -> Material (Uniforms u) Varyings
 material uniforms =
     Material.material
         uniforms
@@ -28,11 +37,7 @@ material uniforms =
         fragmentShader
 
 
-vertexShader :
-    Shader Vertex
-        (Uniforms u)
-        { v_color : Vec3
-        }
+vertexShader : Shader Vertex (Uniforms u) Varyings
 vertexShader =
     [glsl|
         precision mediump float;
@@ -53,7 +58,7 @@ vertexShader =
     |]
 
 
-fragmentShader : Shader {} (Uniforms u) { v_color : Vec3 }
+fragmentShader : Shader {} u Varyings
 fragmentShader =
     [glsl|
         precision mediump float;

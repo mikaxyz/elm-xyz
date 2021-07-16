@@ -5,37 +5,62 @@ import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
-import XYZMika.XYZ.Material as Material
+import XYZMika.XYZ.Data.Vertex exposing (Vertex)
+import XYZMika.XYZ.Material as Material exposing (Material)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
-import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
+import XYZMika.XYZ.Scene.Uniforms as Scene
 
 
-renderer : Material.Options -> Texture -> Uniforms u -> Object materialId -> Entity
+type alias Uniforms =
+    { sceneCamera : Mat4
+    , scenePerspective : Mat4
+    , sceneMatrix : Mat4
+    , objectColor : Vec3
+    , directionalLight : Vec3
+    , diffuseMap : Texture
+    , hasDiffuseMap : Bool
+    , normalMap : Texture
+    , hasNormalMap : Bool
+    , normalMapIntensity : Float
+    }
+
+
+type alias Varyings =
+    { v_color : Vec3
+    , v_normal : Vec3
+    , v_uv : Vec2
+    }
+
+
+renderer : Material.Options -> Texture -> Scene.Uniforms u -> Object materialId -> Entity
 renderer options defaultTexture uniforms object =
-    (\m ->
-        WebGL.entity
-            (Material.vertexShader m)
-            (Material.fragmentShader m)
-            (Object.mesh object)
-            (Material.uniforms m)
-    )
-        (material
-            { sceneCamera = uniforms.sceneCamera
-            , scenePerspective = uniforms.scenePerspective
-            , sceneMatrix = uniforms.sceneMatrix
+    material
+        { sceneCamera = uniforms.sceneCamera
+        , scenePerspective = uniforms.scenePerspective
+        , sceneMatrix = uniforms.sceneMatrix
 
-            --
-            , objectColor = Object.colorVec3 object
-            , directionalLight = options.lights.directional
-            , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
-            , hasDiffuseMap = Object.diffuseMap object /= Nothing
-            , hasNormalMap = Object.normalMap object /= Nothing
-            , normalMap = object |> Object.normalMapWithDefault defaultTexture
-            , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
-            }
-        )
+        --
+        , objectColor = Object.colorVec3 object
+        , directionalLight = options.lights.directional
+        , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
+        , hasDiffuseMap = Object.diffuseMap object /= Nothing
+        , hasNormalMap = Object.normalMap object /= Nothing
+        , normalMap = object |> Object.normalMapWithDefault defaultTexture
+        , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
+        }
+        |> toEntity object
 
 
+toEntity : Object materialId -> Material uniforms v -> Entity
+toEntity object mat =
+    WebGL.entity
+        (Material.vertexShader mat)
+        (Material.fragmentShader mat)
+        (Object.mesh object)
+        (Material.uniforms mat)
+
+
+material : Uniforms -> Material Uniforms Varyings
 material uniforms =
     Material.material
         uniforms
@@ -43,33 +68,7 @@ material uniforms =
         fragmentShader
 
 
-vertexShader :
-    Shader
-        { color : Vec3
-        , meta : { hasColor : Bool, hasNormal : Bool, hasUV : Bool }
-        , normal : Vec3
-        , tangent : Vec3
-        , position : Vec3
-        , uv : Vec2
-        }
-        { u
-            | sceneCamera : Mat4
-            , scenePerspective : Mat4
-            , sceneMatrix : Mat4
-
-            --
-            , objectColor : Vec3
-            , directionalLight : Vec3
-            , diffuseMap : Texture
-            , hasDiffuseMap : Bool
-            , normalMap : Texture
-            , hasNormalMap : Bool
-            , normalMapIntensity : Float
-        }
-        { v_color : Vec3
-        , v_normal : Vec3
-        , v_uv : Vec2
-        }
+vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
         precision mediump float;
@@ -99,25 +98,7 @@ vertexShader =
     |]
 
 
-fragmentShader :
-    Shader {}
-        { u
-            | sceneCamera : Mat4
-            , scenePerspective : Mat4
-            , sceneMatrix : Mat4
-
-            --
-            , directionalLight : Vec3
-            , diffuseMap : Texture
-            , hasDiffuseMap : Bool
-            , normalMap : Texture
-            , hasNormalMap : Bool
-            , normalMapIntensity : Float
-        }
-        { v_color : Vec3
-        , v_normal : Vec3
-        , v_uv : Vec2
-        }
+fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
