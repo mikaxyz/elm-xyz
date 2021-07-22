@@ -25,9 +25,9 @@
 	var app;
 
 	if (urlParams.get('app') === "mouse-select") {
-		app = Elm.MouseSelect.init();
+		app = Elm.Sandbox.MouseSelect.init();
 	} else {
-		app = Elm.Sandbox.init();
+		app = Elm.Sandbox.Sandbox.init();
 		document.addEventListener('pointerlockchange', pointerLockChange, false);
 
 		var e = document.getElementsByTagName('body')[0];
