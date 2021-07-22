@@ -11,7 +11,7 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
-import XYZMika.XYZ.Scene as Scene
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -40,6 +40,13 @@ viewport =
 
 view : Texture -> Model -> Html msg
 view defaultTexture model =
+    model.scene
+        |> Maybe.map (sceneView defaultTexture model)
+        |> Maybe.withDefault (text "")
+
+
+sceneView : Texture -> Model -> Scene Material.Name -> Html msg
+sceneView defaultTexture model scene =
     WebGL.toHtml
         [ width viewport.width
         , height viewport.height
@@ -51,7 +58,7 @@ view defaultTexture model =
             (Model.getDrag model)
             model.theta
             (Model.sceneOptions model)
-            (model.scene |> Scene.withRendererOptions model.rendererOptions)
+            (scene |> Scene.withRendererOptions model.rendererOptions)
             renderer
         )
 

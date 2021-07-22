@@ -42,7 +42,7 @@ type alias Model =
     { theta : Float
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
-    , scene : Scene Material.Name
+    , scene : Maybe (Scene Material.Name)
     , rendererOptions : XYZMika.XYZ.Material.Options
     , renderOptions : Scene.RenderOptions
     , scenes : Array ActiveScene
@@ -62,7 +62,7 @@ init =
     { theta = 0
     , dragger = Nothing
     , drag = vec2 0 0
-    , scene = Scenes.Light.init
+    , scene = Nothing
     , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.RenderOptions True False False
     , scenes = [ NormalMapping, Textures, Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
@@ -151,10 +151,10 @@ updateAssetStore assets model =
         |> (\m ->
                 case Array.get m.currentSceneIndex m.scenes of
                     Just NormalMapping ->
-                        { m | scene = Scenes.NormalMapping.init m.assets }
+                        { m | scene = Scenes.NormalMapping.init m.assets |> Just }
 
                     Just Textures ->
-                        { m | scene = Scenes.Textures.init m.assets }
+                        { m | scene = Scenes.Textures.init m.assets |> Just }
 
                     Just Sandbox ->
                         m
@@ -177,7 +177,7 @@ loadScene : Model -> ( Model, Cmd Msg )
 loadScene model =
     case Array.get model.currentSceneIndex model.scenes of
         Just NormalMapping ->
-            { model | scene = Scenes.NormalMapping.init model.assets }
+            { model | scene = Just <| Scenes.NormalMapping.init model.assets }
                 |> (\model_ ->
                         { model_
                             | rendererOptions =
@@ -195,7 +195,7 @@ loadScene model =
                    )
 
         Just Textures ->
-            { model | scene = Scenes.Textures.init model.assets }
+            { model | scene = Just <| Scenes.Textures.init model.assets }
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
@@ -209,13 +209,13 @@ loadScene model =
                    )
 
         Just Sandbox ->
-            ( { model | scene = Scenes.Sandbox.init }
+            ( { model | scene = Just Scenes.Sandbox.init }
             , Cmd.none
             )
 
         Just ObjectLoader ->
             ( { model
-                | scene = Scenes.ObjectLoader.init
+                | scene = Just Scenes.ObjectLoader.init
               }
             , Cmd.batch
                 [ Scenes.ObjectLoader.getObj
@@ -248,14 +248,14 @@ loadScene model =
 
         Just Landscape ->
             ( { model
-                | scene = Scenes.Landscape.init
+                | scene = Just Scenes.Landscape.init
               }
             , Cmd.none
             )
 
         Just Light ->
             ( { model
-                | scene = Scenes.Light.init
+                | scene = Just Scenes.Light.init
               }
             , Cmd.none
             )

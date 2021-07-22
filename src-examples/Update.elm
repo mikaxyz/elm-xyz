@@ -112,11 +112,15 @@ update msg model =
         GotObj material ( options, pos, str ) ->
             ( { model
                 | scene =
-                    Scenes.ObjectLoader.addMesh
-                        material
-                        (XYZMika.XYZ.Parser.Obj.parse options str).triangles
-                        pos
-                        model.scene
+                    model.scene
+                        |> Maybe.map
+                            (\scene ->
+                                Scenes.ObjectLoader.addMesh
+                                    material
+                                    (XYZMika.XYZ.Parser.Obj.parse options str).triangles
+                                    pos
+                                    scene
+                            )
               }
             , Cmd.none
             )
