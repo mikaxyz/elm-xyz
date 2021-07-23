@@ -6,7 +6,7 @@ module XYZMika.XYZ.Mesh.Primitives exposing
     )
 
 import Math.Vector2 exposing (vec2)
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 
@@ -27,9 +27,15 @@ quad color a b c d =
 quadWithNormal : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
 quadWithNormal color a b c d normal =
     let
+        tangent v =
+            v
+                |> Vec3.toRecord
+                |> (\{ x, y, z } -> Vec3.vec3 z x y)
+
         vertex position uv =
             Vertex.vertex position
                 |> Vertex.withNormal normal
+                |> Vertex.withTangent (tangent normal)
                 |> Vertex.withColor (Color.toVec3 color)
                 |> Vertex.withUV uv
     in

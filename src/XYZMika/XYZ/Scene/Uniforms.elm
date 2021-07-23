@@ -8,4 +8,5 @@ type alias Uniforms u =
         | sceneCamera : Mat4
         , scenePerspective : Mat4
         , sceneMatrix : Mat4
+        , sceneRotationMatrix : Mat4
     }

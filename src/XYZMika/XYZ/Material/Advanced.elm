@@ -11,12 +11,18 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms as Scene
 
 
+
+-- NORMAL MAPPING: https://learnopengl.com/Advanced-Lighting/Normal-Mapping
+
+
 type alias Uniforms =
     { sceneCamera : Mat4
     , scenePerspective : Mat4
     , sceneMatrix : Mat4
+    , sceneRotationMatrix : Mat4
     , objectColor : Vec3
     , directionalLight : Vec3
+    , pointLight : Vec3
     , diffuseMap : Texture
     , hasDiffuseMap : Bool
     , normalMap : Texture
@@ -28,7 +34,14 @@ type alias Uniforms =
 type alias Varyings =
     { v_color : Vec3
     , v_normal : Vec3
+    , v_tangent : Vec3
     , v_uv : Vec2
+    , v_fragPos : Vec3
+
+    --
+    , v_t : Vec3
+    , v_b : Vec3
+    , v_n : Vec3
     }
 
 
@@ -38,10 +51,12 @@ renderer options defaultTexture uniforms object =
         { sceneCamera = uniforms.sceneCamera
         , scenePerspective = uniforms.scenePerspective
         , sceneMatrix = uniforms.sceneMatrix
+        , sceneRotationMatrix = uniforms.sceneRotationMatrix
 
         --
         , objectColor = Object.colorVec3 object
         , directionalLight = options.lights.directional
+        , pointLight = options.lights.point
         , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
         , hasDiffuseMap = Object.diffuseMap object /= Nothing
         , hasNormalMap = Object.normalMap object /= Nothing
@@ -78,22 +93,33 @@ vertexShader =
         attribute vec3 normal;
         attribute vec3 tangent;
         attribute vec2 uv;
-        
+
         uniform mat4 sceneCamera;
         uniform mat4 scenePerspective;
         uniform mat4 sceneMatrix;
+        uniform mat4 sceneRotationMatrix;
         
         uniform vec3 objectColor;
 
         varying vec3 v_color;
         varying vec3 v_normal;
+        varying vec3 v_tangent;
         varying vec2 v_uv;
+        varying vec3 v_fragPos;
+
+        varying vec3 v_t;
+        varying vec3 v_b;
+        varying vec3 v_n;
 
         void main () {
             gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
+            v_fragPos = vec3(sceneMatrix * vec4(position, 1.0));
             v_color = color * objectColor;
             v_uv = uv;
             v_normal = normal;
+            v_t = normalize(vec3(sceneRotationMatrix * vec4(tangent, 1.0)));
+            v_n = normalize(vec3(sceneRotationMatrix * vec4(normal, 1.0)));
+            v_b = cross(v_n, v_t);
         }
     |]
 
@@ -103,9 +129,13 @@ fragmentShader =
     [glsl|
         precision mediump float;
 
+        uniform mat4 sceneCamera;
+        uniform mat4 scenePerspective;
         uniform mat4 sceneMatrix;
-        
+        uniform mat4 sceneRotationMatrix;
+
         uniform vec3 directionalLight;
+        uniform vec3 pointLight;
         uniform sampler2D diffuseMap;
         uniform bool hasDiffuseMap;
         uniform sampler2D normalMap;
@@ -114,32 +144,89 @@ fragmentShader =
 
         varying vec3 v_color;
         varying vec3 v_normal;
+        varying vec3 v_tangent;
         varying vec2 v_uv;
+        varying vec3 v_fragPos;
+
+        varying vec3 v_t;
+        varying vec3 v_b;
+        varying vec3 v_n;
+
+
+        highp mat4 transpose(in highp mat4 inMatrix) {
+            highp vec4 i0 = inMatrix[0];
+            highp vec4 i1 = inMatrix[1];
+            highp vec4 i2 = inMatrix[2];
+            highp vec4 i3 = inMatrix[3];
+
+            highp mat4 outMatrix = mat4(
+                         vec4(i0.x, i1.x, i2.x, i3.x),
+                         vec4(i0.y, i1.y, i2.y, i3.y),
+                         vec4(i0.z, i1.z, i2.z, i3.z),
+                         vec4(i0.w, i1.w, i2.w, i3.w)
+                         );
+
+            return outMatrix;
+        }
+
+        vec3 f_pointLight_PassThrough (vec3 normal) {
+//            highp vec3 color = vec3(0.6, 0.5, 0.2);
+            highp vec3 color = vec3(1.0, 1.0, 1.0);
+            highp float falloff = 2.0;
+            highp vec3 position = vec3(sceneMatrix * vec4(pointLight, 1.0));
+
+            highp float distance = distance(pointLight, v_fragPos);
+            highp float intensity = max(falloff - distance, 0.0);
+            return color * intensity;
+        }
+
+        vec3 f_pointLight (vec3 normal) {
+            highp vec3 color = vec3(1.0, 1.0, 1.0);
+            highp vec3 pointLightDirection = normalize(pointLight - v_fragPos);
+            highp float pointLightDiff = max(dot(normal, pointLightDirection), 0.0);
+            highp float intensity = pow(pointLightDiff, 1.0);
+            highp float distance = distance(pointLight, v_fragPos);
+
+//            return color * (intensity / distance);
+            return color * intensity;
+        }
+
+        vec3 f_directionalLight (vec3 normal) {
+            highp vec3 color = vec3(1.0, 1.0, 1.0);
+            highp vec3 directionalVector = normalize(directionalLight);
+            highp float intensity = max(dot(normal, directionalVector), 0.0);
+            return color * intensity;
+        }
 
         void main () {
             vec3 diffuse;
             if(hasDiffuseMap) {
                 diffuse = texture2D(diffuseMap, v_uv).rgb;
             } else {
-                diffuse = vec3(1, 1, 1);
+                diffuse = v_color;
             }
 
+
+            highp mat3 TBN = mat3(v_t, v_b, v_n);
             vec3 normal;
             if(hasNormalMap) {
-                normal = texture2D(normalMap, v_uv).rgb;
-                normal = v_normal * normalize(normal) * normalMapIntensity;
+                normal = texture2D(normalMap, v_uv).xyz;
+                normal = normal * 2.0 - 1.0;
+                normal = normalize(TBN * normal);
             } else {
-                normal = v_normal;
+                normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
             }
 
-            // Lighting
-            highp vec3 directionalLightColor = vec3(1, 1, 1);
-            highp vec3 directionalVector = -normalize(directionalLight);
-            highp vec4 transformedNormal = sceneMatrix * vec4(normal, 0.0);
-            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+//            vec3 lighting = vec3(0,0,0);
+//            lighting += 0.3 * f_directionalLight(normal);
+//            lighting += 0.3 * f_pointLight(normal);
+//            lighting += 0.3 * f_pointLight_PassThrough(normal);
 
-            vec3 f_lighting = (directionalLightColor * directional);
+            vec3 lighting = vec3(1,1,1);
+//            lighting *= f_directionalLight(normal);
+            lighting *= f_pointLight(normal);
+//            lighting *= f_pointLight_PassThrough(normal);
 
-            gl_FragColor =  vec4(v_color * diffuse * f_lighting, 1.0);
+            gl_FragColor =  vec4(lighting * diffuse, 1.0);
         }
     |]

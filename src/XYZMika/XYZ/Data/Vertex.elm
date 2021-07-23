@@ -1,7 +1,14 @@
-module XYZMika.XYZ.Data.Vertex exposing (..)
+module XYZMika.XYZ.Data.Vertex exposing
+    ( Vertex
+    , vertex
+    , withColor
+    , withNormal
+    , withTangent
+    , withUV
+    )
 
 import Math.Vector2 exposing (Vec2, vec2)
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 
 
 type alias Vertex =
@@ -13,6 +20,7 @@ type alias Vertex =
     , meta :
         { hasColor : Bool
         , hasNormal : Bool
+        , hasTangent : Bool
         , hasUV : Bool
         }
     }
@@ -28,6 +36,7 @@ vertex pos =
     , meta =
         { hasColor = False
         , hasNormal = False
+        , hasTangent = False
         , hasUV = False
         }
     }
@@ -40,12 +49,18 @@ withColor x ({ meta } as v) =
 
 withNormal : Vec3 -> Vertex -> Vertex
 withNormal x ({ meta } as v) =
-    { v | normal = x, meta = { meta | hasNormal = True } }
+    { v
+        | normal = x |> Vec3.normalize
+        , meta = { meta | hasNormal = True }
+    }
 
 
 withTangent : Vec3 -> Vertex -> Vertex
 withTangent x ({ meta } as v) =
-    { v | tangent = x }
+    { v
+        | tangent = Vec3.normalize x
+        , meta = { meta | hasTangent = True }
+    }
 
 
 withUV : Vec2 -> Vertex -> Vertex

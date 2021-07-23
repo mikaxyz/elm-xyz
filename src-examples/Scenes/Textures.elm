@@ -16,9 +16,7 @@ import XYZMika.XYZ.Scene.Object as Object
 
 
 type alias BallAssets =
-    { vertices : List ( Vertex, Vertex, Vertex )
-    , verticesIndexed : ( List Vertex, List ( Int, Int, Int ) )
-    , mesh : Mesh Vertex
+    { verticesIndexed : ( List Vertex, List ( Int, Int, Int ) )
     , diffuse : Texture
     , normal : Texture
     }
@@ -40,7 +38,7 @@ init assets =
                 |> Object.withPosition (vec3 0 -0.5 0)
                 |> Object.withOptionDragToRotateXY
                 |> Object.withColor Color.blue
-                |> Object.withMaterialName Material.Color
+                |> Object.withMaterialName Material.Advanced
             )
             (Maybe.map2 render
                 (getBallAssets assets)
@@ -48,26 +46,39 @@ init assets =
                 |> Maybe.withDefault []
             )
         ]
+        --|> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 2) (vec3 0 0 0) (vec3 0 1 0))
         |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0.5 3) (vec3 0 0.5 0) (vec3 0 1 0))
 
 
 render : BallAssets -> TreeAssets -> List (Graph Material.Name)
 render ball tree =
-    [ ball.vertices
-        |> Object.initWithTriangles
-        |> Object.withDiffuseMap ball.diffuse
-        |> Object.withMaterialName Material.Advanced
-        |> Object.withPosition (vec3 0.7 0 0)
-        |> (\x -> Graph x [])
-    , ball.verticesIndexed
+    --[ ball.verticesIndexed
+    --    |> Object.initWithIndexedTriangles
+    --    |> Object.withMaterialName Material.Advanced
+    --    |> Object.withPosition (vec3 -0.7 -0.31 0)
+    --    |> (\x -> Graph x [])
+    --, ball.verticesIndexed
+    --    |> Object.initWithIndexedTriangles
+    --    |> Object.withNormalMap ball.normal
+    --    |> Object.withMaterialName Material.Advanced
+    --    |> Object.withPosition (vec3 0 -0.31 0)
+    --    |> (\x -> Graph x [])
+    --, ball.verticesIndexed
+    --    |> Object.initWithIndexedTriangles
+    --    |> Object.withDiffuseMap ball.diffuse
+    --    |> Object.withNormalMap ball.normal
+    --    |> Object.withMaterialName Material.Advanced
+    --    |> Object.withPosition (vec3 0.7 -0.31 0)
+    --    |> (\x -> Graph x [])
+    [ ball.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withDiffuseMap ball.diffuse
         |> Object.withNormalMap ball.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0 0 0)
         |> (\x -> Graph x [])
-    , ball.vertices
-        |> Object.initWithTriangles
+    , ball.verticesIndexed
+        |> Object.initWithIndexedTriangles
         |> Object.withNormalMap ball.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 -0.7 0 0)
@@ -84,8 +95,8 @@ render ball tree =
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 2 0 -5)
         |> (\x -> Graph x [])
-    , ball.vertices
-        |> Object.initWithTriangles
+    , ball.verticesIndexed
+        |> Object.initWithIndexedTriangles
         |> Object.withDiffuseMap ball.diffuse
         |> Object.withNormalMap ball.normal
         |> Object.withColor Color.yellow
@@ -109,11 +120,9 @@ render ball tree =
 
 getBallAssets : Store Asset.Obj Asset.Texture -> Maybe BallAssets
 getBallAssets assets =
-    Maybe.map5
+    Maybe.map3
         BallAssets
-        (AssetStore.vertices Asset.Ball assets)
         (AssetStore.verticesIndexed Asset.Ball assets)
-        (AssetStore.mesh Asset.Ball assets)
         (AssetStore.texture Asset.BallDiffuse assets)
         (AssetStore.texture Asset.BallNormal assets)
 

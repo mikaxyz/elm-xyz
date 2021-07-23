@@ -76,11 +76,16 @@ type alias ObjectData materialId =
 
 init : Mesh Vertex -> Object materialId
 init x =
+    initWithBounds ( vec3 0 0 0, vec3 0 0 0 ) x
+
+
+initWithBounds : ( Vec3, Vec3 ) -> Mesh Vertex -> Object a
+initWithBounds bounds x =
     Mesh
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
-        , boundingBox = ( vec3 0 0 0, vec3 0 0 0 )
+        , boundingBox = bounds
         , diffuseMap = Nothing
         , normalMap = Nothing
         , normalMapIntensity = Nothing
@@ -96,7 +101,10 @@ initWithTriangles x =
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.triangles x
-        , boundingBox = getBounds x
+        , boundingBox =
+            x
+                |> List.foldl (\( v1, v2, v3 ) acc -> v1 :: v2 :: v3 :: acc) []
+                |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
         , normalMapIntensity = Nothing
@@ -108,65 +116,42 @@ initWithTriangles x =
 
 initWithIndexedTriangles : ( List Vertex, List ( Int, Int, Int ) ) -> Object materialId
 initWithIndexedTriangles ( v, i ) =
-    init (WebGL.indexedTriangles v i)
+    initWithBounds (getBounds v) (WebGL.indexedTriangles v i)
 
 
-getBounds : List ( Vertex, Vertex, Vertex ) -> ( Vec3, Vec3 )
+getBounds : List Vertex -> ( Vec3, Vec3 )
 getBounds vs =
     vs
-        |> List.map
-            (\( v1, v2, v3 ) ->
-                ( Vec3.toRecord v1.position
-                , Vec3.toRecord v2.position
-                , Vec3.toRecord v3.position
-                )
-            )
+        |> List.map .position
         |> List.foldl
-            (\( p1, p2, p3 ) ->
-                \( a1, a2 ) ->
-                    let
-                        xMin =
-                            a1.x
-                                |> min p1.x
-                                |> min p2.x
-                                |> min p3.x
-
-                        xMax =
-                            a2.x
-                                |> max p1.x
-                                |> max p2.x
-                                |> max p3.x
-
-                        yMin =
-                            a1.y
-                                |> min p1.y
-                                |> min p2.y
-                                |> min p3.y
-
-                        yMax =
-                            a2.y
-                                |> max p1.y
-                                |> max p2.y
-                                |> max p3.y
-
-                        zMin =
-                            a1.z
-                                |> min p1.z
-                                |> min p2.z
-                                |> min p3.z
-
-                        zMax =
-                            a2.z
-                                |> max p1.z
-                                |> max p2.z
-                                |> max p3.z
-                    in
-                    ( { x = xMin, y = yMin, z = zMin }
-                    , { x = xMax, y = yMax, z = zMax }
-                    )
+            (\v ( min, max ) ->
+                ( vMin min v, vMax max v )
             )
-            ( Vec3.toRecord (vec3 0 0 0), Vec3.toRecord (vec3 0 0 0) )
-        |> Tuple.mapBoth Vec3.fromRecord Vec3.fromRecord
+            ( vec3 0 0 0, vec3 0 0 0 )
+
+
+vMin : Vec3 -> Vec3 -> Vec3
+vMin v1 v2 =
+    let
+        ( x, y, z ) =
+            ( min (Vec3.getX v1) (Vec3.getX v2)
+            , min (Vec3.getY v1) (Vec3.getY v2)
+            , min (Vec3.getZ v1) (Vec3.getZ v2)
+            )
+    in
+    vec3 x y z
+
+
+vMax : Vec3 -> Vec3 -> Vec3
+vMax v1 v2 =
+    let
+        ( x, y, z ) =
+            ( max (Vec3.getX v1) (Vec3.getX v2)
+            , max (Vec3.getY v1) (Vec3.getY v2)
+            , max (Vec3.getZ v1) (Vec3.getZ v2)
+            )
+    in
+    vec3 x y z
 
 
 withPosition : Vec3 -> Object materialId -> Object materialId

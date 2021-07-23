@@ -6,6 +6,7 @@ module XYZMika.XYZ.Material exposing
     , fragmentShader
     , material
     , setDirectionalLight
+    , setPointLight
     , uniforms
     , vertexShader
     )
@@ -18,19 +19,27 @@ import XYZMika.XYZ.Scene.Object exposing (Object)
 
 
 type alias Options =
-    { lights : { directional : Vec3 }
+    { lights : { directional : Vec3, point : Vec3 }
     }
 
 
-defaultOptions : { lights : { directional : Vec3 } }
+defaultOptions : Options
 defaultOptions =
-    { lights = { directional = Vec3.fromRecord { x = -1, y = -0.7, z = -0.3 } }
+    { lights =
+        { directional = Vec3.fromRecord { x = -1, y = -1, z = -3 }
+        , point = Vec3.fromRecord { x = 2, y = 2, z = 3 }
+        }
     }
 
 
 setDirectionalLight : Vec3 -> Options -> Options
 setDirectionalLight x options =
     (\lights -> { options | lights = { lights | directional = x } }) options.lights
+
+
+setPointLight : Vec3 -> Options -> Options
+setPointLight x options =
+    (\lights -> { options | lights = { lights | point = x } }) options.lights
 
 
 type alias Renderer materialId uniforms =

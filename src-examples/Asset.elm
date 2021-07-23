@@ -5,6 +5,7 @@ type Obj
     = Ball
     | Tree
     | Cube
+    | UvCube
 
 
 objPath : Obj -> String
@@ -17,6 +18,9 @@ objPath texture =
             "obj/fat_bottomed_tree/fat_bottomed_tree.obj"
 
         Cube ->
+            "obj/cube.obj"
+
+        UvCube ->
             "obj/uvcube/uvcube.obj"
 
 
@@ -26,7 +30,9 @@ type Texture
     | BallDiffuse
     | BallNormal
     | TreeDiffuse
-    | CubeDiffuse
+    | UvCubeDiffuse
+    | BrickWallDiffuse
+    | BrickWallNormal
 
 
 texturePath : Texture -> String
@@ -47,5 +53,11 @@ texturePath texture =
         TreeDiffuse ->
             "obj/fat_bottomed_tree/fat_bottomed_tree.png"
 
-        CubeDiffuse ->
+        UvCubeDiffuse ->
             "obj/uvcube/uvcube.png"
+
+        BrickWallDiffuse ->
+            "obj/Brick_Wall_017_SD/Brick_Wall_017_basecolor.jpg"
+
+        BrickWallNormal ->
+            "obj/Brick_Wall_017_SD/Brick_Wall_017_normal.jpg"

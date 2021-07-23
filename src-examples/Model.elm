@@ -17,12 +17,14 @@ import Asset
 import Material
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
+import Scenes.BrickWall
 import Scenes.Landscape
 import Scenes.Light
 import Scenes.NormalMapping
 import Scenes.ObjectLoader
 import Scenes.Sandbox
 import Scenes.Textures
+import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
@@ -65,7 +67,7 @@ init =
     , scene = Nothing
     , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.RenderOptions True False False
-    , scenes = [ NormalMapping, Textures, Sandbox, ObjectLoader, Light, Landscape ] |> Array.fromList
+    , scenes = [ NormalMapping, Textures, BrickWall, Light, Sandbox, ObjectLoader, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     }
@@ -112,7 +114,8 @@ prevScene model =
 
 
 type ActiveScene
-    = NormalMapping
+    = BrickWall
+    | NormalMapping
     | Textures
     | Sandbox
     | ObjectLoader
@@ -123,6 +126,9 @@ type ActiveScene
 sceneOptions : Model -> Maybe Scene.Options
 sceneOptions model =
     case Array.get model.currentSceneIndex model.scenes of
+        Just BrickWall ->
+            Scenes.BrickWall.sceneOptions
+
         Just NormalMapping ->
             Scenes.NormalMapping.sceneOptions
 
@@ -150,6 +156,9 @@ updateAssetStore assets model =
     { model | assets = assets }
         |> (\m ->
                 case Array.get m.currentSceneIndex m.scenes of
+                    Just BrickWall ->
+                        { m | scene = Scenes.BrickWall.init m.assets |> Just }
+
                     Just NormalMapping ->
                         { m | scene = Scenes.NormalMapping.init m.assets |> Just }
 
@@ -175,21 +184,26 @@ updateAssetStore assets model =
 
 loadScene : Model -> ( Model, Cmd Msg )
 loadScene model =
-    case Array.get model.currentSceneIndex model.scenes of
+    case Array.get model.currentSceneIndex model.scenes |> Dbug.log "loadScene" of
         Just NormalMapping ->
             { model | scene = Just <| Scenes.NormalMapping.init model.assets }
                 |> (\model_ ->
-                        { model_
-                            | rendererOptions =
-                                model_.rendererOptions
-                                    |> XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
-                        }
+                        ( model_
+                        , Cmd.batch
+                            [ AssetStore.loadObj Asset.UvCube model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.UvCubeDiffuse model_.assets (AssetLoaded 1)
+                            ]
+                        )
                    )
+
+        Just BrickWall ->
+            { model | scene = Just <| Scenes.BrickWall.init model.assets }
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
                             [ AssetStore.loadObj Asset.Cube model_.assets (AssetLoaded 1)
-                            , AssetStore.loadTexture Asset.CubeDiffuse model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.BrickWallDiffuse model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.BrickWallNormal model_.assets (AssetLoaded 1)
                             ]
                         )
                    )
@@ -227,7 +241,7 @@ loadScene model =
                     { scale = 0.3, color = vec3 0.5 0.5 1 }
                     (vec3 -1 1 0)
                     "obj/monkey.obj"
-                    (GotObj Nothing)
+                    (GotObj (Just Material.Advanced))
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 1 1 0.5 }
                     (vec3 0 0 0.5)
@@ -242,7 +256,7 @@ loadScene model =
                     { scale = 1, color = vec3 0.5 1 0.5 }
                     (vec3 0 0.5 -1.5)
                     "obj/cube.obj"
-                    (GotObj Nothing)
+                    (GotObj (Just Material.Advanced))
                 ]
             )
 

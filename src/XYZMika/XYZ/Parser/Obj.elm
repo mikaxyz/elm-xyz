@@ -2,7 +2,7 @@ module XYZMika.XYZ.Parser.Obj exposing (parse)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Math.Vector2 exposing (Vec2, vec2)
+import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.Data.Vertex as Vertex
@@ -63,8 +63,120 @@ parse options input =
                     )
     in
     { triangles = triangles
-    , indexedTriangles = indexed
+    , indexedTriangles = indexed |> generateTangents
     }
+
+
+generateTangents : ( List Vertex.Vertex, List ( Int, Int, Int ) ) -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
+generateTangents ( vs, is ) =
+    ( vs
+        |> List.indexedMap (generateTangent is (vs |> Array.fromList))
+    , is
+    )
+
+
+generateTangent : List ( Int, Int, Int ) -> Array Vertex.Vertex -> Int -> Vertex.Vertex -> Vertex.Vertex
+generateTangent indices vertices index vertex =
+    let
+        triangles : List ( Vertex.Vertex, Vertex.Vertex, Vertex.Vertex )
+        triangles =
+            indices
+                |> List.filter (\( i1, i2, i3 ) -> [ i1, i2, i3 ] |> List.member index)
+                |> List.map
+                    (\( i1, i2, i3 ) ->
+                        if index == i1 then
+                            ( i1, i2, i3 )
+
+                        else if index == i2 then
+                            ( i2, i1, i3 )
+
+                        else
+                            ( i3, i1, i2 )
+                    )
+                |> List.filterMap
+                    (\( i1, i2, i3 ) ->
+                        Maybe.map3
+                            (\v1 v2 v3 -> ( v1, v2, v3 ))
+                            (Array.get i1 vertices)
+                            (Array.get i2 vertices)
+                            (Array.get i3 vertices)
+                    )
+
+        --|> Debug.log "triangles"
+        tangent : ( Vertex.Vertex, Vertex.Vertex, Vertex.Vertex ) -> Vec3
+        tangent ( v1, v2, v3 ) =
+            let
+                -- TODO: Calculate tangents for triangle
+                --{ uv1, uv2, uv2 } =
+                --{ uv1x, uv1y, uv2x, uv2y, uv3x, uv3y } =
+                --    { uv1x = v1.uv |> Vec2.getX
+                --    , uv1y = v1.uv |> Vec2.getY
+                --    , uv2x = v2.uv |> Vec2.getX
+                --    , uv2y = v2.uv |> Vec2.getY
+                --    , uv3x = v3.uv |> Vec2.getX
+                --    , uv3y = v3.uv |> Vec2.getY
+                --    }
+                deltaPos1 : Vec3
+                deltaPos1 =
+                    Vec3.sub v1.position v2.position
+
+                --|> Vec3.toRecord
+                deltaPos2 : Vec3
+                deltaPos2 =
+                    Vec3.sub v1.position v3.position
+
+                --|> Vec3.toRecord
+                deltaUV1 : { x : Float, y : Float }
+                deltaUV1 =
+                    Vec2.sub v1.uv v2.uv
+                        |> Vec2.toRecord
+
+                --|> Debug.log "deltaUV1"
+                deltaUV2 : { x : Float, y : Float }
+                deltaUV2 =
+                    Vec2.sub v1.uv v3.uv
+                        --|> Debug.log "deltaUV2"
+                        |> Vec2.toRecord
+
+                r : Float
+                r =
+                    1.0
+                        / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x)
+
+                --|> Debug.log "r"
+                d1 =
+                    Vec3.scale deltaUV2.y deltaPos1
+
+                d2 =
+                    Vec3.scale deltaUV1.y deltaPos2
+
+                tangent1 =
+                    Vec3.sub d1 d2 |> Vec3.scale r
+
+                --Vec3.sub (Vec3.scale deltaUV1.y deltaPos2) (Vec3.scale deltaUV2.y deltaPos1)
+                --|> Vec3.scale r
+                --|> Debug.log "tangent"
+                --bitangent1 =
+                --    Vec3.sub (Vec3.scale deltaUV1.x deltaPos2) (Vec3.scale deltaUV2.x deltaPos1)
+                --|> Vec3.scale r
+                --|> Debug.log "bitangent1"
+                --*r;
+                --bitangent = (deltaPos2 * deltaUV1.x   - deltaPos1 * deltaUV2.x)*r;
+            in
+            Vec3.normalize tangent1
+    in
+    --|> Vertex.withTangent tangent_
+    triangles
+        |> List.head
+        -- TODO: Dont just pick head, Create an average tangent from all triangles
+        |> Maybe.map
+            (\t ->
+                vertex
+                    --|> Vertex.withNormal (normal t)
+                    |> Vertex.withTangent (tangent t)
+             --|> Vertex.withTangent tangent_
+            )
+        |> Maybe.withDefault vertex
 
 
 indexedVertices : Options -> List ObjData -> ( List Vertex.Vertex, List ( Int, Int, Int ) )
@@ -91,6 +203,10 @@ indexedVertices options data =
             data
                 |> List.filterMap mapNormal
                 |> Array.fromList
+
+        tangentVector : Vec3 -> ( Float, Float ) -> Vec3
+        tangentVector p ( u, v ) =
+            vec3 0 0 0
 
         toVertex2 : ( Int, Int, Int ) -> Vertex.Vertex
         toVertex2 ( vGeometry, vUv, vNormal ) =

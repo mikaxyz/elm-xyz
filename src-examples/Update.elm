@@ -9,6 +9,10 @@ import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene
 
 
+pointLightDistance =
+    3
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -41,42 +45,54 @@ update msg model =
                 "x" ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.down)
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.down
+                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).down
+                            )
                     , Cmd.none
                     )
 
                 "w" ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.up)
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.up
+                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).up
+                            )
                     , Cmd.none
                     )
 
                 "d" ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.right)
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.right
+                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).right
+                            )
                     , Cmd.none
                     )
 
                 "a" ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.left)
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.left
+                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).left
+                            )
                     , Cmd.none
                     )
 
                 "e" ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.forward)
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.backward
+                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).forward
+                            )
                     , Cmd.none
                     )
 
                 "z" ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.backward)
+                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.forward
+                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).backward
+                            )
                     , Cmd.none
                     )
 

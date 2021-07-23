@@ -3,6 +3,7 @@ module XYZMika.XYZ.Scene exposing
     , RenderOptions
     , Scene
     , direction
+    , inDirection
     , init
     , map
     , render
@@ -26,12 +27,17 @@ import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 direction : { right : Vec3, left : Vec3, up : Vec3, down : Vec3, forward : Vec3, backward : Vec3 }
 direction =
-    { right = vec3 1 0 0
-    , left = vec3 -1 0 0
-    , up = vec3 0 1 0
-    , down = vec3 0 -1 0
-    , forward = vec3 0 0 -1
-    , backward = vec3 0 0 1
+    inDirection 10
+
+
+inDirection : Float -> { right : Vec3, left : Vec3, up : Vec3, down : Vec3, forward : Vec3, backward : Vec3 }
+inDirection d =
+    { right = vec3 d 0 0
+    , left = vec3 -d 0 0
+    , up = vec3 0 d 0
+    , down = vec3 0 -d 0
+    , forward = vec3 0 0 -d
+    , backward = vec3 0 0 d
     }
 
 
@@ -118,6 +124,7 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         { sceneCamera = scene.camera
         , scenePerspective = options_.perspective aspectRatio
         , sceneMatrix = Mat4.identity
+        , sceneRotationMatrix = Mat4.identity
         }
         defaultTexture
         scene.graph
@@ -150,6 +157,10 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture gra
                                 Object.rotation object_
                                     |> Mat4.mul (Mat4.makeTranslate (Object.position object_))
                                     |> Mat4.mul uniforms.sceneMatrix
+
+                            sceneRotationMatrix =
+                                Object.rotation object_
+                                    |> Mat4.mul uniforms.sceneRotationMatrix
 
                             entity : Uniforms u -> Entity
                             entity uniforms_ =
@@ -187,17 +198,17 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture gra
                         in
                         case ( renderOptions.showGeometry, renderOptions.showBoundingBoxes ) of
                             ( True, True ) ->
-                                entity { uniforms | sceneMatrix = sceneMatrix }
-                                    :: boundingBox { uniforms | sceneMatrix = sceneMatrix }
-                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+                                entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
+                                    :: boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
+                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix } defaultTexture children renderer
 
                             ( True, False ) ->
-                                entity { uniforms | sceneMatrix = sceneMatrix }
-                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+                                entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
+                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix } defaultTexture children renderer
 
                             ( False, True ) ->
-                                boundingBox { uniforms | sceneMatrix = sceneMatrix }
-                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix } defaultTexture children renderer
+                                boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
+                                    :: renderGraph drag theta rendererOptions renderOptions { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix } defaultTexture children renderer
 
                             _ ->
                                 []

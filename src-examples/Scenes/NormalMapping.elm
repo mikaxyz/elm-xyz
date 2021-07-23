@@ -16,9 +16,7 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
 type alias Assets =
-    { vertices : List ( Vertex, Vertex, Vertex )
-    , verticesIndexed : ( List Vertex, List ( Int, Int, Int ) )
-    , mesh : Mesh Vertex
+    { verticesIndexed : ( List Vertex, List ( Int, Int, Int ) )
     , diffuse : Texture
     }
 
@@ -92,15 +90,15 @@ render cube =
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withMaterialName Material.Advanced
         |> objectToGraph
-    , cube.vertices
-        |> Object.initWithTriangles
+    , cube.verticesIndexed
+        |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 -1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withMaterialName Material.Advanced
         |> objectToGraph
-    , cube.vertices
-        |> Object.initWithTriangles
+    , cube.verticesIndexed
+        |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withColor Color.grey
@@ -111,12 +109,10 @@ render cube =
 
 getAssets : Store Asset.Obj Asset.Texture -> Maybe Assets
 getAssets assets =
-    Maybe.map4
+    Maybe.map2
         Assets
-        (AssetStore.vertices Asset.Cube assets)
-        (AssetStore.verticesIndexed Asset.Cube assets)
-        (AssetStore.mesh Asset.Cube assets)
-        (AssetStore.texture Asset.CubeDiffuse assets)
+        (AssetStore.verticesIndexed Asset.UvCube assets)
+        (AssetStore.texture Asset.UvCubeDiffuse assets)
 
 
 sceneOptions : Maybe Options
