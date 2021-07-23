@@ -67,7 +67,7 @@ init =
     , scene = Nothing
     , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.RenderOptions True False False
-    , scenes = [ NormalMapping, Textures, BrickWall, Light, Sandbox, ObjectLoader, Landscape ] |> Array.fromList
+    , scenes = [ ObjectLoader, Textures, NormalMapping, BrickWall, Light, Sandbox, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     }
@@ -244,14 +244,14 @@ loadScene model =
                     (GotObj (Just Material.Advanced))
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 1 1 0.5 }
-                    (vec3 0 0 0.5)
+                    (vec3 0 0.04 0.5)
                     "obj/cat.obj"
                     (GotObj (Just Material.Advanced))
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 0.5 1 1 }
-                    (vec3 0 0 0)
+                    (vec3 0 0.04 0)
                     "obj/wolf.obj"
-                    (GotObj Nothing)
+                    (GotObj (Just Material.Advanced))
                 , Scenes.ObjectLoader.getObj
                     { scale = 1, color = vec3 0.5 1 0.5 }
                     (vec3 0 0.5 -1.5)

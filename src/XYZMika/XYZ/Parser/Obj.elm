@@ -288,12 +288,42 @@ indexedVertices options data =
                                 |> Dict.get i3
                                 |> Maybe.withDefault (i3 |> toVertex2)
 
+                        calculateNormal : Vec3 -> Vec3 -> Vec3 -> Vec3
+                        calculateNormal v1_ v2_ v3_ =
+                            Vec3.cross (Vec3.sub v1_ v2_) (Vec3.sub v1_ v3_) |> Vec3.normalize
+
+                        calculateMissingNormal : Vec3 -> Vec3 -> Vec3 -> Vertex.Vertex -> Vertex.Vertex
+                        calculateMissingNormal v1 v2 v3 vertex =
+                            if vertex.meta.hasNormal then
+                                vertex
+
+                            else
+                                vertex |> Vertex.withNormal (calculateNormal v1 v2 v3)
+
                         vertexStore_ : Dict ( Int, Int, Int ) Vertex.Vertex
                         vertexStore_ =
                             vertexStore
-                                |> Dict.insert i1 vertex1
-                                |> Dict.insert i2 vertex2
-                                |> Dict.insert i3 vertex3
+                                |> Dict.insert i1
+                                    (vertex1
+                                        |> calculateMissingNormal
+                                            vertex1.position
+                                            vertex2.position
+                                            vertex3.position
+                                    )
+                                |> Dict.insert i2
+                                    (vertex2
+                                        |> calculateMissingNormal
+                                            vertex1.position
+                                            vertex2.position
+                                            vertex3.position
+                                    )
+                                |> Dict.insert i3
+                                    (vertex3
+                                        |> calculateMissingNormal
+                                            vertex1.position
+                                            vertex2.position
+                                            vertex3.position
+                                    )
                     in
                     rewriteIndices index3 indexStore3 vertexStore_ rest
 
