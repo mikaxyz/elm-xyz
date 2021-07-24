@@ -232,6 +232,11 @@ fragmentShader =
 //            lighting += 0.3 * f_pointLight(normal);
 //            lighting += 0.3 * f_pointLight_PassThrough(normal);
 
+
+//            vec3 lighting = vec3(0,0,0);
+//            lighting += 0.2 * f_pointLight(normal);
+//            lighting += 0.8 * f_pointLight_PassThrough(normal);
+
             vec3 lighting = vec3(1,1,1);
 //            lighting *= f_directionalLight(normal);
             lighting *= f_pointLight(normal);
