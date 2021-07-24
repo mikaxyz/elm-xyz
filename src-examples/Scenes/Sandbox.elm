@@ -16,7 +16,7 @@ import XYZMika.XYZ.Scene.Object as Object
 
 init : Scene Material.Name
 init =
-    Scene.init
+    Scene.init { gizmoMaterial = Material.Simple }
         [ Graph
             (XYZMika.XYZ.Mesh.Cube.withBoundsColorful ( vec3 -0.5 -0.2 -0.5, vec3 0.5 0.2 0.5 )
                 |> Object.initWithTriangles

@@ -22,11 +22,21 @@ renderer _ _ uniforms object =
 
 toEntity : Object materialId -> Material uniforms v -> Entity
 toEntity object mat =
-    WebGL.entity
-        (Material.vertexShader mat)
-        (Material.fragmentShader mat)
-        (Object.mesh object)
-        (Material.uniforms mat)
+    case Object.glSetting object of
+        Just glSetting ->
+            WebGL.entityWith
+                [ glSetting ]
+                (Material.vertexShader mat)
+                (Material.fragmentShader mat)
+                (Object.mesh object)
+                (Material.uniforms mat)
+
+        Nothing ->
+            WebGL.entity
+                (Material.vertexShader mat)
+                (Material.fragmentShader mat)
+                (Object.mesh object)
+                (Material.uniforms mat)
 
 
 material : Uniforms u -> Material (Uniforms u) Varyings

@@ -1,8 +1,8 @@
 module XYZMika.XYZ.Scene.Object exposing
     ( Object, init, initWithTriangles
-    , withPosition, withRotation, withColor, withMaterialName
+    , withPosition, withRotation, withColor, withMaterialName, withGlSetting
     , withDiffuseMap, withNormalMap, withNormalMapIntensity
-    , mesh, position, rotation, color, colorVec3, materialName, boundingBox
+    , mesh, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault, normalMapIntensityWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
@@ -19,13 +19,13 @@ module XYZMika.XYZ.Scene.Object exposing
 
 ## Modify
 
-@docs withPosition, withRotation, withColor, withMaterialName
+@docs withPosition, withRotation, withColor, withMaterialName, withGlSetting
 @docs withDiffuseMap, withNormalMap, withNormalMapIntensity
 
 
 ## Read
 
-@docs mesh, position, rotation, color, colorVec3, materialName, boundingBox
+@docs mesh, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
 @docs diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault, normalMapIntensity, normalMapIntensityWithDefault
 
 
@@ -48,6 +48,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh)
+import WebGL.Settings
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 
@@ -67,6 +68,7 @@ type alias ObjectData materialId =
     , normalMapIntensity : Maybe Float
     , material : Maybe materialId
     , color : Color
+    , glSetting : Maybe WebGL.Settings.Setting
     }
 
 
@@ -92,6 +94,7 @@ initWithBounds bounds x =
         , options = Nothing
         , material = Nothing
         , color = Color.white
+        , glSetting = Nothing
         }
 
 
@@ -111,6 +114,7 @@ initWithTriangles x =
         , options = Nothing
         , material = Nothing
         , color = Color.white
+        , glSetting = Nothing
         }
 
 
@@ -152,6 +156,16 @@ vMax v1 v2 =
             )
     in
     vec3 x y z
+
+
+withGlSetting : WebGL.Settings.Setting -> Object materialId -> Object materialId
+withGlSetting x (Mesh objectData) =
+    Mesh { objectData | glSetting = Just x }
+
+
+glSetting : Object materialId -> Maybe WebGL.Settings.Setting
+glSetting (Mesh objectData) =
+    objectData.glSetting
 
 
 withPosition : Vec3 -> Object materialId -> Object materialId

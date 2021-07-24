@@ -20,6 +20,7 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Material as Renderer exposing (Renderer)
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
+import XYZMika.XYZ.Mesh.Gizmo as Gizmo
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -47,6 +48,7 @@ type Scene materialId
         , camera : Mat4
         , cameraRotate : Mat4
         , rendererOptions : Renderer.Options
+        , gizmoMaterial : materialId
         }
 
 
@@ -55,13 +57,14 @@ withRendererOptions rendererOptions (Scene scene) =
     Scene { scene | rendererOptions = rendererOptions }
 
 
-init : List (Graph materialId) -> Scene materialId
-init graph =
+init : { gizmoMaterial : materialId } -> List (Graph materialId) -> Scene materialId
+init { gizmoMaterial } graph =
     Scene
         { graph = graph
         , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 0 0) (vec3 0 1 0)
         , cameraRotate = Mat4.identity
         , rendererOptions = Renderer.defaultOptions
+        , gizmoMaterial = gizmoMaterial
         }
 
 
@@ -127,8 +130,28 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         , sceneRotationMatrix = Mat4.identity
         }
         defaultTexture
-        scene.graph
+        (addGizmos scene.rendererOptions scene.gizmoMaterial scene.graph)
         renderer
+
+
+addGizmos : Renderer.Options -> materialId -> List (Graph materialId) -> List (Graph materialId)
+addGizmos options material graph =
+    graph
+        ++ [ Graph
+                (Gizmo.axis
+                    |> Object.init
+                    |> Object.withMaterialName material
+                    |> Object.withPosition options.lights.point
+                    |> Object.withGlSetting
+                        (WebGL.Settings.DepthTest.always
+                            { write = True
+                            , near = 0
+                            , far = 1
+                            }
+                        )
+                )
+                []
+           ]
 
 
 renderGraph :

@@ -31,7 +31,7 @@ type alias TreeAssets =
 
 init : Store Asset.Obj Asset.Texture -> Scene Material.Name
 init assets =
-    Scene.init
+    Scene.init { gizmoMaterial = Material.Simple }
         [ Graph
             (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
                 |> Object.initWithTriangles

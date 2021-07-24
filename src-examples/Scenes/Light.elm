@@ -16,7 +16,7 @@ speed =
 
 init : Scene Material.Name
 init =
-    Scene.init
+    Scene.init { gizmoMaterial = Material.Simple }
         [ Graph
             (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 -0.6 -1, vec3 1 -0.5 1 )
                 |> Object.initWithTriangles

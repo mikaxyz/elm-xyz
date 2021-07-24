@@ -27,8 +27,8 @@ init assets =
         |> getAssets
         |> Maybe.map render
         |> Maybe.withDefault []
-        |> Scene.init
-        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 3.5) (vec3 0 0 0) (vec3 0 1 0))
+        |> Scene.init { gizmoMaterial = Material.Simple }
+        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 4.5) (vec3 0 0 0) (vec3 0 1 0))
 
 
 render : Assets -> List (Graph Material.Name)

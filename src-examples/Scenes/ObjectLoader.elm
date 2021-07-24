@@ -13,7 +13,7 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 init : Scene Material.Name
 init =
-    Scene.init [ rootObject ]
+    Scene.init { gizmoMaterial = Material.Simple } [ rootObject ]
         |> Scene.withCamera (Mat4.makeLookAt (vec3 0 1 2.5) (vec3 0 0 0) (vec3 0 1 0))
 
 

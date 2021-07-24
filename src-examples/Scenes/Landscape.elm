@@ -99,7 +99,7 @@ init =
         helpers =
             normalGuides ++ elevationBones 4
     in
-    Scene.init
+    Scene.init { gizmoMaterial = Material.Simple }
         [ landscape
             |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
             |> Object.init
