@@ -63,26 +63,7 @@ renderer options defaultTexture uniforms object =
         , normalMap = object |> Object.normalMapWithDefault defaultTexture
         , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
         }
-        |> toEntity object
-
-
-toEntity : Object materialId -> Material uniforms v -> Entity
-toEntity object mat =
-    case Object.glSetting object of
-        Just glSetting ->
-            WebGL.entityWith
-                [ glSetting ]
-                (Material.vertexShader mat)
-                (Material.fragmentShader mat)
-                (Object.mesh object)
-                (Material.uniforms mat)
-
-        Nothing ->
-            WebGL.entity
-                (Material.vertexShader mat)
-                (Material.fragmentShader mat)
-                (Object.mesh object)
-                (Material.uniforms mat)
+        |> Material.toEntity object
 
 
 material : Uniforms -> Material Uniforms Varyings

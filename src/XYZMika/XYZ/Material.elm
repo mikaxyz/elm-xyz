@@ -7,6 +7,7 @@ module XYZMika.XYZ.Material exposing
     , material
     , setDirectionalLight
     , setPointLight
+    , toEntity
     , uniforms
     , vertexShader
     )
@@ -15,7 +16,7 @@ import Math.Vector3 as Vec3 exposing (Vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Scene.Object exposing (Object)
+import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
 type alias Options =
@@ -81,3 +82,22 @@ fragmentShader (Material _ _ (FragmentShader x)) =
 uniforms : Material uniforms v -> uniforms
 uniforms (Material x _ _) =
     x
+
+
+toEntity : Object materialId -> Material uniforms v -> Entity
+toEntity object mat =
+    case Object.glSetting object of
+        Just glSetting ->
+            WebGL.entityWith
+                [ glSetting ]
+                (vertexShader mat)
+                (fragmentShader mat)
+                (Object.mesh object)
+                (uniforms mat)
+
+        Nothing ->
+            WebGL.entity
+                (vertexShader mat)
+                (fragmentShader mat)
+                (Object.mesh object)
+                (uniforms mat)

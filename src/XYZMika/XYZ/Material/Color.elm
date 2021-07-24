@@ -33,26 +33,7 @@ renderer _ _ uniforms object =
         --
         , objectColor = Object.colorVec3 object
         }
-        |> toEntity object
-
-
-toEntity : Object materialId -> Material uniforms v -> Entity
-toEntity object mat =
-    case Object.glSetting object of
-        Just glSetting ->
-            WebGL.entityWith
-                [ glSetting ]
-                (Material.vertexShader mat)
-                (Material.fragmentShader mat)
-                (Object.mesh object)
-                (Material.uniforms mat)
-
-        Nothing ->
-            WebGL.entity
-                (Material.vertexShader mat)
-                (Material.fragmentShader mat)
-                (Object.mesh object)
-                (Material.uniforms mat)
+        |> Material.toEntity object
 
 
 material : Uniforms -> Material Uniforms Varyings
