@@ -237,11 +237,12 @@ loadScene model =
                     (vec3 0 0 -0.5)
                     "obj/deer.obj"
                     (GotObj (Just Material.Advanced))
-                , Scenes.ObjectLoader.getObj
-                    { scale = 0.3, color = vec3 0.5 0.5 1 }
-                    (vec3 -1 1 0)
-                    "obj/monkey.obj"
-                    (GotObj (Just Material.Advanced))
+
+                --, Scenes.ObjectLoader.getObj
+                --    { scale = 0.3, color = vec3 0.5 0.5 1 }
+                --    (vec3 -1 1 0)
+                --    "obj/monkey.obj"
+                --    (GotObj (Just Material.Advanced))
                 , Scenes.ObjectLoader.getObj
                     { scale = 0.001, color = vec3 1 1 0.5 }
                     (vec3 0 0.04 0.5)
