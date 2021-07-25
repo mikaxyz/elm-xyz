@@ -101,7 +101,6 @@ render ball tree =
         |> Object.withNormalMap ball.normal
         |> Object.withColor Color.yellow
         |> Object.withMaterialName Material.Advanced
-        |> Object.withNormalMapIntensity 10.0
         |> Object.withPosition (vec3 1 0 -3)
         |> Object.withOptionRotationInTime
             (\theta ->

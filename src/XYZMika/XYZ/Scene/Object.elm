@@ -1,12 +1,11 @@
 module XYZMika.XYZ.Scene.Object exposing
-    ( Object, init, initWithTriangles
+    ( Object, init, initWithTriangles, initWithIndexedTriangles
     , withPosition, withRotation, withColor, withMaterialName, withGlSetting
-    , withDiffuseMap, withNormalMap, withNormalMapIntensity
+    , withDiffuseMap, withNormalMap
     , mesh, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
-    , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault, normalMapIntensityWithDefault
+    , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
-    , initWithIndexedTriangles
     )
 
 {-|
@@ -14,19 +13,19 @@ module XYZMika.XYZ.Scene.Object exposing
 
 # Create
 
-@docs Object, init, initWithTriangles
+@docs Object, init, initWithTriangles, initWithIndexedTriangles
 
 
 ## Modify
 
 @docs withPosition, withRotation, withColor, withMaterialName, withGlSetting
-@docs withDiffuseMap, withNormalMap, withNormalMapIntensity
+@docs withDiffuseMap, withNormalMap
 
 
 ## Read
 
 @docs mesh, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
-@docs diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault, normalMapIntensity, normalMapIntensityWithDefault
+@docs diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
 
 
 # Options (Move these to "Modifier.elm")
@@ -65,7 +64,6 @@ type alias ObjectData materialId =
     , options : Maybe Options
     , diffuseMap : Maybe Texture
     , normalMap : Maybe Texture
-    , normalMapIntensity : Maybe Float
     , material : Maybe materialId
     , color : Color
     , glSetting : Maybe WebGL.Settings.Setting
@@ -90,7 +88,6 @@ initWithBounds bounds x =
         , boundingBox = bounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , normalMapIntensity = Nothing
         , options = Nothing
         , material = Nothing
         , color = Color.white
@@ -110,7 +107,6 @@ initWithTriangles x =
                 |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , normalMapIntensity = Nothing
         , options = Nothing
         , material = Nothing
         , color = Color.white
@@ -198,11 +194,6 @@ withNormalMap x obj =
     obj |> mapData (\data -> { data | normalMap = Just x })
 
 
-withNormalMapIntensity : Float -> Object materialId -> Object materialId
-withNormalMapIntensity x obj =
-    obj |> mapData (\data -> { data | normalMapIntensity = Just x })
-
-
 
 -- HELPERS
 
@@ -288,11 +279,6 @@ normalMap obj =
 normalMapWithDefault : Texture -> Object materialId -> Texture
 normalMapWithDefault default obj =
     obj |> get .normalMap |> Maybe.withDefault default
-
-
-normalMapIntensityWithDefault : Float -> Object materialId -> Float
-normalMapIntensityWithDefault default obj =
-    obj |> get .normalMapIntensity |> Maybe.withDefault default
 
 
 

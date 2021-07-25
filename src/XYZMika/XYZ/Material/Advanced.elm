@@ -27,7 +27,6 @@ type alias Uniforms =
     , hasDiffuseMap : Bool
     , normalMap : Texture
     , hasNormalMap : Bool
-    , normalMapIntensity : Float
     }
 
 
@@ -61,7 +60,6 @@ renderer options defaultTexture uniforms object =
         , hasDiffuseMap = Object.diffuseMap object /= Nothing
         , hasNormalMap = Object.normalMap object /= Nothing
         , normalMap = object |> Object.normalMapWithDefault defaultTexture
-        , normalMapIntensity = object |> Object.normalMapIntensityWithDefault 2.0
         }
         |> Material.toEntity object
 
@@ -131,7 +129,6 @@ fragmentShader =
         uniform bool hasDiffuseMap;
         uniform sampler2D normalMap;
         uniform bool hasNormalMap;
-        uniform float normalMapIntensity;
 
         varying vec3 v_color;
         varying vec3 v_normal;
