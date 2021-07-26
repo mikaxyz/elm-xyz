@@ -1,21 +1,69 @@
 module Update exposing (update)
 
 import Math.Vector2 as Vec2
-import Model exposing (Model, Msg(..))
+import Math.Vector3 as Vec3 exposing (vec3)
+import Model exposing (Hud(..), HudMsg(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene
+import XYZMika.XYZ.Scene.Camera as Camera
 
 
 pointLightDistance =
     3
 
 
+updateHud : HudMsg -> Hud -> ( Hud, Cmd Msg )
+updateHud msg (Hud hud) =
+    case msg |> Debug.log "MSG" of
+        Click ->
+            ( Hud hud, Cmd.none )
+
+        ToggleSidebar ->
+            ( Hud { hud | sidebarExpanded = not hud.sidebarExpanded }, Cmd.none )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        HudMsg msg_ ->
+            updateHud msg_ model.hud
+                |> Tuple.mapFirst (\hud -> { model | hud = hud })
+
+        SetValue hudObject hudValue x ->
+            let
+                set value_ vector =
+                    case hudValue of
+                        HudValue_Vec3_X ->
+                            Vec3.setX value_ vector
+
+                        HudValue_Vec3_Y ->
+                            Vec3.setY value_ vector
+
+                        HudValue_Vec3_Z ->
+                            Vec3.setZ value_ vector
+            in
+            ( case String.toFloat x of
+                Just value ->
+                    { model
+                        | scene =
+                            model.scene
+                                --|> Maybe.map (XYZMika.XYZ.Scene.withCameraPosition (vec3 value 0 0))
+                                |> Maybe.map
+                                    (XYZMika.XYZ.Scene.withCameraMap
+                                        (Camera.withPositionMap
+                                            (set value)
+                                        )
+                                    )
+                    }
+
+                Nothing ->
+                    model
+            , Cmd.none
+            )
+
         Animate elapsed ->
             ( { model | theta = model.theta + (elapsed / 10000) }, Cmd.none )
 

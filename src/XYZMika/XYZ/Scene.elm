@@ -2,12 +2,15 @@ module XYZMika.XYZ.Scene exposing
     ( Options
     , RenderOptions
     , Scene
+    , camera
     , direction
     , inDirection
     , init
     , map
     , render
     , withCamera
+    , withCameraMap
+    , withCameraPosition
     , withRendererOptions
     )
 
@@ -21,6 +24,7 @@ import XYZMika.XYZ.Material as Renderer exposing (Renderer)
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Gizmo as Gizmo
+import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -45,8 +49,7 @@ inDirection d =
 type Scene materialId
     = Scene
         { graph : List (Graph materialId)
-        , camera : Mat4
-        , cameraRotate : Mat4
+        , camera : Camera
         , rendererOptions : Renderer.Options
         , gizmoMaterial : materialId
         }
@@ -61,16 +64,30 @@ init : { gizmoMaterial : materialId } -> List (Graph materialId) -> Scene materi
 init { gizmoMaterial } graph =
     Scene
         { graph = graph
-        , camera = Mat4.makeLookAt (vec3 0 3 4) (vec3 0 0 0) (vec3 0 1 0)
-        , cameraRotate = Mat4.identity
+        , camera = Camera.init (vec3 0 3 4) (vec3 0 0 0)
         , rendererOptions = Renderer.defaultOptions
         , gizmoMaterial = gizmoMaterial
         }
 
 
-withCamera : Mat4 -> Scene materialId -> Scene materialId
-withCamera x (Scene scene) =
-    Scene { scene | camera = x }
+camera : Scene materialId -> Camera
+camera (Scene scene) =
+    scene.camera
+
+
+withCamera : { position : Vec3, target : Vec3 } -> Scene materialId -> Scene materialId
+withCamera { position, target } (Scene scene) =
+    Scene { scene | camera = Camera.init position target }
+
+
+withCameraPosition : Vec3 -> Scene materialId -> Scene materialId
+withCameraPosition position (Scene scene) =
+    Scene { scene | camera = scene.camera |> Camera.withPosition position }
+
+
+withCameraMap : (Camera -> Camera) -> Scene materialId -> Scene materialId
+withCameraMap f (Scene scene) =
+    Scene { scene | camera = f scene.camera }
 
 
 map : (Graph materialId -> Graph materialId) -> Scene materialId -> Scene materialId
@@ -124,7 +141,7 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         theta
         scene.rendererOptions
         renderOptions
-        { sceneCamera = scene.camera
+        { sceneCamera = Camera.toMat4 scene.camera
         , scenePerspective = options_.perspective aspectRatio
         , sceneMatrix = Mat4.identity
         , sceneRotationMatrix = Mat4.identity

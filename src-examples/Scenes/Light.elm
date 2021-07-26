@@ -74,7 +74,7 @@ init =
                 ]
             ]
         ]
-        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 4) (vec3 0 0 0) (vec3 0 1 0))
+        |> Scene.withCameraPosition (vec3 0 4 7)
 
 
 sceneOptions : Maybe Options

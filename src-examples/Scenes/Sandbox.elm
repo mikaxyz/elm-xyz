@@ -31,7 +31,7 @@ init =
                 (tree 8 0)
             ]
         ]
-        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 1 2.5) (vec3 0 0 0) (vec3 0 1 0))
+        |> Scene.withCameraPosition (vec3 0 1 2.5)
 
 
 sceneOptions : Maybe Options

@@ -1,6 +1,11 @@
 module Model exposing
-    ( Model
+    ( Hud(..)
+    , HudMsg(..)
+    , HudObject(..)
+    , HudValue(..)
+    , Model
     , Msg(..)
+    , currentSceneName
     , getDrag
     , init
     , loadScene
@@ -38,6 +43,14 @@ type Msg
     | KeyPressed String
     | GotObj (Maybe Material.Name) ( { scale : Float, color : Vec3 }, Vec3, String )
     | AssetLoaded Float AssetStore.Content
+      --
+    | HudMsg HudMsg
+    | SetValue HudObject HudValue String
+
+
+type HudMsg
+    = Click
+    | ToggleSidebar
 
 
 type alias Model =
@@ -50,7 +63,22 @@ type alias Model =
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
     , assets : AssetStore.Store Asset.Obj Asset.Texture
+    , hud : Hud
     }
+
+
+type Hud
+    = Hud { sidebarExpanded : Bool }
+
+
+type HudValue
+    = HudValue_Vec3_X
+    | HudValue_Vec3_Y
+    | HudValue_Vec3_Z
+
+
+type HudObject
+    = Camera
 
 
 getDrag model =
@@ -67,9 +95,10 @@ init =
     , scene = Nothing
     , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.RenderOptions True False False
-    , scenes = [ ObjectLoader, Textures, NormalMapping, BrickWall, Light, Sandbox, Landscape ] |> Array.fromList
+    , scenes = [ BrickWall, ObjectLoader, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
+    , hud = Hud { sidebarExpanded = True }
     }
         |> loadScene
         |> (\( model, cmd ) ->
@@ -121,6 +150,34 @@ type ActiveScene
     | ObjectLoader
     | Light
     | Landscape
+
+
+currentSceneName : Model -> String
+currentSceneName model =
+    case Array.get model.currentSceneIndex model.scenes of
+        Just BrickWall ->
+            "BrickWall"
+
+        Just NormalMapping ->
+            "NormalMapping"
+
+        Just Textures ->
+            "Textures"
+
+        Just Sandbox ->
+            "Sandbox"
+
+        Just ObjectLoader ->
+            "ObjectLoader"
+
+        Just Landscape ->
+            "Landscape"
+
+        Just Light ->
+            "Light"
+
+        Nothing ->
+            "-"
 
 
 sceneOptions : Model -> Maybe Scene.Options

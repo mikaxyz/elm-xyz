@@ -46,8 +46,11 @@ init assets =
                 |> Maybe.withDefault []
             )
         ]
-        --|> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 2) (vec3 0 0 0) (vec3 0 1 0))
-        |> Scene.withCamera (Mat4.makeLookAt (vec3 0 0.5 3) (vec3 0 0.5 0) (vec3 0 1 0))
+
+
+
+--|> Scene.withCamera (Mat4.makeLookAt (vec3 0 0 2) (vec3 0 0 0) (vec3 0 1 0))
+--|> Scene.withCamera { position = vec3 0 0.5 3, target = vec3 0 0.5 0 }
 
 
 render : BallAssets -> TreeAssets -> List (Graph Material.Name)
