@@ -16,11 +16,16 @@ import Math.Vector3 as Vec3 exposing (Vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
+import XYZMika.XYZ.Scene.Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
 type alias Options =
-    { lights : { directional : Vec3, point : Vec3 }
+    { lights :
+        { directional : Vec3
+        , point1 : PointLight
+        , point2 : PointLight
+        }
     }
 
 
@@ -28,7 +33,8 @@ defaultOptions : Options
 defaultOptions =
     { lights =
         { directional = Vec3.fromRecord { x = -1, y = -1, z = -3 }
-        , point = Vec3.fromRecord { x = 2, y = 2, z = 3 }
+        , point1 = PointLight (Vec3.fromRecord { x = 2, y = 2, z = 3 }) 0.7
+        , point2 = PointLight (Vec3.fromRecord { x = -1, y = 3, z = -2 }) 0.3
         }
     }
 
@@ -40,7 +46,7 @@ setDirectionalLight x options =
 
 setPointLight : Vec3 -> Options -> Options
 setPointLight x options =
-    (\lights -> { options | lights = { lights | point = x } }) options.lights
+    (\lights -> { options | lights = { lights | point1 = PointLight x 0.7 } }) options.lights
 
 
 type alias Renderer materialId uniforms =

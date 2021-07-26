@@ -3,10 +3,12 @@ module XYZMika.XYZ.Material.Advanced exposing (renderer)
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3)
+import Math.Vector4 exposing (Vec4)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material)
+import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms as Scene
 
@@ -22,11 +24,14 @@ type alias Uniforms =
     , sceneRotationMatrix : Mat4
     , objectColor : Vec3
     , directionalLight : Vec3
-    , pointLight : Vec3
     , diffuseMap : Texture
     , hasDiffuseMap : Bool
     , normalMap : Texture
     , hasNormalMap : Bool
+
+    --
+    , pointLight1 : Vec4
+    , pointLight2 : Vec4
     }
 
 
@@ -55,11 +60,14 @@ renderer options defaultTexture uniforms object =
         --
         , objectColor = Object.colorVec3 object
         , directionalLight = options.lights.directional
-        , pointLight = options.lights.point
         , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
         , hasDiffuseMap = Object.diffuseMap object /= Nothing
         , hasNormalMap = Object.normalMap object /= Nothing
         , normalMap = object |> Object.normalMapWithDefault defaultTexture
+
+        --
+        , pointLight1 = Light.toVec4 options.lights.point1
+        , pointLight2 = Light.toVec4 options.lights.point2
         }
         |> Material.toEntity object
 
@@ -124,11 +132,13 @@ fragmentShader =
         uniform mat4 sceneRotationMatrix;
 
         uniform vec3 directionalLight;
-        uniform vec3 pointLight;
         uniform sampler2D diffuseMap;
         uniform bool hasDiffuseMap;
         uniform sampler2D normalMap;
         uniform bool hasNormalMap;
+
+        uniform vec4 pointLight1;
+        uniform vec4 pointLight2;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -157,23 +167,23 @@ fragmentShader =
             return outMatrix;
         }
 
-        vec3 f_pointLight_PassThrough (vec3 normal) {
+        vec3 f_pointLight_PassThrough (vec3 normal, vec3 lightPosition) {
 //            highp vec3 color = vec3(0.6, 0.5, 0.2);
             highp vec3 color = vec3(1.0, 1.0, 1.0);
             highp float falloff = 2.0;
-            highp vec3 position = vec3(sceneMatrix * vec4(pointLight, 1.0));
+            highp vec3 position = vec3(sceneMatrix * vec4(lightPosition, 1.0));
 
-            highp float distance = distance(pointLight, v_fragPos);
+            highp float distance = distance(position, v_fragPos);
             highp float intensity = max(falloff - distance, 0.0);
             return color * intensity;
         }
 
-        vec3 f_pointLight (vec3 normal) {
+        vec3 f_pointLight (vec3 normal, vec3 lightPosition) {
             highp vec3 color = vec3(1.0, 1.0, 1.0);
-            highp vec3 pointLightDirection = normalize(pointLight - v_fragPos);
+            highp vec3 pointLightDirection = normalize(lightPosition - v_fragPos);
             highp float pointLightDiff = max(dot(normal, pointLightDirection), 0.0);
             highp float intensity = pow(pointLightDiff, 1.0);
-            highp float distance = distance(pointLight, v_fragPos);
+            highp float distance = distance(lightPosition, v_fragPos);
 
 //            return color * (intensity / distance);
             return color * intensity;
@@ -211,14 +221,19 @@ fragmentShader =
 //            lighting += 0.3 * f_pointLight_PassThrough(normal);
 
 
-//            vec3 lighting = vec3(0,0,0);
-//            lighting += 0.2 * f_pointLight(normal);
+            vec3 lighting = vec3(0,0,0);
+            if (pointLight1.w > 0.0) {
+               lighting += pointLight1.w * f_pointLight(normal, pointLight1.xyz);
+            }
+            if (pointLight2.w > 0.0) {
+               lighting += pointLight2.w * f_pointLight(normal, pointLight2.xyz);
+            }
 //            lighting += 0.8 * f_pointLight_PassThrough(normal);
 
-            vec3 lighting = vec3(1,1,1);
-//            lighting *= f_directionalLight(normal);
-            lighting *= f_pointLight(normal);
-//            lighting *= f_pointLight_PassThrough(normal);
+//            vec3 lighting = vec3(1,1,1);
+////            lighting *= f_directionalLight(normal);
+//            lighting *= f_pointLight(normal);
+////            lighting *= f_pointLight_PassThrough(normal);
 
             gl_FragColor =  vec4(lighting * diffuse, 1.0);
         }

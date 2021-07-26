@@ -130,28 +130,36 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         , sceneRotationMatrix = Mat4.identity
         }
         defaultTexture
-        (addGizmos scene.rendererOptions scene.gizmoMaterial scene.graph)
+        ([ scene.rendererOptions.lights.point1.position
+         , scene.rendererOptions.lights.point2.position
+         ]
+            |> addGizmos scene.gizmoMaterial scene.graph
+        )
         renderer
 
 
-addGizmos : Renderer.Options -> materialId -> List (Graph materialId) -> List (Graph materialId)
-addGizmos options material graph =
+addGizmos : materialId -> List (Graph materialId) -> List Vec3 -> List (Graph materialId)
+addGizmos material graph pointLights =
     graph
-        ++ [ Graph
-                (Gizmo.axis
-                    |> Object.init
-                    |> Object.withMaterialName material
-                    |> Object.withPosition options.lights.point
-                    |> Object.withGlSetting
-                        (WebGL.Settings.DepthTest.always
-                            { write = True
-                            , near = 0
-                            , far = 1
-                            }
-                        )
-                )
-                []
-           ]
+        ++ (pointLights
+                |> List.map
+                    (\position ->
+                        Graph
+                            (Gizmo.axis
+                                |> Object.init
+                                |> Object.withMaterialName material
+                                |> Object.withPosition position
+                                |> Object.withGlSetting
+                                    (WebGL.Settings.DepthTest.always
+                                        { write = True
+                                        , near = 0
+                                        , far = 1
+                                        }
+                                    )
+                            )
+                            []
+                    )
+           )
 
 
 renderGraph :
