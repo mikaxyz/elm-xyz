@@ -98,14 +98,46 @@
 		.widget__control {
 			display: flex;
 			flex-direction: column;
+			margin-bottom: 0.5em;
 		}
-		.widget__control-meta {
+		.widget__control input[type=range] {
+			appearance: none;
+			margin: 0;
+			background-color: black;
+			/*background: transparent;*/
+			height: 0.5em;
+			margin: 0.2em 0;
+		}
+		.widget__control input[type=range]:hover {
+			background-color: #ffffff21;
+		}
+
+		.widget__control input[type=range]::-moz-range-thumb {
+			border-radius: 0.1em;
+			border: none;
+			height: 0.8em;
+			width: 0.5em;
+			background-color: white;
+			cursor: pointer;
+		}
+
+		.widget__control input[type=range][disabled] {
+			background-color: #ffffff09;
+		}
+		.widget__control input[type=range][disabled]::-moz-range-thumb {
+			background-color: dimgray;
+		}
+
+		.value {
 			display: flex;
 			align-items: center;
 			font-family: monospace;
 			font-size: 0.9em;
 		}
-		.widget__control-meta span:first-child:after {
+		.value__title {
+			margin-right: auto;
+		}
+		.value__title:after {
 			content: ": ";
 			margin-right: 0.5em;
 		}

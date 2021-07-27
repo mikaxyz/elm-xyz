@@ -31,14 +31,15 @@ subscriptions model =
 
         drags =
             case model.dragger of
-                Just _ ->
+                Just dragger ->
                     Sub.batch
                         [ Browser.Events.onMouseMove (vectorDecoder |> D.map Drag)
+                        , Browser.Events.onMouseMove (vectorDecoder |> D.map (\pos -> DragBy (Vec2.sub pos model.lastDrag)))
                         , Browser.Events.onMouseUp (vectorDecoder |> D.map DragEnd)
                         ]
 
                 Nothing ->
-                    Browser.Events.onMouseDown (vectorDecoder |> D.map DragStart)
+                    Browser.Events.onMouseDown (vectorDecoder |> D.map (DragStart (Model.dragTarget model)))
     in
     Sub.batch
         [ drags

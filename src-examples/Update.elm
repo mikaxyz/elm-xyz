@@ -34,18 +34,6 @@ update msg model =
                 |> Tuple.mapFirst (\hud -> { model | hud = hud })
 
         SetValue hudObject hudValue x ->
-            let
-                set value_ vector =
-                    case hudValue of
-                        HudValue_Vec3_X ->
-                            Vec3.setX value_ vector
-
-                        HudValue_Vec3_Y ->
-                            Vec3.setY value_ vector
-
-                        HudValue_Vec3_Z ->
-                            Vec3.setZ value_ vector
-            in
             ( case String.toFloat x of
                 Just value ->
                     { model
@@ -54,8 +42,19 @@ update msg model =
                                 --|> Maybe.map (XYZMika.XYZ.Scene.withCameraPosition (vec3 value 0 0))
                                 |> Maybe.map
                                     (XYZMika.XYZ.Scene.withCameraMap
-                                        (Camera.withPositionMap
-                                            (set value)
+                                        (\camera ->
+                                            case hudValue of
+                                                HudValue_Vec3_X ->
+                                                    Camera.withPositionMap (Vec3.setX value) camera
+
+                                                HudValue_Vec3_Y ->
+                                                    Camera.withPositionMap (Vec3.setY value) camera
+
+                                                HudValue_Vec3_Z ->
+                                                    Camera.withPositionMap (Vec3.setZ value) camera
+
+                                                HudValue_Vec3_Roll ->
+                                                    Camera.withOrbitY (value - Camera.roll camera) camera
                                         )
                                     )
                     }
@@ -68,19 +67,59 @@ update msg model =
         Animate elapsed ->
             ( { model | theta = model.theta + (elapsed / 10000) }, Cmd.none )
 
-        DragStart pos ->
-            ( { model | dragger = Just { from = pos, to = pos } }, Cmd.none )
-
-        Drag pos ->
+        DragStart target pos ->
             ( { model
-                | dragger = Maybe.map (\drag -> { drag | to = pos }) model.dragger
+                | dragger = Just { from = pos, to = pos }
+                , lastDrag = pos
+                , dragTarget = target
               }
             , Cmd.none
             )
 
+        DragBy d ->
+            ( { model
+                | lastDrag = Vec2.add model.lastDrag d
+                , scene =
+                    case model.dragTarget of
+                        Model.CameraOrbit ->
+                            model.scene
+                                |> Maybe.map
+                                    (XYZMika.XYZ.Scene.withCameraMap
+                                        (\camera ->
+                                            camera
+                                                |> Camera.withOrbitY -(Vec2.getX d / 100)
+                                                --|> Camera.orbitX -(Vec2.getY d / 100)
+                                                |> Camera.withPositionMap (\position -> Vec3.setY (Vec3.getY position + (Vec2.getY d / 20)) position)
+                                        )
+                                    )
+
+                        Model.CameraPan ->
+                            model.scene |> Maybe.map (XYZMika.XYZ.Scene.withCameraMap (Camera.withPan (Vec2.scale 0.01 d)))
+
+                        Model.CameraZoom ->
+                            model.scene |> Maybe.map (XYZMika.XYZ.Scene.withCameraMap (Camera.withZoom (Vec2.getY d / 20)))
+
+                        Model.Default ->
+                            model.scene
+              }
+            , Cmd.none
+            )
+
+        Drag pos ->
+            if model.dragTarget == Model.Default then
+                ( { model
+                    | dragger = Maybe.map (\drag -> { drag | to = pos }) model.dragger
+                  }
+                , Cmd.none
+                )
+
+            else
+                ( model, Cmd.none )
+
         DragEnd pos ->
             ( { model
                 | dragger = Nothing
+                , dragTarget = Model.Default
                 , drag =
                     model.dragger
                         |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))

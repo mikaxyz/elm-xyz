@@ -5,6 +5,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes as HA exposing (..)
 import Html.Events exposing (onClick, onInput)
+import Json.Decode as JD
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
@@ -14,7 +15,7 @@ import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
-import XYZMika.XYZ.Scene.Camera as Camera
+import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -71,7 +72,7 @@ sceneView defaultTexture (Hud hud) model scene =
             [ class "app__sidebar"
             , classList [ ( "app__sidebar--expanded", hud.sidebarExpanded ) ]
             ]
-            [ sidebarView model.hud model scene
+            [ sidebarView model.hud (Scene.camera scene) model
             ]
         ]
 
@@ -92,11 +93,12 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : Hud -> Model -> Scene Material.Name -> Html Msg
-sidebarView (Hud hud) model scene =
+sidebarView : Hud -> Camera -> Model -> Html Msg
+sidebarView (Hud hud) camera model =
     div
         [ class "sidebar"
         , classList [ ( "sidebar--expanded", hud.sidebarExpanded ) ]
+        , onClickFinal (HudMsg Click)
         ]
         [ section
             [ class "sidebar__content"
@@ -104,9 +106,19 @@ sidebarView (Hud hud) model scene =
             [ header []
                 [ h1 [ class "sidebar__title" ] [ text <| Model.currentSceneName model ]
                 ]
-            , Camera.position (Scene.camera scene)
+            , Camera.position camera
                 |> Vec3.toRecord
                 |> vector3Widget "Camera" Camera
+
+            --, div [ class "value" ]
+            --    [ span [ class "value__title" ] [ text "Roll" ]
+            --    , Camera.roll camera
+            --        --|> (*) 180
+            --        |> valueToHtml
+            --    , text "°"
+            --    ]
+            -- TODO: Make this input work. Store other value?
+            , rangeInput "Roll" Camera HudValue_Vec3_Roll -1 1 True (Camera.roll camera)
             ]
         , button
             [ onClick (HudMsg ToggleSidebar)
@@ -116,30 +128,67 @@ sidebarView (Hud hud) model scene =
         ]
 
 
+valueToHtml x =
+    formatNumber x
+        |> (\( sign, value ) -> span [] [ text sign, text value ])
+
+
+formatNumber x =
+    formatNumberWithDecimals 3 x
+
+
+formatNumberWithDecimals : Int -> Float -> ( String, String )
+formatNumberWithDecimals decimals x =
+    let
+        sign =
+            if x < 0.0 then
+                "-"
+
+            else
+                "+"
+    in
+    case String.fromFloat (abs x) |> String.split "." of
+        int :: [] ->
+            ( sign, int ++ "." ++ (List.repeat decimals '0' |> String.fromList) )
+
+        int :: [ rest ] ->
+            ( sign, int ++ "." ++ String.left decimals rest )
+
+        _ ->
+            ( "", "NaN" )
+
+
 vector3Widget : String -> HudObject -> { x : Float, y : Float, z : Float } -> Html Msg
 vector3Widget title hudObject vector =
     section [ class "widget" ]
         [ h3 [] [ text title ]
-        , rangeInput "x" hudObject HudValue_Vec3_X vector.x
-        , rangeInput "y" hudObject HudValue_Vec3_Y vector.y
-        , rangeInput "z" hudObject HudValue_Vec3_Z vector.z
+        , rangeInput "x" hudObject HudValue_Vec3_X -10 10 False vector.x
+        , rangeInput "y" hudObject HudValue_Vec3_Y -10 10 False vector.y
+        , rangeInput "z" hudObject HudValue_Vec3_Z -10 10 False vector.z
         ]
 
 
-rangeInput : String -> HudObject -> HudValue -> Float -> Html Msg
-rangeInput title hudObject hudValue value_ =
+rangeInput : String -> HudObject -> HudValue -> Float -> Float -> Bool -> Float -> Html Msg
+rangeInput title hudObject hudValue min_ max_ isDisabled value_ =
     label [ class "widget__control" ]
-        [ span [ class "widget__control-meta" ]
-            [ span [] [ text title ]
-            , span [] [ text (String.fromFloat value_) ]
+        [ span [ class "value" ]
+            [ span [ class "value__title" ] [ text title ]
+            , span [] [ valueToHtml value_ ]
             ]
         , input
             [ type_ "range"
-            , HA.min "-10"
-            , HA.max "10"
+            , HA.min (String.fromFloat min_)
+            , HA.max (String.fromFloat max_)
             , HA.step "0.0001"
             , value (String.fromFloat value_)
             , onInput (SetValue hudObject hudValue)
+            , disabled isDisabled
             ]
             []
         ]
+
+
+onClickFinal : msg -> Attribute msg
+onClickFinal msg =
+    JD.succeed { message = msg, stopPropagation = True, preventDefault = False }
+        |> Html.Events.custom "mousedown"

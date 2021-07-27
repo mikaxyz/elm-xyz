@@ -1,11 +1,13 @@
 module Model exposing
-    ( Hud(..)
+    ( DragTarget(..)
+    , Hud(..)
     , HudMsg(..)
     , HudObject(..)
     , HudValue(..)
     , Model
     , Msg(..)
     , currentSceneName
+    , dragTarget
     , getDrag
     , init
     , loadScene
@@ -38,8 +40,9 @@ import XYZMika.XYZ.Scene as Scene exposing (Scene)
 
 type Msg
     = Animate Float
-    | DragStart Vec2
+    | DragStart DragTarget Vec2
     | Drag Vec2
+    | DragBy Vec2
     | DragEnd Vec2
     | GotObj (Maybe Material.Name) ( { scale : Float, color : Vec3 }, Vec3, String )
     | AssetLoaded Float AssetStore.Content
@@ -51,6 +54,31 @@ type Msg
     | SetValue HudObject HudValue String
 
 
+type DragTarget
+    = Default
+    | CameraOrbit
+    | CameraPan
+    | CameraZoom
+
+
+dragTarget : Model -> DragTarget
+dragTarget model =
+    [ ( Keyboard.isKeyDown Keyboard.Alt model.keyboard && Keyboard.isKeyDown Keyboard.Shift model.keyboard
+      , CameraPan
+      )
+    , ( Keyboard.isKeyDown Keyboard.Alt model.keyboard
+      , CameraOrbit
+      )
+    , ( Keyboard.isKeyDown Keyboard.Shift model.keyboard
+      , CameraZoom
+      )
+    ]
+        |> List.filter Tuple.first
+        |> List.map Tuple.second
+        |> List.head
+        |> Maybe.withDefault Default
+
+
 type HudMsg
     = Click
     | ToggleSidebar
@@ -60,6 +88,8 @@ type alias Model =
     { theta : Float
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
+    , lastDrag : Vec2
+    , dragTarget : DragTarget
     , scene : Maybe (Scene Material.Name)
     , rendererOptions : XYZMika.XYZ.Material.Options
     , renderOptions : Scene.RenderOptions
@@ -79,6 +109,7 @@ type HudValue
     = HudValue_Vec3_X
     | HudValue_Vec3_Y
     | HudValue_Vec3_Z
+    | HudValue_Vec3_Roll
 
 
 type HudObject
@@ -96,6 +127,8 @@ init =
     { theta = 0
     , dragger = Nothing
     , drag = vec2 0 0
+    , lastDrag = vec2 0 0
+    , dragTarget = Default
     , scene = Nothing
     , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.RenderOptions True False False
