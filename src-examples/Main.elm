@@ -3,6 +3,7 @@ module Main exposing (main)
 import Browser
 import Browser.Events
 import Json.Decode as D
+import Keyboard
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Model exposing (Model, Msg(..))
 import Update exposing (update)
@@ -41,6 +42,6 @@ subscriptions model =
     in
     Sub.batch
         [ drags
+        , Keyboard.subscriptions { tagger = KeyboardMsg, keyDown = OnKeyDown }
         , Browser.Events.onAnimationFrameDelta Animate
-        , Browser.Events.onKeyPress (D.field "key" D.string) |> Sub.map KeyPressed
         ]

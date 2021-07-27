@@ -1,5 +1,6 @@
 module Update exposing (update)
 
+import Keyboard
 import Math.Vector2 as Vec2
 import Math.Vector3 as Vec3 exposing (vec3)
 import Model exposing (Hud(..), HudMsg(..), HudValue(..), Model, Msg(..))
@@ -88,9 +89,14 @@ update msg model =
             , Cmd.none
             )
 
-        KeyPressed key ->
-            case String.toLower key of
-                "x" ->
+        KeyboardMsg msg_ ->
+            ( { model | keyboard = Keyboard.update msg_ model.keyboard }
+            , Cmd.none
+            )
+
+        OnKeyDown key ->
+            case key of
+                Keyboard.Alpha 'X' ->
                     ( model
                         |> Model.mapRendererOptions
                             (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.down
@@ -99,7 +105,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                "w" ->
+                Keyboard.Alpha 'W' ->
                     ( model
                         |> Model.mapRendererOptions
                             (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.up
@@ -108,7 +114,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                "d" ->
+                Keyboard.Alpha 'D' ->
                     ( model
                         |> Model.mapRendererOptions
                             (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.right
@@ -117,7 +123,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                "a" ->
+                Keyboard.Alpha 'A' ->
                     ( model
                         |> Model.mapRendererOptions
                             (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.left
@@ -126,7 +132,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                "e" ->
+                Keyboard.Alpha 'E' ->
                     ( model
                         |> Model.mapRendererOptions
                             (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.backward
@@ -135,7 +141,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                "z" ->
+                Keyboard.Alpha 'Z' ->
                     ( model
                         |> Model.mapRendererOptions
                             (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.forward
@@ -144,30 +150,30 @@ update msg model =
                     , Cmd.none
                     )
 
-                "s" ->
+                Keyboard.Alpha 'S' ->
                     ( model |> Model.mapRendererOptions (always XYZMika.XYZ.Material.defaultOptions)
                     , Cmd.none
                     )
 
-                "1" ->
+                Keyboard.Digit 1 ->
                     ( model |> Model.mapRenderOptions (\x -> { x | showGeometry = not x.showGeometry })
                     , Cmd.none
                     )
 
-                "2" ->
+                Keyboard.Digit 2 ->
                     ( model |> Model.mapRenderOptions (\x -> { x | showBoundingBoxes = not x.showBoundingBoxes })
                     , Cmd.none
                     )
 
-                "3" ->
+                Keyboard.Digit 3 ->
                     ( model |> Model.mapRenderOptions (\x -> { x | showBoundingBoxesOverlay = not x.showBoundingBoxesOverlay })
                     , Cmd.none
                     )
 
-                "j" ->
+                Keyboard.Alpha 'J' ->
                     model |> Model.nextScene
 
-                "k" ->
+                Keyboard.Alpha 'K' ->
                     model |> Model.prevScene
 
                 _ ->

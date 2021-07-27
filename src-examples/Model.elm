@@ -19,6 +19,7 @@ module Model exposing
 
 import Array exposing (Array)
 import Asset
+import Keyboard
 import Material
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 exposing (Vec3, vec3)
@@ -40,9 +41,11 @@ type Msg
     | DragStart Vec2
     | Drag Vec2
     | DragEnd Vec2
-    | KeyPressed String
     | GotObj (Maybe Material.Name) ( { scale : Float, color : Vec3 }, Vec3, String )
     | AssetLoaded Float AssetStore.Content
+      --
+    | KeyboardMsg Keyboard.Msg
+    | OnKeyDown Keyboard.Key
       --
     | HudMsg HudMsg
     | SetValue HudObject HudValue String
@@ -64,6 +67,7 @@ type alias Model =
     , currentSceneIndex : Int
     , assets : AssetStore.Store Asset.Obj Asset.Texture
     , hud : Hud
+    , keyboard : Keyboard.State
     }
 
 
@@ -99,6 +103,7 @@ init =
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
+    , keyboard = Keyboard.init
     }
         |> loadScene
         |> (\( model, cmd ) ->
