@@ -209,6 +209,21 @@ update msg model =
                     , Cmd.none
                     )
 
+                Keyboard.Digit 4 ->
+                    ( model |> Model.mapRenderOptions (\x -> { x | showGridX = not x.showGridX })
+                    , Cmd.none
+                    )
+
+                Keyboard.Digit 5 ->
+                    ( model |> Model.mapRenderOptions (\x -> { x | showGridY = not x.showGridY })
+                    , Cmd.none
+                    )
+
+                Keyboard.Digit 6 ->
+                    ( model |> Model.mapRenderOptions (\x -> { x | showGridZ = not x.showGridZ })
+                    , Cmd.none
+                    )
+
                 Keyboard.Alpha 'J' ->
                     model |> Model.nextScene
 
