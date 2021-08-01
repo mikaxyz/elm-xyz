@@ -25,10 +25,10 @@ import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.Color
 import XYZMika.XYZ.Material as Renderer exposing (Renderer)
+import XYZMika.XYZ.Material.Gizmo
 import XYZMika.XYZ.Material.Grid
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Mesh.Gizmo as Gizmo
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
@@ -167,12 +167,9 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         , sceneRotationMatrix = Mat4.identity
         }
         defaultTexture
-        (([ scene.rendererOptions.lights.point1.position
-          , scene.rendererOptions.lights.point2.position
-          ]
-            |> addGizmos scene.gizmoMaterial scene.graph
-            |> List.map GraphNode
-         )
+        (PointLightNode scene.rendererOptions.lights.point1.position
+            :: PointLightNode scene.rendererOptions.lights.point2.position
+            :: List.map GraphNode scene.graph
             |> withGridPlane renderOptions.showGridX AxisX
             |> withGridPlane renderOptions.showGridY AxisY
             |> withGridPlane renderOptions.showGridZ AxisZ
@@ -189,30 +186,6 @@ withGridPlane show axis nodes =
         nodes
 
 
-addGizmos : materialId -> List (Graph materialId) -> List Vec3 -> List (Graph materialId)
-addGizmos material graph pointLights =
-    graph
-        ++ (pointLights
-                |> List.map
-                    (\position ->
-                        Graph
-                            (Gizmo.axis
-                                |> Object.init
-                                |> Object.withMaterialName material
-                                |> Object.withPosition position
-                                |> Object.withGlSetting
-                                    (WebGL.Settings.DepthTest.always
-                                        { write = True
-                                        , near = 0
-                                        , far = 1
-                                        }
-                                    )
-                            )
-                            []
-                    )
-           )
-
-
 type Axis
     = AxisX
     | AxisY
@@ -222,6 +195,7 @@ type Axis
 type Node materialId
     = GraphNode (Graph materialId)
     | GridPlaneNode Axis
+    | PointLightNode Vec3
 
 
 renderGraph :
@@ -239,9 +213,39 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
         |> List.map
             (\node ->
                 case node of
+                    PointLightNode position ->
+                        let
+                            size =
+                                1
+
+                            mesh =
+                                XYZMika.XYZ.Mesh.Primitives.quad Color.green
+                                    (vec3 -size -size 0)
+                                    (vec3 -size size 0)
+                                    (vec3 size size 0)
+                                    (vec3 size -size 0)
+                                    |> WebGL.triangles
+                        in
+                        [ WebGL.entityWith
+                            [ WebGL.Settings.DepthTest.default
+                            , WebGL.Settings.sampleAlphaToCoverage
+                            ]
+                            XYZMika.XYZ.Material.Gizmo.vertexShader
+                            XYZMika.XYZ.Material.Gizmo.fragmentShader
+                            mesh
+                            { sceneCamera = uniforms.sceneCamera
+                            , scenePerspective = uniforms.scenePerspective
+                            , sceneMatrix = uniforms.sceneMatrix
+                            , sceneRotationMatrix = uniforms.sceneRotationMatrix
+
+                            --
+                            , center = position
+                            }
+                        ]
+
                     GridPlaneNode axis ->
                         let
-                            gridSize =
+                            size =
                                 20
 
                             ( color, axisIndex, mesh ) =
@@ -250,10 +254,10 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                         ( Color.red
                                         , 0
                                         , XYZMika.XYZ.Mesh.Primitives.quad Color.green
-                                            (vec3 0 -gridSize -gridSize)
-                                            (vec3 0 -gridSize gridSize)
-                                            (vec3 0 gridSize gridSize)
-                                            (vec3 0 gridSize -gridSize)
+                                            (vec3 0 -size -size)
+                                            (vec3 0 -size size)
+                                            (vec3 0 size size)
+                                            (vec3 0 size -size)
                                             |> WebGL.triangles
                                         )
 
@@ -261,10 +265,10 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                         ( Color.green
                                         , 1
                                         , XYZMika.XYZ.Mesh.Primitives.quad Color.yellow
-                                            (vec3 -gridSize 0 -gridSize)
-                                            (vec3 -gridSize 0 gridSize)
-                                            (vec3 gridSize 0 gridSize)
-                                            (vec3 gridSize 0 -gridSize)
+                                            (vec3 -size 0 -size)
+                                            (vec3 -size 0 size)
+                                            (vec3 size 0 size)
+                                            (vec3 size 0 -size)
                                             |> WebGL.triangles
                                         )
 
@@ -272,10 +276,10 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                         ( Color.blue
                                         , 2
                                         , XYZMika.XYZ.Mesh.Primitives.quad Color.yellow
-                                            (vec3 -gridSize -gridSize 0)
-                                            (vec3 -gridSize gridSize 0)
-                                            (vec3 gridSize gridSize 0)
-                                            (vec3 gridSize -gridSize 0)
+                                            (vec3 -size -size 0)
+                                            (vec3 -size size 0)
+                                            (vec3 size size 0)
+                                            (vec3 size -size 0)
                                             |> WebGL.triangles
                                         )
                         in
