@@ -13,7 +13,7 @@ import XYZMika.XYZ.Scene.Camera as Camera
 
 
 pointLightDistance =
-    3
+    5
 
 
 updateHud : HudMsg -> Hud -> ( Hud, Cmd Msg )

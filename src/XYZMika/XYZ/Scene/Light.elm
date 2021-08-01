@@ -1,12 +1,15 @@
 module XYZMika.XYZ.Scene.Light exposing
     ( PointLight
+    , color
     , pointLight
     , position
     , toVec4
+    , withColor
     , withIntensity
+    , withPosition
     )
 
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4)
 
 
@@ -14,6 +17,7 @@ type PointLight
     = PointLight
         { position : Vec3
         , intensity : Float
+        , color : Vec3
         }
 
 
@@ -22,7 +26,13 @@ pointLight p =
     PointLight
         { position = p
         , intensity = 1.0
+        , color = vec3 1 1 1
         }
+
+
+withPosition : Vec3 -> PointLight -> PointLight
+withPosition x (PointLight light) =
+    PointLight { light | position = x }
 
 
 withIntensity : Float -> PointLight -> PointLight
@@ -30,9 +40,19 @@ withIntensity x (PointLight light) =
     PointLight { light | intensity = x }
 
 
+withColor : Vec3 -> PointLight -> PointLight
+withColor x (PointLight light) =
+    PointLight { light | color = x }
+
+
 position : PointLight -> Vec3
 position (PointLight light) =
     light.position
+
+
+color : PointLight -> Vec3
+color (PointLight light) =
+    light.color
 
 
 type alias Options =

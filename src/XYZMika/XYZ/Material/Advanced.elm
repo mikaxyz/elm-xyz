@@ -31,7 +31,9 @@ type alias Uniforms =
 
     --
     , pointLight1 : Vec4
+    , pointLight1Color : Vec3
     , pointLight2 : Vec4
+    , pointLight2Color : Vec3
     }
 
 
@@ -67,7 +69,9 @@ renderer options defaultTexture uniforms object =
 
         --
         , pointLight1 = Light.toVec4 options.lights.point1
+        , pointLight1Color = Light.color options.lights.point1
         , pointLight2 = Light.toVec4 options.lights.point2
+        , pointLight2Color = Light.color options.lights.point2
         }
         |> Material.toEntity object
 
@@ -138,7 +142,10 @@ fragmentShader =
         uniform bool hasNormalMap;
 
         uniform vec4 pointLight1;
+        uniform vec3 pointLight1Color;
+
         uniform vec4 pointLight2;
+        uniform vec3 pointLight2Color;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -223,10 +230,10 @@ fragmentShader =
 
             vec3 lighting = vec3(0,0,0);
             if (pointLight1.w > 0.0) {
-               lighting += pointLight1.w * f_pointLight(normal, pointLight1.xyz);
+               lighting += pointLight1.w * f_pointLight(normal, pointLight1.xyz) * pointLight1Color;
             }
             if (pointLight2.w > 0.0) {
-               lighting += pointLight2.w * f_pointLight(normal, pointLight2.xyz);
+               lighting += pointLight2.w * f_pointLight(normal, pointLight2.xyz) * pointLight2Color;
             }
 //            lighting += 0.8 * f_pointLight_PassThrough(normal);
 
