@@ -32,6 +32,7 @@ import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -167,8 +168,8 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         , sceneRotationMatrix = Mat4.identity
         }
         defaultTexture
-        (PointLightNode scene.rendererOptions.lights.point1.position
-            :: PointLightNode scene.rendererOptions.lights.point2.position
+        (PointLightNode (Light.position scene.rendererOptions.lights.point1)
+            :: PointLightNode (Light.position scene.rendererOptions.lights.point2)
             :: List.map GraphNode scene.graph
             |> withGridPlane renderOptions.showGridX AxisX
             |> withGridPlane renderOptions.showGridY AxisY
