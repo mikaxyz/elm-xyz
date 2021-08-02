@@ -92,7 +92,6 @@ type alias Model =
     , lastDrag : Vec2
     , dragTarget : DragTarget
     , scene : Maybe (Scene Material.Name)
-    , rendererOptions : XYZMika.XYZ.Material.Options
     , renderOptions : Scene.RenderOptions
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
@@ -137,7 +136,6 @@ init =
     , lastDrag = vec2 0 0
     , dragTarget = Default
     , scene = Nothing
-    , rendererOptions = XYZMika.XYZ.Material.defaultOptions
     , renderOptions = Scene.defaultRenderOptions
     , scenes = [ BrickWall, ObjectLoader, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
@@ -164,7 +162,7 @@ mapRenderOptions f model =
 
 mapRendererOptions : (XYZMika.XYZ.Material.Options -> XYZMika.XYZ.Material.Options) -> Model -> Model
 mapRendererOptions f model =
-    { model | rendererOptions = f model.rendererOptions }
+    { model | scene = model.scene |> Maybe.map (Scene.withRendererOptionsMap f) }
 
 
 nextScene : Model -> ( Model, Cmd Msg )

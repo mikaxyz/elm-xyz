@@ -15,7 +15,7 @@ module XYZMika.XYZ.Scene exposing
     , withCameraPosition
     , withPointLight1Map
     , withPointLight2Map
-    , withRendererOptions
+    , withRendererOptionsMap
     )
 
 import Color
@@ -63,11 +63,6 @@ type Scene materialId
         , rendererOptions : Renderer.Options
         , gizmoMaterial : materialId
         }
-
-
-withRendererOptions : Renderer.Options -> Scene materialId -> Scene materialId
-withRendererOptions rendererOptions (Scene scene) =
-    Scene { scene | rendererOptions = rendererOptions }
 
 
 init : { gizmoMaterial : materialId } -> List (Graph materialId) -> Scene materialId
@@ -120,6 +115,11 @@ withPointLight2Map f (Scene scene) =
             lights.point2
     in
     Scene { scene | rendererOptions = { rendererOptions | lights = { lights | point2 = f pointLight } } }
+
+
+withRendererOptionsMap : (Renderer.Options -> Renderer.Options) -> Scene materialId -> Scene materialId
+withRendererOptionsMap f (Scene scene) =
+    Scene { scene | rendererOptions = f scene.rendererOptions }
 
 
 withCamera : { position : Vec3, target : Vec3 } -> Scene materialId -> Scene materialId
