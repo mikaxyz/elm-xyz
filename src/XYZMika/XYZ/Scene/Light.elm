@@ -7,6 +7,7 @@ module XYZMika.XYZ.Scene.Light exposing
     , withColor
     , withIntensity
     , withPosition
+    , withPositionMap
     )
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -33,6 +34,11 @@ pointLight p =
 withPosition : Vec3 -> PointLight -> PointLight
 withPosition x (PointLight light) =
     PointLight { light | position = x }
+
+
+withPositionMap : (Vec3 -> Vec3) -> PointLight -> PointLight
+withPositionMap f (PointLight light) =
+    PointLight { light | position = f light.position }
 
 
 withIntensity : Float -> PointLight -> PointLight

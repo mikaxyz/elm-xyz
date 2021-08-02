@@ -8,10 +8,13 @@ module XYZMika.XYZ.Scene exposing
     , inDirection
     , init
     , map
+    , pointLights
     , render
     , withCamera
     , withCameraMap
     , withCameraPosition
+    , withPointLight1Map
+    , withPointLight2Map
     , withRendererOptions
     )
 
@@ -32,7 +35,7 @@ import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
-import XYZMika.XYZ.Scene.Light as Light
+import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -80,6 +83,43 @@ init { gizmoMaterial } graph =
 camera : Scene materialId -> Camera
 camera (Scene scene) =
     scene.camera
+
+
+pointLights : Scene materialId -> List PointLight
+pointLights (Scene scene) =
+    [ scene.rendererOptions.lights.point1
+    , scene.rendererOptions.lights.point2
+    ]
+
+
+withPointLight1Map : (PointLight -> PointLight) -> Scene materialId -> Scene materialId
+withPointLight1Map f (Scene scene) =
+    let
+        rendererOptions =
+            scene.rendererOptions
+
+        lights =
+            rendererOptions.lights
+
+        pointLight =
+            lights.point1
+    in
+    Scene { scene | rendererOptions = { rendererOptions | lights = { lights | point1 = f pointLight } } }
+
+
+withPointLight2Map : (PointLight -> PointLight) -> Scene materialId -> Scene materialId
+withPointLight2Map f (Scene scene) =
+    let
+        rendererOptions =
+            scene.rendererOptions
+
+        lights =
+            rendererOptions.lights
+
+        pointLight =
+            lights.point2
+    in
+    Scene { scene | rendererOptions = { rendererOptions | lights = { lights | point2 = f pointLight } } }
 
 
 withCamera : { position : Vec3, target : Vec3 } -> Scene materialId -> Scene materialId

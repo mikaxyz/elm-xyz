@@ -1,6 +1,7 @@
 module Model exposing
     ( DragTarget(..)
     , Hud(..)
+    , HudLightObject(..)
     , HudMsg(..)
     , HudObject(..)
     , HudValue(..)
@@ -114,6 +115,12 @@ type HudValue
 
 type HudObject
     = Camera
+    | LightHudObject HudLightObject
+
+
+type HudLightObject
+    = PointLight1
+    | PointLight2
 
 
 getDrag model =

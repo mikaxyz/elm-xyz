@@ -3,13 +3,14 @@ module Update exposing (update)
 import Keyboard
 import Math.Vector2 as Vec2
 import Math.Vector3 as Vec3 exposing (vec3)
-import Model exposing (Hud(..), HudMsg(..), HudValue(..), Model, Msg(..))
+import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene
 import XYZMika.XYZ.Scene.Camera as Camera
+import XYZMika.XYZ.Scene.Light as Light
 
 
 pointLightDistance =
@@ -41,21 +42,46 @@ update msg model =
                             model.scene
                                 --|> Maybe.map (XYZMika.XYZ.Scene.withCameraPosition (vec3 value 0 0))
                                 |> Maybe.map
-                                    (XYZMika.XYZ.Scene.withCameraMap
-                                        (\camera ->
-                                            case hudValue of
-                                                HudValue_Vec3_X ->
-                                                    Camera.withPositionMap (Vec3.setX value) camera
+                                    (case hudObject of
+                                        Camera ->
+                                            XYZMika.XYZ.Scene.withCameraMap
+                                                (\camera ->
+                                                    case hudValue of
+                                                        HudValue_Vec3_X ->
+                                                            Camera.withPositionMap (Vec3.setX value) camera
 
-                                                HudValue_Vec3_Y ->
-                                                    Camera.withPositionMap (Vec3.setY value) camera
+                                                        HudValue_Vec3_Y ->
+                                                            Camera.withPositionMap (Vec3.setY value) camera
 
-                                                HudValue_Vec3_Z ->
-                                                    Camera.withPositionMap (Vec3.setZ value) camera
+                                                        HudValue_Vec3_Z ->
+                                                            Camera.withPositionMap (Vec3.setZ value) camera
 
-                                                HudValue_Vec3_Roll ->
-                                                    Camera.withOrbitY (value - Camera.roll camera) camera
-                                        )
+                                                        HudValue_Vec3_Roll ->
+                                                            Camera.withOrbitY (value - Camera.roll camera) camera
+                                                )
+
+                                        LightHudObject lightHudObject ->
+                                            (case lightHudObject of
+                                                PointLight1 ->
+                                                    XYZMika.XYZ.Scene.withPointLight1Map
+
+                                                PointLight2 ->
+                                                    XYZMika.XYZ.Scene.withPointLight2Map
+                                            )
+                                                (\light ->
+                                                    case hudValue of
+                                                        HudValue_Vec3_X ->
+                                                            Light.withPositionMap (Vec3.setX value) light
+
+                                                        HudValue_Vec3_Y ->
+                                                            Light.withPositionMap (Vec3.setY value) light
+
+                                                        HudValue_Vec3_Z ->
+                                                            Light.withPositionMap (Vec3.setZ value) light
+
+                                                        HudValue_Vec3_Roll ->
+                                                            light
+                                                )
                                     )
                     }
 

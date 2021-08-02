@@ -8,7 +8,7 @@ import Html.Events exposing (onClick, onInput)
 import Json.Decode as JD
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
+import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import WebGL
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore
@@ -16,6 +16,7 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
+import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -64,7 +65,7 @@ sceneView defaultTexture (Hud hud) model scene =
                     (Model.getDrag model)
                     model.theta
                     (Model.sceneOptions model)
-                    (scene |> Scene.withRendererOptions model.rendererOptions)
+                    scene
                     renderer
                 )
             ]
@@ -72,7 +73,10 @@ sceneView defaultTexture (Hud hud) model scene =
             [ class "app__sidebar"
             , classList [ ( "app__sidebar--expanded", hud.sidebarExpanded ) ]
             ]
-            [ sidebarView model.hud (Scene.camera scene) model
+            [ sidebarView model.hud
+                (Scene.camera scene)
+                (Scene.pointLights scene)
+                model
             ]
         ]
 
@@ -93,8 +97,8 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : Hud -> Camera -> Model -> Html Msg
-sidebarView (Hud hud) camera model =
+sidebarView : Hud -> Camera -> List PointLight -> Model -> Html Msg
+sidebarView (Hud hud) camera pointLights model =
     div
         [ class "sidebar"
         , classList [ ( "sidebar--expanded", hud.sidebarExpanded ) ]
@@ -103,29 +107,56 @@ sidebarView (Hud hud) camera model =
         [ section
             [ class "sidebar__content"
             ]
-            [ header []
+            ([ header []
                 [ h1 [ class "sidebar__title" ] [ text <| Model.currentSceneName model ]
                 ]
-            , Camera.position camera
+             , Camera.position camera
                 |> Vec3.toRecord
                 |> vector3Widget "Camera" Camera
 
-            --, div [ class "value" ]
-            --    [ span [ class "value__title" ] [ text "Roll" ]
-            --    , Camera.roll camera
-            --        --|> (*) 180
-            --        |> valueToHtml
-            --    , text "°"
-            --    ]
-            -- TODO: Make this input work. Store other value?
-            , rangeInput "Roll" Camera HudValue_Vec3_Roll -1 1 True (Camera.roll camera)
-            ]
+             --, div [ class "value" ]
+             --    [ span [ class "value__title" ] [ text "Roll" ]
+             --    , Camera.roll camera
+             --        --|> (*) 180
+             --        |> valueToHtml
+             --    , text "°"
+             --    ]
+             -- TODO: Make this input work. Store other value?
+             , rangeInput "Roll" Camera HudValue_Vec3_Roll -1 1 True (Camera.roll camera)
+             ]
+                ++ List.indexedMap pointLightControl pointLights
+            )
         , button
             [ onClick (HudMsg ToggleSidebar)
             , class "sidebar__toggle"
             ]
             []
         ]
+
+
+pointLightControl : Int -> PointLight -> Html Msg
+pointLightControl index light =
+    let
+        lightHudObject : Maybe HudLightObject
+        lightHudObject =
+            case index of
+                0 ->
+                    Just PointLight1
+
+                1 ->
+                    Just PointLight2
+
+                _ ->
+                    Nothing
+    in
+    lightHudObject
+        |> Maybe.map
+            (\x ->
+                Light.position light
+                    |> Vec3.toRecord
+                    |> vector3Widget ("Point light " ++ String.fromInt (index + 1)) (LightHudObject x)
+            )
+        |> Maybe.withDefault (text "")
 
 
 valueToHtml x =
