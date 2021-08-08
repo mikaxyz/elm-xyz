@@ -13,7 +13,7 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 init : Scene Material.Name
 init =
-    Scene.init { gizmoMaterial = Material.Simple } [ rootObject ]
+    Scene.init { gizmoMaterial = Material.Simple } rootObject
         |> Scene.withCameraPosition (vec3 0 1 2.5)
 
 

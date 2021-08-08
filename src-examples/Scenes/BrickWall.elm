@@ -30,12 +30,11 @@ init assets =
         |> Maybe.map render
         |> Maybe.withDefault []
         |> (\x ->
-                [ Graph
+                Graph
                     (positionHandle 0.01 (vec3 0 0 0)
                         |> Object.withOptionDragToRotateXY
                     )
                     x
-                ]
            )
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4)

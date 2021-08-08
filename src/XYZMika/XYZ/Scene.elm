@@ -58,14 +58,14 @@ inDirection d =
 
 type Scene materialId
     = Scene
-        { graph : List (Graph (Object materialId))
+        { graph : Graph (Object materialId)
         , camera : Camera
         , rendererOptions : Renderer.Options
         , gizmoMaterial : materialId
         }
 
 
-init : { gizmoMaterial : materialId } -> List (Graph (Object materialId)) -> Scene materialId
+init : { gizmoMaterial : materialId } -> Graph (Object materialId) -> Scene materialId
 init { gizmoMaterial } graph =
     Scene
         { graph = graph
@@ -139,7 +139,7 @@ withCameraMap f (Scene scene) =
 
 map : (Graph (Object materialId) -> Graph (Object materialId)) -> Scene materialId -> Scene materialId
 map f (Scene scene) =
-    Scene { scene | graph = scene.graph |> List.map f }
+    Scene { scene | graph = scene.graph |> f }
 
 
 type alias Options =
@@ -210,7 +210,8 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         defaultTexture
         (PointLightNode (Light.position scene.rendererOptions.lights.point1)
             :: PointLightNode (Light.position scene.rendererOptions.lights.point2)
-            :: List.map GraphNode scene.graph
+            :: GraphNode scene.graph
+            :: []
             |> withGridPlane renderOptions.showGridX AxisX
             |> withGridPlane renderOptions.showGridY AxisY
             |> withGridPlane renderOptions.showGridZ AxisZ

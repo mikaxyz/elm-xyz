@@ -31,21 +31,20 @@ type alias TreeAssets =
 
 init : Store Asset.Obj Asset.Texture -> Scene Material.Name
 init assets =
-    Scene.init { gizmoMaterial = Material.Simple }
-        [ Graph
-            (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
-                |> Object.initWithTriangles
-                |> Object.withPosition (vec3 0 -0.5 0)
-                |> Object.withOptionDragToRotateXY
-                |> Object.withColor Color.blue
-                |> Object.withMaterialName Material.Advanced
-            )
-            (Maybe.map2 render
-                (getBallAssets assets)
-                (getTreeAssets assets)
-                |> Maybe.withDefault []
-            )
-        ]
+    Graph
+        (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
+            |> Object.initWithTriangles
+            |> Object.withPosition (vec3 0 -0.5 0)
+            |> Object.withOptionDragToRotateXY
+            |> Object.withColor Color.blue
+            |> Object.withMaterialName Material.Advanced
+        )
+        (Maybe.map2 render
+            (getBallAssets assets)
+            (getTreeAssets assets)
+            |> Maybe.withDefault []
+        )
+        |> Scene.init { gizmoMaterial = Material.Simple }
 
 
 

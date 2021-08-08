@@ -27,6 +27,7 @@ init assets =
         |> getAssets
         |> Maybe.map render
         |> Maybe.withDefault []
+        |> (\x -> Graph (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.init) x)
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4.5)
 

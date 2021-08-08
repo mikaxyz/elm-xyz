@@ -46,6 +46,7 @@ init =
                 1
                 normalized
 
+        landscape : ( List Vertex, List ( Int, Int, Int ) )
         landscape =
             XYZMika.XYZ.Mesh.Landscape.simple
                 { divisions = divisions
@@ -100,14 +101,14 @@ init =
             normalGuides ++ elevationBones 4
     in
     Scene.init { gizmoMaterial = Material.Simple }
-        [ landscape
+        (landscape
             |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
             |> Object.init
             |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY
             |> (\obj -> Graph obj helpers)
-        ]
+        )
         |> Scene.withCameraPosition (vec3 0 4 7)
 
 
