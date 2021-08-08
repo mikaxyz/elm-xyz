@@ -58,14 +58,14 @@ inDirection d =
 
 type Scene materialId
     = Scene
-        { graph : List (Graph materialId)
+        { graph : List (Graph (Object materialId))
         , camera : Camera
         , rendererOptions : Renderer.Options
         , gizmoMaterial : materialId
         }
 
 
-init : { gizmoMaterial : materialId } -> List (Graph materialId) -> Scene materialId
+init : { gizmoMaterial : materialId } -> List (Graph (Object materialId)) -> Scene materialId
 init { gizmoMaterial } graph =
     Scene
         { graph = graph
@@ -137,7 +137,7 @@ withCameraMap f (Scene scene) =
     Scene { scene | camera = f scene.camera }
 
 
-map : (Graph materialId -> Graph materialId) -> Scene materialId -> Scene materialId
+map : (Graph (Object materialId) -> Graph (Object materialId)) -> Scene materialId -> Scene materialId
 map f (Scene scene) =
     Scene { scene | graph = scene.graph |> List.map f }
 
@@ -234,7 +234,7 @@ type Axis
 
 
 type Node materialId
-    = GraphNode (Graph materialId)
+    = GraphNode (Graph (Object materialId))
     | GridPlaneNode Axis
     | PointLightNode Vec3
 

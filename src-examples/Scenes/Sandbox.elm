@@ -7,7 +7,7 @@ import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Tree exposing (tree)
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
-import XYZMika.XYZ.Scene.Object as Object
+import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
 

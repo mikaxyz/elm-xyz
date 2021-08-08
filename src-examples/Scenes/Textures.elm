@@ -12,7 +12,7 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
-import XYZMika.XYZ.Scene.Object as Object
+import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
 type alias BallAssets =
@@ -53,7 +53,7 @@ init assets =
 --|> Scene.withCamera { position = vec3 0 0.5 3, target = vec3 0 0.5 0 }
 
 
-render : BallAssets -> TreeAssets -> List (Graph Material.Name)
+render : BallAssets -> TreeAssets -> List (Graph (Object Material.Name))
 render ball tree =
     --[ ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles

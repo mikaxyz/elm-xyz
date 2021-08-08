@@ -14,7 +14,7 @@ branchMultiplier =
     0.05
 
 
-tree : Int -> Int -> List (Graph materialId)
+tree : Int -> Int -> List (Graph (Object materialId))
 tree i r =
     nodes i r
         |> treeFromNodes 0 []
@@ -35,7 +35,7 @@ nodes i r =
             (nodes (i - 1) -1)
 
 
-treeFromNodes : Float -> List (Graph materialId) -> Node Branch -> List (Graph materialId)
+treeFromNodes : Float -> List (Graph (Object materialId)) -> Node Branch -> List (Graph (Object materialId))
 treeFromNodes y t node =
     case node of
         Empty ->
