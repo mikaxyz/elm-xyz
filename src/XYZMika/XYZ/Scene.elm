@@ -142,6 +142,20 @@ map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
 
 
+graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Graph (Object materialId) -> Graph ( Mat4, Object materialId )
+graphWithMatrix ({ theta, drag, mat } as config) (Graph object children) =
+    let
+        mat_ =
+            object
+                |> Object.rotationWithDrag drag
+                |> Object.rotationInTime theta
+                |> Object.rotation
+                |> Mat4.mul (Mat4.makeTranslate (Object.position object))
+                |> Mat4.mul mat
+    in
+    Graph ( mat_, object ) (children |> List.map (graphWithMatrix { config | mat = mat_ }))
+
+
 type alias Options =
     { rotation : Float -> Mat4
     , translate : Float -> Mat4
@@ -210,7 +224,7 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         defaultTexture
         (PointLightNode (Light.position scene.rendererOptions.lights.point1)
             :: PointLightNode (Light.position scene.rendererOptions.lights.point2)
-            :: GraphNode scene.graph
+            :: GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph)
             :: []
             |> withGridPlane renderOptions.showGridX AxisX
             |> withGridPlane renderOptions.showGridY AxisY
@@ -235,7 +249,7 @@ type Axis
 
 
 type Node materialId
-    = GraphNode (Graph (Object materialId))
+    = GraphNode (Graph ( Mat4, Object materialId ))
     | GridPlaneNode Axis
     | PointLightNode Vec3
 
@@ -343,20 +357,10 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                             }
                         ]
 
-                    GraphNode (Graph object children) ->
+                    GraphNode (Graph ( sceneMatrix, object ) children) ->
                         let
-                            object_ =
-                                object
-                                    |> Object.rotationWithDrag drag
-                                    |> Object.rotationInTime theta
-
-                            sceneMatrix =
-                                Object.rotation object_
-                                    |> Mat4.mul (Mat4.makeTranslate (Object.position object_))
-                                    |> Mat4.mul uniforms.sceneMatrix
-
                             sceneRotationMatrix =
-                                Object.rotation object_
+                                Object.rotation object
                                     |> Mat4.mul uniforms.sceneRotationMatrix
 
                             entity : Uniforms u -> Entity

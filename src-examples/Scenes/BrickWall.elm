@@ -166,7 +166,7 @@ render assets =
                  --|> objectToGraph
                 )
                 []
-                |> Graph.map (addNormalGuides mesh)
+                |> Graph.traverse (addNormalGuides mesh)
 
         --|> Graph.fmap ((++) (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
         --|> Graph.map ((++) (normalGizmos <| Tuple.first mesh))
