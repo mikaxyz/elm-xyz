@@ -37,12 +37,6 @@ type alias Config =
     }
 
 
-viewport =
-    { width = 1600
-    , height = 800
-    }
-
-
 view : Texture -> Model -> Html Msg
 view defaultTexture model =
     model.scene
@@ -55,16 +49,24 @@ sceneView defaultTexture (Hud hud) model scene =
     main_ [ class "app" ]
         [ div [ class "app__viewport" ]
             [ WebGL.toHtml
-                [ width viewport.width
-                , height viewport.height
+                [ width Model.viewport.width
+                , height Model.viewport.height
+                , id "viewport"
                 ]
                 (Scene.render
                     defaultTexture
                     model.renderOptions
-                    viewport
+                    Model.viewport
                     (Model.getDrag model)
                     model.theta
                     (Model.sceneOptions model)
+                    (\graph ->
+                        if model.selectedGraph == Just graph then
+                            Just { showBoundingBox = True }
+
+                        else
+                            Nothing
+                    )
                     scene
                     renderer
                 )

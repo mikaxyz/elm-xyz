@@ -2,7 +2,7 @@ module XYZMika.XYZ.Scene.Object exposing
     ( Object, init, initWithTriangles, initWithIndexedTriangles
     , withPosition, withRotation, withColor, withMaterialName, withGlSetting
     , withDiffuseMap, withNormalMap
-    , mesh, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
+    , mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
@@ -24,7 +24,7 @@ module XYZMika.XYZ.Scene.Object exposing
 
 ## Read
 
-@docs mesh, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
+@docs mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
 @docs diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
 
 
@@ -42,6 +42,7 @@ module XYZMika.XYZ.Scene.Object exposing
 
 -}
 
+import Array exposing (Array)
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
@@ -60,6 +61,7 @@ type alias ObjectData materialId =
     { position : Vec3
     , rotation : Mat4
     , mesh : Mesh Vertex
+    , triangles : List ( Vec3, Vec3, Vec3 )
     , boundingBox : ( Vec3, Vec3 )
     , options : Maybe Options
     , diffuseMap : Maybe Texture
@@ -76,15 +78,16 @@ type alias ObjectData materialId =
 
 init : Mesh Vertex -> Object materialId
 init x =
-    initWithBounds ( vec3 0 0 0, vec3 0 0 0 ) x
+    initWithBounds ( vec3 0 0 0, vec3 0 0 0 ) [] x
 
 
-initWithBounds : ( Vec3, Vec3 ) -> Mesh Vertex -> Object a
-initWithBounds bounds x =
+initWithBounds : ( Vec3, Vec3 ) -> List ( Vec3, Vec3, Vec3 ) -> Mesh Vertex -> Object a
+initWithBounds bounds tris x =
     Mesh
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
+        , triangles = tris
         , boundingBox = bounds
         , diffuseMap = Nothing
         , normalMap = Nothing
@@ -101,6 +104,7 @@ initWithTriangles x =
         { position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.triangles x
+        , triangles = x |> List.map toVec3s
         , boundingBox =
             x
                 |> List.foldl (\( v1, v2, v3 ) acc -> v1 :: v2 :: v3 :: acc) []
@@ -116,7 +120,30 @@ initWithTriangles x =
 
 initWithIndexedTriangles : ( List Vertex, List ( Int, Int, Int ) ) -> Object materialId
 initWithIndexedTriangles ( v, i ) =
-    initWithBounds (getBounds v) (WebGL.indexedTriangles v i)
+    initWithBounds (getBounds v) (toTriangles ( v, i )) (WebGL.indexedTriangles v i)
+
+
+toVec3s : ( Vertex, Vertex, Vertex ) -> ( Vec3, Vec3, Vec3 )
+toVec3s ( v1, v2, v3 ) =
+    ( v1.position, v2.position, v3.position )
+
+
+toTriangles : ( List Vertex, List ( Int, Int, Int ) ) -> List ( Vec3, Vec3, Vec3 )
+toTriangles ( vertices, indices ) =
+    let
+        vs : Array Vertex
+        vs =
+            Array.fromList vertices
+    in
+    indices
+        |> List.filterMap
+            (\( i1, i2, i3 ) ->
+                Maybe.map3
+                    (\v1 v2 v3 -> toVec3s ( v1, v2, v3 ))
+                    (Array.get i1 vs)
+                    (Array.get i2 vs)
+                    (Array.get i3 vs)
+            )
 
 
 getBounds : List Vertex -> ( Vec3, Vec3 )
@@ -231,6 +258,11 @@ boundingBox obj =
 mesh : Object materialId -> Mesh Vertex
 mesh obj =
     obj |> get .mesh
+
+
+triangles : Object materialId -> List ( Vec3, Vec3, Vec3 )
+triangles obj =
+    obj |> get .triangles
 
 
 position : Object materialId -> Vec3

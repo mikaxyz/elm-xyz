@@ -1,16 +1,19 @@
 module Update exposing (update)
 
+import Browser.Dom
 import Keyboard
-import Math.Vector2 as Vec2
-import Math.Vector3 as Vec3 exposing (vec3)
+import Math.Vector2 as Vec2 exposing (Vec2)
+import Math.Vector3 as Vec3 exposing (Vec3)
 import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
+import Task
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene
 import XYZMika.XYZ.Scene.Camera as Camera
 import XYZMika.XYZ.Scene.Light as Light
+import XYZMika.XYZ.Scene.Util as Util
 
 
 pointLightDistance =
@@ -30,6 +33,16 @@ updateHud msg (Hud hud) =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OnViewportElement (Ok x) ->
+            ( { model | viewPortElement = Just x }, Cmd.none )
+
+        OnViewportElement (Err error) ->
+            let
+                _ =
+                    Debug.log "error" error
+            in
+            ( model, Cmd.none )
+
         HudMsg msg_ ->
             updateHud msg_ model.hud
                 |> Tuple.mapFirst (\hud -> { model | hud = hud })
@@ -146,6 +159,25 @@ update msg model =
             ( { model
                 | dragger = Nothing
                 , dragTarget = Model.Default
+                , selectedGraph =
+                    case Maybe.map2 Tuple.pair model.scene model.viewPortElement of
+                        Just ( scene, viewPortElement ) ->
+                            if model.dragTarget == Model.Default then
+                                Util.selectGraphAtClickPosition
+                                    { theta = model.theta
+                                    , drag = model.drag
+                                    , viewport = Model.viewport
+                                    , viewPortElement = viewPortElement
+                                    , sceneOptions = Model.sceneOptions model
+                                    }
+                                    scene
+                                    ( Vec2.getX pos, Vec2.getY pos )
+
+                            else
+                                model.selectedGraph
+
+                        Nothing ->
+                            Nothing
                 , drag =
                     model.dragger
                         |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
@@ -278,5 +310,5 @@ update msg model =
         AssetLoaded scale asset ->
             ( model
                 |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
-            , Cmd.none
+            , Browser.Dom.getElement "viewport" |> Task.attempt OnViewportElement
             )

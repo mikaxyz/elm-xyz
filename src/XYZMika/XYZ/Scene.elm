@@ -1,10 +1,14 @@
 module XYZMika.XYZ.Scene exposing
-    ( Options
+    ( GraphRenderOptions
+    , Options
     , RenderOptions
     , Scene
     , camera
+    , defaultOptions
     , defaultRenderOptions
     , direction
+    , getGraph
+    , graphWithMatrix
     , inDirection
     , init
     , map
@@ -75,6 +79,11 @@ init { gizmoMaterial } graph =
         }
 
 
+getGraph : Scene materialId -> Graph (Object materialId)
+getGraph (Scene scene) =
+    scene.graph
+
+
 camera : Scene materialId -> Camera
 camera (Scene scene) =
     scene.camera
@@ -142,6 +151,12 @@ map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
 
 
+
+--map : (Graph materialId -> Graph materialId) -> Scene materialId -> Scene materialId
+--map f (Scene scene) =
+--    Scene { scene | graph = scene.graph |> List.map f }
+
+
 graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Graph (Object materialId) -> Graph ( Mat4, Object materialId )
 graphWithMatrix ({ theta, drag, mat } as config) (Graph object children) =
     let
@@ -181,6 +196,11 @@ type alias RenderOptions =
     }
 
 
+type alias GraphRenderOptions =
+    { showBoundingBox : Bool
+    }
+
+
 defaultRenderOptions : RenderOptions
 defaultRenderOptions =
     { showGeometry = True
@@ -199,10 +219,11 @@ render :
     -> Vec2
     -> Float
     -> Maybe Options
+    -> (Graph (Object materialId) -> Maybe GraphRenderOptions)
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-render defaultTexture renderOptions viewport drag theta options (Scene scene) renderer =
+render defaultTexture renderOptions viewport drag theta options graphRenderOptions (Scene scene) renderer =
     --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
     let
         options_ =
@@ -216,6 +237,7 @@ render defaultTexture renderOptions viewport drag theta options (Scene scene) re
         theta
         scene.rendererOptions
         renderOptions
+        graphRenderOptions
         { sceneCamera = Camera.toMat4 scene.camera
         , scenePerspective = options_.perspective aspectRatio
         , sceneMatrix = Mat4.identity
@@ -259,12 +281,13 @@ renderGraph :
     -> Float
     -> Renderer.Options
     -> RenderOptions
+    -> (Graph (Object materialId) -> Maybe GraphRenderOptions)
     -> Uniforms u
     -> Texture
     -> List (Node materialId)
     -> Renderer materialId (Uniforms u)
     -> List Entity
-renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nodes renderer =
+renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn uniforms defaultTexture nodes renderer =
     nodes
         |> List.map
             (\node ->
@@ -359,6 +382,11 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
 
                     GraphNode (Graph ( sceneMatrix, object ) children) ->
                         let
+                            graphRenderOptions =
+                                Graph ( sceneMatrix, object ) children
+                                    |> XYZMika.XYZ.Scene.Graph.map Tuple.second
+                                    |> graphRenderOptionsFn
+
                             sceneRotationMatrix =
                                 Object.rotation object
                                     |> Mat4.mul uniforms.sceneRotationMatrix
@@ -378,8 +406,13 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                             |> Object.boundingBox
                                             |> XYZMika.XYZ.Mesh.Cube.pairsColorfulWithBounds
 
+                                    overlay =
+                                        graphRenderOptions
+                                            |> Maybe.map .showBoundingBox
+                                            |> Maybe.withDefault renderOptions.showBoundingBoxesOverlay
+
                                     options =
-                                        if renderOptions.showBoundingBoxesOverlay then
+                                        if overlay then
                                             [ WebGL.Settings.DepthTest.always
                                                 { write = True
                                                 , near = 0
@@ -396,8 +429,13 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                     XYZMika.XYZ.Material.Simple.fragmentShader
                                     (WebGL.lines vertices)
                                     uniforms_
+
+                            showBoundingBox =
+                                graphRenderOptions
+                                    |> Maybe.map .showBoundingBox
+                                    |> Maybe.withDefault renderOptions.showBoundingBoxes
                         in
-                        case ( renderOptions.showGeometry, renderOptions.showBoundingBoxes ) of
+                        case ( renderOptions.showGeometry, showBoundingBox ) of
                             ( True, True ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
@@ -405,6 +443,7 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                         theta
                                         rendererOptions
                                         renderOptions
+                                        graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                         defaultTexture
                                         (List.map GraphNode children)
@@ -416,6 +455,7 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                         theta
                                         rendererOptions
                                         renderOptions
+                                        graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                         defaultTexture
                                         (List.map GraphNode children)
@@ -427,6 +467,7 @@ renderGraph drag theta rendererOptions renderOptions uniforms defaultTexture nod
                                         theta
                                         rendererOptions
                                         renderOptions
+                                        graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                         defaultTexture
                                         (List.map GraphNode children)
