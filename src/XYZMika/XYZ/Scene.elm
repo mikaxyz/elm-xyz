@@ -38,7 +38,7 @@ import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -384,7 +384,7 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                         let
                             graphRenderOptions =
                                 Graph ( sceneMatrix, object ) children
-                                    |> XYZMika.XYZ.Scene.Graph.map Tuple.second
+                                    |> Graph.map Tuple.second
                                     |> graphRenderOptionsFn
 
                             sceneRotationMatrix =

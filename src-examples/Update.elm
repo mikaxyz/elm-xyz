@@ -10,11 +10,11 @@ import Task
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
-import XYZMika.XYZ.Scene
+import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Light as Light
-import XYZMika.XYZ.Scene.Object
+import XYZMika.XYZ.Scene.Object as Object
 import XYZMika.XYZ.Scene.Util as Util
 
 
@@ -46,7 +46,7 @@ applyHudValue hudObject hudValue value model =
                 | scene =
                     model.scene
                         |> Maybe.map
-                            (XYZMika.XYZ.Scene.withCameraMap
+                            (Scene.withCameraMap
                                 (\camera ->
                                     case hudValue of
                                         HudValue_Vec3_X ->
@@ -87,10 +87,10 @@ applyHudValue hudObject hudValue value model =
                             (\scene ->
                                 case lightHudObject of
                                     PointLight1 ->
-                                        scene |> XYZMika.XYZ.Scene.withPointLight1Map updateLight
+                                        scene |> Scene.withPointLight1Map updateLight
 
                                     PointLight2 ->
-                                        scene |> XYZMika.XYZ.Scene.withPointLight2Map updateLight
+                                        scene |> Scene.withPointLight2Map updateLight
                             )
             }
 
@@ -102,30 +102,30 @@ applyHudValue hudObject hudValue value model =
                             case hudValue of
                                 HudValue_Vec3_X ->
                                     object
-                                        |> XYZMika.XYZ.Scene.Object.position
+                                        |> Object.position
                                         |> Vec3.setX value
 
                                 HudValue_Vec3_Y ->
                                     object
-                                        |> XYZMika.XYZ.Scene.Object.position
+                                        |> Object.position
                                         |> Vec3.setY value
 
                                 HudValue_Vec3_Z ->
                                     object
-                                        |> XYZMika.XYZ.Scene.Object.position
+                                        |> Object.position
                                         |> Vec3.setZ value
 
                                 HudValue_Vec3_Roll ->
-                                    object |> XYZMika.XYZ.Scene.Object.position
+                                    object |> Object.position
                     in
-                    Graph (object |> XYZMika.XYZ.Scene.Object.withPosition position) children
+                    Graph (object |> Object.withPosition position) children
             in
             { model
                 | scene =
                     model.scene
                         |> Maybe.map
-                            (XYZMika.XYZ.Scene.map
-                                (XYZMika.XYZ.Scene.Graph.traverse
+                            (Scene.map
+                                (Graph.traverse
                                     (\(Graph object children) ->
                                         if model.selectedGraph == Just (Graph object children) then
                                             updateGraph (Graph object children)
@@ -189,7 +189,7 @@ update msg model =
                         Model.CameraOrbit ->
                             model.scene
                                 |> Maybe.map
-                                    (XYZMika.XYZ.Scene.withCameraMap
+                                    (Scene.withCameraMap
                                         (\camera ->
                                             camera
                                                 |> Camera.withOrbitY -(Vec2.getX d / 100)
@@ -199,10 +199,10 @@ update msg model =
                                     )
 
                         Model.CameraPan ->
-                            model.scene |> Maybe.map (XYZMika.XYZ.Scene.withCameraMap (Camera.withPan (Vec2.scale 0.01 d)))
+                            model.scene |> Maybe.map (Scene.withCameraMap (Camera.withPan (Vec2.scale 0.01 d)))
 
                         Model.CameraZoom ->
-                            model.scene |> Maybe.map (XYZMika.XYZ.Scene.withCameraMap (Camera.withZoom (Vec2.getY d / 20)))
+                            model.scene |> Maybe.map (Scene.withCameraMap (Camera.withZoom (Vec2.getY d / 20)))
 
                         Model.Default ->
                             model.scene
@@ -262,8 +262,8 @@ update msg model =
                 Keyboard.Alpha 'X' ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.down
-                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).down
+                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.down
+                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).down
                             )
                     , Cmd.none
                     )
@@ -271,8 +271,8 @@ update msg model =
                 Keyboard.Alpha 'W' ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.up
-                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).up
+                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.up
+                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).up
                             )
                     , Cmd.none
                     )
@@ -280,8 +280,8 @@ update msg model =
                 Keyboard.Alpha 'D' ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.right
-                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).right
+                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.right
+                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).right
                             )
                     , Cmd.none
                     )
@@ -289,8 +289,8 @@ update msg model =
                 Keyboard.Alpha 'A' ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.left
-                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).left
+                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.left
+                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).left
                             )
                     , Cmd.none
                     )
@@ -298,8 +298,8 @@ update msg model =
                 Keyboard.Alpha 'E' ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.backward
-                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).forward
+                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.backward
+                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).forward
                             )
                     , Cmd.none
                     )
@@ -307,8 +307,8 @@ update msg model =
                 Keyboard.Alpha 'Z' ->
                     ( model
                         |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight XYZMika.XYZ.Scene.direction.forward
-                                >> XYZMika.XYZ.Material.setPointLight (XYZMika.XYZ.Scene.inDirection pointLightDistance).backward
+                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
+                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).backward
                             )
                     , Cmd.none
                     )
