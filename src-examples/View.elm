@@ -16,8 +16,9 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
+import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
-import XYZMika.XYZ.Scene.Object exposing (Object)
+import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
@@ -109,31 +110,43 @@ sidebarView (Hud hud) camera pointLights model =
         [ section
             [ class "sidebar__content"
             ]
-            ([ header []
+            [ header []
                 [ h1 [ class "sidebar__title" ] [ text <| Model.currentSceneName model ]
                 ]
-             , Camera.position camera
+            , Camera.position camera
                 |> Vec3.toRecord
                 |> vector3Widget "Camera" Camera
 
-             --, div [ class "value" ]
-             --    [ span [ class "value__title" ] [ text "Roll" ]
-             --    , Camera.roll camera
-             --        --|> (*) 180
-             --        |> valueToHtml
-             --    , text "°"
-             --    ]
-             -- TODO: Make this input work. Store other value?
-             , rangeInput "Roll" Camera HudValue_Vec3_Roll -1 1 True (Camera.roll camera)
-             ]
-                ++ List.indexedMap pointLightControl pointLights
-            )
+            --, div [ class "value" ]
+            --    [ span [ class "value__title" ] [ text "Roll" ]
+            --    , Camera.roll camera
+            --        --|> (*) 180
+            --        |> valueToHtml
+            --    , text "°"
+            --    ]
+            -- TODO: Make this input work. Store other value?
+            , rangeInput "Roll" Camera HudValue_Vec3_Roll -1 1 True (Camera.roll camera)
+            , model.selectedGraph
+                |> Maybe.map selectedGraphWidget
+                |> Maybe.withDefault (pointLightWidgets pointLights)
+            ]
         , button
             [ onClick (HudMsg ToggleSidebar)
             , class "sidebar__toggle"
             ]
             []
         ]
+
+
+selectedGraphWidget : Graph (Object Material.Name) -> Html Msg
+selectedGraphWidget (Graph object _) =
+    vector3Widget "Object" SelectedGraph (Object.position object |> Vec3.toRecord)
+
+
+pointLightWidgets lights =
+    lights
+        |> List.indexedMap pointLightControl
+        |> div []
 
 
 pointLightControl : Int -> PointLight -> Html Msg

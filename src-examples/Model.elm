@@ -129,6 +129,7 @@ type HudValue
 type HudObject
     = Camera
     | LightHudObject HudLightObject
+    | SelectedGraph
 
 
 type HudLightObject
