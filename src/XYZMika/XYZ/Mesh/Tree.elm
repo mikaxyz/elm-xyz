@@ -6,7 +6,7 @@ import WebGL exposing (..)
 import XYZMika.Color as Color
 import XYZMika.XYZ.Data.Node exposing (Node(..))
 import XYZMika.XYZ.Mesh.Primitives exposing (bone2)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -42,11 +42,9 @@ treeFromNodes y t node =
             t
 
         Node branch left right ->
-            [ Graph (object y branch)
-                (List.append
-                    (treeFromNodes branch.l [] left)
-                    (treeFromNodes branch.l [] right)
-                )
+            [ Graph.init (object y branch)
+                |> Graph.mapChildren ((++) (treeFromNodes branch.l [] left))
+                |> Graph.mapChildren ((++) (treeFromNodes branch.l [] right))
             ]
 
 

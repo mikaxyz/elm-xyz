@@ -11,7 +11,7 @@ import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -27,7 +27,7 @@ init assets =
         |> getAssets
         |> Maybe.map render
         |> Maybe.withDefault []
-        |> (\x -> Graph (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.init) x)
+        |> (\x -> XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.init |> Graph.init |> Graph.withChildren x)
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4.5)
 
@@ -50,7 +50,7 @@ render cube =
                 ]
                 |> Object.init
                 --|> Object.withPosition v.position
-                |> (\obj -> Graph obj [ Graph (positionHandle 0.02 v.position) [] ])
+                |> (\obj -> Graph.init obj |> Graph.withChildren [ Graph.init (positionHandle 0.02 v.position) ])
 
         normalGuides : List (Graph (Object Material.Name))
         normalGuides =
@@ -73,13 +73,10 @@ render cube =
         wireframe triangles =
             triangles
                 |> List.map wireframeTri
-
-        objectToGraph x =
-            Graph x []
     in
     [ positionHandle 0.02 (Vec3.vec3 0 0 0)
         |> Object.withOptionDragToRotateXY
-        |> (\x -> Graph x normalGuides)
+        |> (\x -> Graph.init x |> Graph.withChildren normalGuides)
 
     --, positionHandle 0.02 (Vec3.vec3 0 0 0)
     --    |> Object.withOptionDragToRotateXY
@@ -90,21 +87,21 @@ render cube =
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withMaterialName Material.Advanced
-        |> objectToGraph
+        |> Graph.init
     , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 -1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withMaterialName Material.Advanced
-        |> objectToGraph
+        |> Graph.init
     , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withColor Color.grey
         |> Object.withMaterialName Material.Advanced
-        |> objectToGraph
+        |> Graph.init
     ]
 
 

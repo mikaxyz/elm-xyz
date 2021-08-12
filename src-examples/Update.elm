@@ -96,29 +96,34 @@ applyHudValue hudObject hudValue value model =
 
         SelectedGraph ->
             let
-                updateGraph (Graph object children) =
+                updateGraph graph =
                     let
                         position =
                             case hudValue of
                                 HudValue_Vec3_X ->
-                                    object
+                                    graph
+                                        |> Graph.unwrap
                                         |> Object.position
                                         |> Vec3.setX value
 
                                 HudValue_Vec3_Y ->
-                                    object
+                                    graph
+                                        |> Graph.unwrap
                                         |> Object.position
                                         |> Vec3.setY value
 
                                 HudValue_Vec3_Z ->
-                                    object
+                                    graph
+                                        |> Graph.unwrap
                                         |> Object.position
                                         |> Vec3.setZ value
 
                                 HudValue_Vec3_Roll ->
-                                    object |> Object.position
+                                    graph
+                                        |> Graph.unwrap
+                                        |> Object.position
                     in
-                    Graph (object |> Object.withPosition position) children
+                    graph |> Graph.mapRoot (Object.withPosition position)
             in
             { model
                 | scene =
@@ -126,12 +131,12 @@ applyHudValue hudObject hudValue value model =
                         |> Maybe.map
                             (Scene.map
                                 (Graph.traverse
-                                    (\(Graph object children) ->
-                                        if model.selectedGraph == Just (Graph object children) then
-                                            updateGraph (Graph object children)
+                                    (\graph ->
+                                        if model.selectedGraph == Just graph then
+                                            updateGraph graph
 
                                         else
-                                            Graph object children
+                                            graph
                                     )
                                 )
                             )

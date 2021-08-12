@@ -38,7 +38,7 @@ import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -158,8 +158,17 @@ map f (Scene scene) =
 
 
 graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Graph (Object materialId) -> Graph ( Mat4, Object materialId )
-graphWithMatrix ({ theta, drag, mat } as config) (Graph object children) =
+graphWithMatrix ({ theta, drag, mat } as config) graph =
     let
+        object =
+            graph
+                |> Graph.unwrap
+
+        children : List (Graph (Object materialId))
+        children =
+            graph
+                |> Graph.unwrapChildren
+
         mat_ =
             object
                 |> Object.rotationWithDrag drag
@@ -168,7 +177,7 @@ graphWithMatrix ({ theta, drag, mat } as config) (Graph object children) =
                 |> Mat4.mul (Mat4.makeTranslate (Object.position object))
                 |> Mat4.mul mat
     in
-    Graph ( mat_, object ) (children |> List.map (graphWithMatrix { config | mat = mat_ }))
+    Graph.init ( mat_, object ) |> Graph.withChildren (children |> List.map (graphWithMatrix { config | mat = mat_ }))
 
 
 type alias Options =
@@ -380,10 +389,17 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                             }
                         ]
 
-                    GraphNode (Graph ( sceneMatrix, object ) children) ->
+                    GraphNode graph ->
                         let
+                            ( sceneMatrix, object ) =
+                                Graph.unwrap graph
+
+                            children : List (Graph ( Mat4, Object materialId ))
+                            children =
+                                Graph.unwrapChildren graph
+
                             graphRenderOptions =
-                                Graph ( sceneMatrix, object ) children
+                                graph
                                     |> Graph.map Tuple.second
                                     |> graphRenderOptionsFn
 

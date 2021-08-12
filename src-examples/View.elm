@@ -16,7 +16,7 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -139,8 +139,8 @@ sidebarView (Hud hud) camera pointLights model =
 
 
 selectedGraphWidget : Graph (Object Material.Name) -> Html Msg
-selectedGraphWidget (Graph object _) =
-    vector3Widget "Object" SelectedGraph (Object.position object |> Vec3.toRecord)
+selectedGraphWidget graph =
+    vector3Widget "Object" SelectedGraph (graph |> Graph.unwrap |> Object.position |> Vec3.toRecord)
 
 
 pointLightWidgets lights =

@@ -7,7 +7,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -18,13 +18,12 @@ init =
 
 
 rootObject =
-    Graph
+    Graph.init
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 0 -1, vec3 1 0.1 1 )
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.5 0)
             |> Object.withOptionDragToRotateXY
         )
-        []
 
 
 sceneOptions : Maybe Options
@@ -53,9 +52,10 @@ addMesh material tris pos scene =
         |> (\x ->
                 Scene.map
                     (\graph ->
-                        case graph of
-                            Graph root children ->
-                                Graph root (Graph x [] :: children)
+                        --case graph of
+                        --    Graph root children ->
+                        --        Graph root (Graph x [] :: children)
+                        graph |> Graph.mapChildren (\children -> Graph.init x :: children)
                     )
                     scene
            )

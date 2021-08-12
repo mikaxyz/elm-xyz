@@ -10,7 +10,7 @@ import XYZMika.XYZ.Generator.Perlin as Perlin
 import XYZMika.XYZ.Mesh.Landscape
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -61,7 +61,7 @@ init =
         normalBone v =
             WebGL.lines [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
                 |> Object.init
-                |> (\obj -> Graph obj [])
+                |> Graph.init
 
         normalGuides =
             landscape
@@ -81,7 +81,7 @@ init =
                 |> WebGL.triangles
                 |> Object.init
                 |> Object.withPosition (Vec3.setY -1 v)
-                |> (\obj -> Graph obj [])
+                |> Graph.init
 
         elevationBones density =
             landscape
@@ -107,7 +107,7 @@ init =
             |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY
-            |> (\obj -> Graph obj helpers)
+            |> (\obj -> Graph.init obj |> Graph.withChildren helpers)
         )
         |> Scene.withCameraPosition (vec3 0 4 7)
 

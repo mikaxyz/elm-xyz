@@ -11,7 +11,7 @@ import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Gizmo as Gizmo
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -30,11 +30,11 @@ init assets =
         |> Maybe.map render
         |> Maybe.withDefault []
         |> (\x ->
-                Graph
+                Graph.init
                     (positionHandle 0.01 (vec3 0 0 0)
                         |> Object.withOptionDragToRotateXY
                     )
-                    x
+                    |> Graph.withChildren x
            )
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4)
@@ -90,11 +90,11 @@ render assets =
                             , tangent = v.tangent
                         }
                     )
-                |> List.map (\v -> Graph (normalGuide v) [])
+                |> List.map (\v -> Graph.init (normalGuide v))
 
         addNormalGuides : ( List Vertex, List ( Int, Int, Int ) ) -> Graph (Object Material.Name) -> Graph (Object Material.Name)
-        addNormalGuides mesh (Graph object children) =
-            Graph object (children ++ (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
+        addNormalGuides mesh graph =
+            graph |> Graph.mapChildren (\children -> children ++ (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
 
         wireframeTri : ( Vertex, Vertex, Vertex ) -> Object materialId
         wireframeTri ( v1, v2, v3 ) =
@@ -115,10 +115,7 @@ render assets =
         normalGizmos : List Vertex -> List (Graph (Object Material.Name))
         normalGizmos vs =
             vs
-                |> List.map (\v -> Graph (gizmo v) [])
-
-        objectToGraph object =
-            Graph object []
+                |> List.map (\v -> Graph.init (gizmo v))
 
         objectToGraphWithNormalGizmo : Vec3 -> Material.Name -> ( List Vertex, List ( Int, Int, Int ) ) -> Graph (Object Material.Name)
         objectToGraphWithNormalGizmo pos material mesh =
@@ -155,7 +152,7 @@ render assets =
             --                []
             --                :: children
             --        )
-            Graph
+            Graph.init
                 (mesh
                     |> Object.initWithIndexedTriangles
                     |> Object.withPosition pos
@@ -165,7 +162,6 @@ render assets =
                  --|> Object.withOptionDragToRotateXY
                  --|> objectToGraph
                 )
-                []
                 |> Graph.traverse (addNormalGuides mesh)
 
         --|> Graph.fmap ((++) (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
@@ -195,7 +191,7 @@ render assets =
         |> Object.withNormalMap assets.normal
         |> Object.withDiffuseMap assets.diffuse
         |> Object.withMaterialName Material.Advanced
-        |> objectToGraph
+        |> Graph.init
     ]
 
 

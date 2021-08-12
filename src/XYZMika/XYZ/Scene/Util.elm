@@ -7,7 +7,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -60,24 +60,28 @@ selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOption
             -> TriangleHitByRay
             -> Maybe (Graph (Object materialId))
         getGraphByDistance graph distance =
-            case graph of
-                Graph ( distance_, object ) children ->
-                    if distance_ == Just distance then
-                        Graph.map (\( _, obj ) -> obj) (Graph ( distance_, object ) children)
-                            |> Just
+            let
+                ( distance_, _ ) =
+                    Graph.unwrap graph
 
-                    else
-                        children
-                            |> List.foldl
-                                (\g_ acc ->
-                                    case getGraphByDistance g_ distance of
-                                        Just x ->
-                                            Just x
+                children =
+                    Graph.unwrapChildren graph
+            in
+            if distance_ == Just distance then
+                Just (Graph.map (\( _, obj ) -> obj) graph)
 
-                                        Nothing ->
-                                            acc
-                                )
-                                Nothing
+            else
+                children
+                    |> List.foldl
+                        (\g_ acc ->
+                            case getGraphByDistance g_ distance of
+                                Just x ->
+                                    Just x
+
+                                Nothing ->
+                                    acc
+                        )
+                        Nothing
     in
     hitDistance
         |> Maybe.andThen (getGraphByDistance graphWithHitInfo)

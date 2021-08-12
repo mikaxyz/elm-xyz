@@ -11,7 +11,7 @@ import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -31,7 +31,7 @@ type alias TreeAssets =
 
 init : Store Asset.Obj Asset.Texture -> Scene Material.Name
 init assets =
-    Graph
+    Graph.init
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.5 0)
@@ -39,11 +39,12 @@ init assets =
             |> Object.withColor Color.blue
             |> Object.withMaterialName Material.Advanced
         )
-        (Maybe.map2 render
-            (getBallAssets assets)
-            (getTreeAssets assets)
-            |> Maybe.withDefault []
-        )
+        |> Graph.withChildren
+            (Maybe.map2 render
+                (getBallAssets assets)
+                (getTreeAssets assets)
+                |> Maybe.withDefault []
+            )
         |> Scene.init { gizmoMaterial = Material.Simple }
 
 
@@ -78,25 +79,25 @@ render ball tree =
         |> Object.withNormalMap ball.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0 0 0)
-        |> (\x -> Graph x [])
+        |> Graph.init
     , ball.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withNormalMap ball.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 -0.7 0 0)
-        |> (\x -> Graph x [])
+        |> Graph.init
     , tree.vertices
         |> Object.initWithTriangles
         |> Object.withDiffuseMap tree.diffuse
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 -2 0 -3)
-        |> (\x -> Graph x [])
+        |> Graph.init
     , tree.vertices
         |> Object.initWithTriangles
         |> Object.withDiffuseMap tree.diffuse
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 2 0 -5)
-        |> (\x -> Graph x [])
+        |> Graph.init
     , ball.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withDiffuseMap ball.diffuse
@@ -115,7 +116,7 @@ render ball tree =
                 in
                 Mat4.makeTranslate3 0 y 0
             )
-        |> (\x -> Graph x [])
+        |> Graph.init
     ]
 
 
