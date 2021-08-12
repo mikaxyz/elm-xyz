@@ -20,6 +20,12 @@ pointLightDistance =
     5
 
 
+onResize ( model, cmd ) =
+    ( model
+    , Cmd.batch [ cmd, Browser.Dom.getElement "viewport" |> Task.attempt OnViewportElement ]
+    )
+
+
 updateHud : HudMsg -> Hud -> ( Hud, Cmd Msg )
 updateHud msg (Hud hud) =
     case msg |> Debug.log "MSG" of
@@ -27,12 +33,15 @@ updateHud msg (Hud hud) =
             ( Hud hud, Cmd.none )
 
         ToggleSidebar ->
-            ( Hud { hud | sidebarExpanded = not hud.sidebarExpanded }, Cmd.none )
+            onResize ( Hud { hud | sidebarExpanded = not hud.sidebarExpanded }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OnResize ->
+            onResize ( model, Cmd.none )
+
         OnViewportElement (Ok x) ->
             ( { model | viewPortElement = Just x }, Cmd.none )
 
@@ -308,7 +317,8 @@ update msg model =
             )
 
         AssetLoaded scale asset ->
-            ( model
-                |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
-            , Browser.Dom.getElement "viewport" |> Task.attempt OnViewportElement
-            )
+            onResize
+                ( model
+                    |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
+                , Cmd.none
+                )

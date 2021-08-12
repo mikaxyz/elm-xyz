@@ -46,6 +46,7 @@ import XYZMika.XYZ.Scene.Object exposing (Object)
 type Msg
     = Animate Float
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
+    | OnResize
     | DragStart DragTarget Vec2
     | Drag Vec2
     | DragBy Vec2
