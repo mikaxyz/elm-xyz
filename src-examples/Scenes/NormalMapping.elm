@@ -27,11 +27,12 @@ init assets =
         |> getAssets
         |> Maybe.map render
         |> Maybe.withDefault []
+        |> (\x -> Graph (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.init) x)
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4.5)
 
 
-render : Assets -> List (Graph Material.Name)
+render : Assets -> List (Graph (Object Material.Name))
 render cube =
     let
         positionHandle size v =
@@ -39,7 +40,7 @@ render cube =
                 |> Object.initWithTriangles
                 |> Object.withPosition v
 
-        normalBone : Vertex -> Graph Material.Name
+        normalBone : Vertex -> Graph (Object Material.Name)
         normalBone v =
             WebGL.lines
                 [ ( v, { v | position = Vec3.add v.position v.normal } )
@@ -51,7 +52,7 @@ render cube =
                 --|> Object.withPosition v.position
                 |> (\obj -> Graph obj [ Graph (positionHandle 0.02 v.position) [] ])
 
-        normalGuides : List (Graph Material.Name)
+        normalGuides : List (Graph (Object Material.Name))
         normalGuides =
             cube.verticesIndexed
                 |> Tuple.first

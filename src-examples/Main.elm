@@ -45,4 +45,5 @@ subscriptions model =
         [ drags
         , Keyboard.subscriptions { tagger = KeyboardMsg, keyDown = OnKeyDown }
         , Browser.Events.onAnimationFrameDelta Animate
+        , Browser.Events.onResize (\_ _ -> OnResize)
         ]

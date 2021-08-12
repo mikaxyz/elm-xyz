@@ -1,18 +1,30 @@
-module XYZMika.XYZ.Scene.Graph exposing (Graph(..), map)
+module XYZMika.XYZ.Scene.Graph exposing
+    ( Graph(..)
+    , map
+    , toList
+    , traverse
+    )
 
-import XYZMika.XYZ.Scene.Object exposing (Object)
+
+type Graph object
+    = Graph object (List (Graph object))
 
 
-type Graph materialId
-    = Graph (Object materialId) (List (Graph materialId))
-
-
-map : (List (Graph materialId) -> List (Graph materialId)) -> Graph materialId -> Graph materialId
+map : (a -> b) -> Graph a -> Graph b
 map f (Graph object children) =
-    Graph object (f children)
+    Graph (f object) (children |> List.map (map f))
 
 
+traverse : (Graph a -> Graph a) -> Graph a -> Graph a
+traverse f (Graph object children) =
+    f (Graph object (children |> List.map f))
 
---type Graph attributes object
---    = Graph attributes object
---    | Children (List (Graph attributes object))
+
+toList : Graph a -> List a
+toList graph =
+    case graph of
+        Graph a [] ->
+            [ a ]
+
+        Graph a children ->
+            a :: (children |> List.concatMap toList)

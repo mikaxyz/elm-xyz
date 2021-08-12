@@ -46,6 +46,7 @@ init =
                 1
                 normalized
 
+        landscape : ( List Vertex, List ( Int, Int, Int ) )
         landscape =
             XYZMika.XYZ.Mesh.Landscape.simple
                 { divisions = divisions
@@ -56,7 +57,7 @@ init =
                 , elevation = elevation
                 }
 
-        normalBone : Vertex -> Graph Material.Name
+        normalBone : Vertex -> Graph (Object Material.Name)
         normalBone v =
             WebGL.lines [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
                 |> Object.init
@@ -74,7 +75,7 @@ init =
                     )
                 |> List.map normalBone
 
-        bone : Vec3 -> Graph Material.Name
+        bone : Vec3 -> Graph (Object Material.Name)
         bone v =
             XYZMika.XYZ.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
                 |> WebGL.triangles
@@ -100,14 +101,14 @@ init =
             normalGuides ++ elevationBones 4
     in
     Scene.init { gizmoMaterial = Material.Simple }
-        [ landscape
+        (landscape
             |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
             |> Object.init
             |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY
             |> (\obj -> Graph obj helpers)
-        ]
+        )
         |> Scene.withCameraPosition (vec3 0 4 7)
 
 

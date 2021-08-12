@@ -18,10 +18,12 @@ module Model exposing
     , prevScene
     , sceneOptions
     , updateAssetStore
+    , viewport
     )
 
 import Array exposing (Array)
 import Asset
+import Browser.Dom
 import Keyboard
 import Material
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
@@ -37,10 +39,14 @@ import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
+import XYZMika.XYZ.Scene.Graph exposing (Graph)
+import XYZMika.XYZ.Scene.Object exposing (Object)
 
 
 type Msg
     = Animate Float
+    | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
+    | OnResize
     | DragStart DragTarget Vec2
     | Drag Vec2
     | DragBy Vec2
@@ -60,6 +66,12 @@ type DragTarget
     | CameraOrbit
     | CameraPan
     | CameraZoom
+
+
+viewport =
+    { width = 1600
+    , height = 800
+    }
 
 
 dragTarget : Model -> DragTarget
@@ -87,6 +99,7 @@ type HudMsg
 
 type alias Model =
     { theta : Float
+    , viewPortElement : Maybe Browser.Dom.Element
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
     , lastDrag : Vec2
@@ -98,6 +111,7 @@ type alias Model =
     , assets : AssetStore.Store Asset.Obj Asset.Texture
     , hud : Hud
     , keyboard : Keyboard.State
+    , selectedGraph : Maybe (Graph (Object Material.Name))
     }
 
 
@@ -115,6 +129,7 @@ type HudValue
 type HudObject
     = Camera
     | LightHudObject HudLightObject
+    | SelectedGraph
 
 
 type HudLightObject
@@ -142,6 +157,8 @@ init =
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
+    , viewPortElement = Nothing
+    , selectedGraph = Nothing
     }
         |> loadScene
         |> (\( model, cmd ) ->

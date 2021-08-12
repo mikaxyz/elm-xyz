@@ -12,7 +12,7 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
 import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
-import XYZMika.XYZ.Scene.Object as Object
+import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
 type alias BallAssets =
@@ -31,21 +31,20 @@ type alias TreeAssets =
 
 init : Store Asset.Obj Asset.Texture -> Scene Material.Name
 init assets =
-    Scene.init { gizmoMaterial = Material.Simple }
-        [ Graph
-            (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
-                |> Object.initWithTriangles
-                |> Object.withPosition (vec3 0 -0.5 0)
-                |> Object.withOptionDragToRotateXY
-                |> Object.withColor Color.blue
-                |> Object.withMaterialName Material.Advanced
-            )
-            (Maybe.map2 render
-                (getBallAssets assets)
-                (getTreeAssets assets)
-                |> Maybe.withDefault []
-            )
-        ]
+    Graph
+        (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
+            |> Object.initWithTriangles
+            |> Object.withPosition (vec3 0 -0.5 0)
+            |> Object.withOptionDragToRotateXY
+            |> Object.withColor Color.blue
+            |> Object.withMaterialName Material.Advanced
+        )
+        (Maybe.map2 render
+            (getBallAssets assets)
+            (getTreeAssets assets)
+            |> Maybe.withDefault []
+        )
+        |> Scene.init { gizmoMaterial = Material.Simple }
 
 
 
@@ -53,7 +52,7 @@ init assets =
 --|> Scene.withCamera { position = vec3 0 0.5 3, target = vec3 0 0.5 0 }
 
 
-render : BallAssets -> TreeAssets -> List (Graph Material.Name)
+render : BallAssets -> TreeAssets -> List (Graph (Object Material.Name))
 render ball tree =
     --[ ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles

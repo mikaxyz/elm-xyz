@@ -1,20 +1,31 @@
 module Update exposing (update)
 
+import Browser.Dom
 import Keyboard
-import Math.Vector2 as Vec2
-import Math.Vector3 as Vec3 exposing (vec3)
+import Math.Vector2 as Vec2 exposing (Vec2)
+import Math.Vector3 as Vec3 exposing (Vec3)
 import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
+import Task
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene
 import XYZMika.XYZ.Scene.Camera as Camera
+import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Light as Light
+import XYZMika.XYZ.Scene.Object
+import XYZMika.XYZ.Scene.Util as Util
 
 
 pointLightDistance =
     5
+
+
+onResize ( model, cmd ) =
+    ( model
+    , Cmd.batch [ cmd, Browser.Dom.getElement "viewport" |> Task.attempt OnViewportElement ]
+    )
 
 
 updateHud : HudMsg -> Hud -> ( Hud, Cmd Msg )
@@ -24,12 +35,126 @@ updateHud msg (Hud hud) =
             ( Hud hud, Cmd.none )
 
         ToggleSidebar ->
-            ( Hud { hud | sidebarExpanded = not hud.sidebarExpanded }, Cmd.none )
+            onResize ( Hud { hud | sidebarExpanded = not hud.sidebarExpanded }, Cmd.none )
+
+
+applyHudValue : HudObject -> HudValue -> Float -> Model -> Model
+applyHudValue hudObject hudValue value model =
+    case hudObject of
+        Camera ->
+            { model
+                | scene =
+                    model.scene
+                        |> Maybe.map
+                            (XYZMika.XYZ.Scene.withCameraMap
+                                (\camera ->
+                                    case hudValue of
+                                        HudValue_Vec3_X ->
+                                            Camera.withPositionMap (Vec3.setX value) camera
+
+                                        HudValue_Vec3_Y ->
+                                            Camera.withPositionMap (Vec3.setY value) camera
+
+                                        HudValue_Vec3_Z ->
+                                            Camera.withPositionMap (Vec3.setZ value) camera
+
+                                        HudValue_Vec3_Roll ->
+                                            Camera.withOrbitY (value - Camera.roll camera) camera
+                                )
+                            )
+            }
+
+        LightHudObject lightHudObject ->
+            let
+                updateLight light =
+                    case hudValue of
+                        HudValue_Vec3_X ->
+                            Light.withPositionMap (Vec3.setX value) light
+
+                        HudValue_Vec3_Y ->
+                            Light.withPositionMap (Vec3.setY value) light
+
+                        HudValue_Vec3_Z ->
+                            Light.withPositionMap (Vec3.setZ value) light
+
+                        HudValue_Vec3_Roll ->
+                            light
+            in
+            { model
+                | scene =
+                    model.scene
+                        |> Maybe.map
+                            (\scene ->
+                                case lightHudObject of
+                                    PointLight1 ->
+                                        scene |> XYZMika.XYZ.Scene.withPointLight1Map updateLight
+
+                                    PointLight2 ->
+                                        scene |> XYZMika.XYZ.Scene.withPointLight2Map updateLight
+                            )
+            }
+
+        SelectedGraph ->
+            let
+                updateGraph (Graph object children) =
+                    let
+                        position =
+                            case hudValue of
+                                HudValue_Vec3_X ->
+                                    object
+                                        |> XYZMika.XYZ.Scene.Object.position
+                                        |> Vec3.setX value
+
+                                HudValue_Vec3_Y ->
+                                    object
+                                        |> XYZMika.XYZ.Scene.Object.position
+                                        |> Vec3.setY value
+
+                                HudValue_Vec3_Z ->
+                                    object
+                                        |> XYZMika.XYZ.Scene.Object.position
+                                        |> Vec3.setZ value
+
+                                HudValue_Vec3_Roll ->
+                                    object |> XYZMika.XYZ.Scene.Object.position
+                    in
+                    Graph (object |> XYZMika.XYZ.Scene.Object.withPosition position) children
+            in
+            { model
+                | scene =
+                    model.scene
+                        |> Maybe.map
+                            (XYZMika.XYZ.Scene.map
+                                (XYZMika.XYZ.Scene.Graph.traverse
+                                    (\(Graph object children) ->
+                                        if model.selectedGraph == Just (Graph object children) then
+                                            updateGraph (Graph object children)
+
+                                        else
+                                            Graph object children
+                                    )
+                                )
+                            )
+                , selectedGraph = model.selectedGraph |> Maybe.map updateGraph
+            }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OnResize ->
+            onResize ( model, Cmd.none )
+
+        OnViewportElement (Ok x) ->
+            ( { model | viewPortElement = Just x }, Cmd.none )
+
+        OnViewportElement (Err error) ->
+            let
+                _ =
+                    Debug.log "error" error
+            in
+            ( model, Cmd.none )
+
         HudMsg msg_ ->
             updateHud msg_ model.hud
                 |> Tuple.mapFirst (\hud -> { model | hud = hud })
@@ -37,53 +162,7 @@ update msg model =
         SetValue hudObject hudValue x ->
             ( case String.toFloat x of
                 Just value ->
-                    { model
-                        | scene =
-                            model.scene
-                                --|> Maybe.map (XYZMika.XYZ.Scene.withCameraPosition (vec3 value 0 0))
-                                |> Maybe.map
-                                    (case hudObject of
-                                        Camera ->
-                                            XYZMika.XYZ.Scene.withCameraMap
-                                                (\camera ->
-                                                    case hudValue of
-                                                        HudValue_Vec3_X ->
-                                                            Camera.withPositionMap (Vec3.setX value) camera
-
-                                                        HudValue_Vec3_Y ->
-                                                            Camera.withPositionMap (Vec3.setY value) camera
-
-                                                        HudValue_Vec3_Z ->
-                                                            Camera.withPositionMap (Vec3.setZ value) camera
-
-                                                        HudValue_Vec3_Roll ->
-                                                            Camera.withOrbitY (value - Camera.roll camera) camera
-                                                )
-
-                                        LightHudObject lightHudObject ->
-                                            (case lightHudObject of
-                                                PointLight1 ->
-                                                    XYZMika.XYZ.Scene.withPointLight1Map
-
-                                                PointLight2 ->
-                                                    XYZMika.XYZ.Scene.withPointLight2Map
-                                            )
-                                                (\light ->
-                                                    case hudValue of
-                                                        HudValue_Vec3_X ->
-                                                            Light.withPositionMap (Vec3.setX value) light
-
-                                                        HudValue_Vec3_Y ->
-                                                            Light.withPositionMap (Vec3.setY value) light
-
-                                                        HudValue_Vec3_Z ->
-                                                            Light.withPositionMap (Vec3.setZ value) light
-
-                                                        HudValue_Vec3_Roll ->
-                                                            light
-                                                )
-                                    )
-                    }
+                    applyHudValue hudObject hudValue value model
 
                 Nothing ->
                     model
@@ -146,6 +225,25 @@ update msg model =
             ( { model
                 | dragger = Nothing
                 , dragTarget = Model.Default
+                , selectedGraph =
+                    case Maybe.map2 Tuple.pair model.scene model.viewPortElement of
+                        Just ( scene, viewPortElement ) ->
+                            if model.dragTarget == Model.Default then
+                                Util.selectGraphAtClickPosition
+                                    { theta = model.theta
+                                    , drag = model.drag
+                                    , viewport = Model.viewport
+                                    , viewPortElement = viewPortElement
+                                    , sceneOptions = Model.sceneOptions model
+                                    }
+                                    scene
+                                    ( Vec2.getX pos, Vec2.getY pos )
+
+                            else
+                                model.selectedGraph
+
+                        Nothing ->
+                            Nothing
                 , drag =
                     model.dragger
                         |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
@@ -276,7 +374,8 @@ update msg model =
             )
 
         AssetLoaded scale asset ->
-            ( model
-                |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
-            , Cmd.none
-            )
+            onResize
+                ( model
+                    |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
+                , Cmd.none
+                )
