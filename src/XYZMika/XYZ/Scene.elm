@@ -26,6 +26,7 @@ import Color
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
+import Tree exposing (Tree)
 import WebGL exposing (Entity, Shader)
 import WebGL.Settings
 import WebGL.Settings.DepthTest
@@ -38,7 +39,6 @@ import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -62,14 +62,14 @@ inDirection d =
 
 type Scene materialId
     = Scene
-        { graph : Graph (Object materialId)
+        { graph : Tree (Object materialId)
         , camera : Camera
         , rendererOptions : Renderer.Options
         , gizmoMaterial : materialId
         }
 
 
-init : { gizmoMaterial : materialId } -> Graph (Object materialId) -> Scene materialId
+init : { gizmoMaterial : materialId } -> Tree (Object materialId) -> Scene materialId
 init { gizmoMaterial } graph =
     Scene
         { graph = graph
@@ -79,7 +79,7 @@ init { gizmoMaterial } graph =
         }
 
 
-getGraph : Scene materialId -> Graph (Object materialId)
+getGraph : Scene materialId -> Tree (Object materialId)
 getGraph (Scene scene) =
     scene.graph
 
@@ -146,7 +146,7 @@ withCameraMap f (Scene scene) =
     Scene { scene | camera = f scene.camera }
 
 
-map : (Graph (Object materialId) -> Graph (Object materialId)) -> Scene materialId -> Scene materialId
+map : (Tree (Object materialId) -> Tree (Object materialId)) -> Scene materialId -> Scene materialId
 map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
 
@@ -157,17 +157,15 @@ map f (Scene scene) =
 --    Scene { scene | graph = scene.graph |> List.map f }
 
 
-graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Graph (Object materialId) -> Graph ( Mat4, Object materialId )
-graphWithMatrix ({ theta, drag, mat } as config) graph =
+graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object materialId) -> Tree ( Mat4, Object materialId )
+graphWithMatrix ({ theta, drag, mat } as config) tree =
     let
         object =
-            graph
-                |> Graph.unwrap
+            Tree.label tree
 
-        children : List (Graph (Object materialId))
+        children : List (Tree (Object materialId))
         children =
-            graph
-                |> Graph.unwrapChildren
+            Tree.children tree
 
         mat_ =
             object
@@ -177,7 +175,7 @@ graphWithMatrix ({ theta, drag, mat } as config) graph =
                 |> Mat4.mul (Mat4.makeTranslate (Object.position object))
                 |> Mat4.mul mat
     in
-    Graph.init ( mat_, object ) |> Graph.withChildren (children |> List.map (graphWithMatrix { config | mat = mat_ }))
+    Tree.singleton ( mat_, object ) |> Tree.replaceChildren (children |> List.map (graphWithMatrix { config | mat = mat_ }))
 
 
 type alias Options =
@@ -228,7 +226,7 @@ render :
     -> Vec2
     -> Float
     -> Maybe Options
-    -> (Graph (Object materialId) -> Maybe GraphRenderOptions)
+    -> (Tree (Object materialId) -> Maybe GraphRenderOptions)
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
@@ -280,7 +278,7 @@ type Axis
 
 
 type Node materialId
-    = GraphNode (Graph ( Mat4, Object materialId ))
+    = GraphNode (Tree ( Mat4, Object materialId ))
     | GridPlaneNode Axis
     | PointLightNode Vec3
 
@@ -290,7 +288,7 @@ renderGraph :
     -> Float
     -> Renderer.Options
     -> RenderOptions
-    -> (Graph (Object materialId) -> Maybe GraphRenderOptions)
+    -> (Tree (Object materialId) -> Maybe GraphRenderOptions)
     -> Uniforms u
     -> Texture
     -> List (Node materialId)
@@ -392,15 +390,16 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                     GraphNode graph ->
                         let
                             ( sceneMatrix, object ) =
-                                Graph.unwrap graph
+                                Tree.label graph
 
-                            children : List (Graph ( Mat4, Object materialId ))
+                            children : List (Tree ( Mat4, Object materialId ))
                             children =
-                                Graph.unwrapChildren graph
+                                Tree.children graph
 
+                            graphRenderOptions : Maybe GraphRenderOptions
                             graphRenderOptions =
                                 graph
-                                    |> Graph.map Tuple.second
+                                    |> Tree.map Tuple.second
                                     |> graphRenderOptionsFn
 
                             sceneRotationMatrix =

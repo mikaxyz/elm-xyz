@@ -5,9 +5,9 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
+import Tree exposing (Tree)
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -27,7 +27,7 @@ selectGraphAtClickPosition :
     }
     -> Scene.Scene materialId
     -> ( Float, Float )
-    -> Maybe (Graph (Object materialId))
+    -> Maybe (Tree (Object materialId))
 selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOptions } scene pos =
     let
         clickPosition =
@@ -39,36 +39,36 @@ selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOption
                 scene
                 pos
 
-        graphWithHitInfo : Graph ( Maybe TriangleHitByRay, Object materialId )
+        graphWithHitInfo : Tree ( Maybe TriangleHitByRay, Object materialId )
         graphWithHitInfo =
             Scene.getGraph scene
                 |> Scene.graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
-                |> Graph.map
+                |> Tree.map
                     (\( mat, object ) ->
                         ( objectClickedInScene clickPosition mat scene object, object )
                     )
 
         hitDistance : Maybe TriangleHitByRay
         hitDistance =
-            Graph.toList graphWithHitInfo
+            Tree.flatten graphWithHitInfo
                 |> List.filterMap (\( d, _ ) -> d)
                 |> List.sortBy (\(TriangleHitByRay distance _) -> distance)
                 |> List.head
 
         getGraphByDistance :
-            Graph ( Maybe TriangleHitByRay, Object materialId )
+            Tree ( Maybe TriangleHitByRay, Object materialId )
             -> TriangleHitByRay
-            -> Maybe (Graph (Object materialId))
+            -> Maybe (Tree (Object materialId))
         getGraphByDistance graph distance =
             let
                 ( distance_, _ ) =
-                    Graph.unwrap graph
+                    Tree.label graph
 
                 children =
-                    Graph.unwrapChildren graph
+                    Tree.children graph
             in
             if distance_ == Just distance then
-                Just (Graph.map (\( _, obj ) -> obj) graph)
+                Just (Tree.map (\( _, obj ) -> obj) graph)
 
             else
                 children

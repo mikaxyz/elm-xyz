@@ -7,12 +7,12 @@ import Math.Vector3 as Vec3 exposing (Vec3)
 import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
 import Task
+import Tree exposing (Tree)
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 import XYZMika.XYZ.Scene.Util as Util
@@ -96,41 +96,53 @@ applyHudValue hudObject hudValue value model =
 
         SelectedGraph ->
             let
+                updateGraph : Tree (Object.Object materialId) -> Tree (Object.Object materialId)
                 updateGraph graph =
                     let
                         position =
                             case hudValue of
                                 HudValue_Vec3_X ->
                                     graph
-                                        |> Graph.unwrap
+                                        |> Tree.label
                                         |> Object.position
                                         |> Vec3.setX value
 
                                 HudValue_Vec3_Y ->
                                     graph
-                                        |> Graph.unwrap
+                                        |> Tree.label
                                         |> Object.position
                                         |> Vec3.setY value
 
                                 HudValue_Vec3_Z ->
                                     graph
-                                        |> Graph.unwrap
+                                        |> Tree.label
                                         |> Object.position
                                         |> Vec3.setZ value
 
                                 HudValue_Vec3_Roll ->
                                     graph
-                                        |> Graph.unwrap
+                                        |> Tree.label
                                         |> Object.position
                     in
-                    graph |> Graph.mapRoot (Object.withPosition position)
+                    graph |> Tree.mapLabel (Object.withPosition position)
+
+                traverseTree : (Tree a -> Tree a) -> Tree a -> Tree a
+                traverseTree f tree =
+                    let
+                        object =
+                            Tree.label tree
+
+                        children =
+                            Tree.children tree
+                    in
+                    f (Tree.tree object (children |> List.map (traverseTree f)))
             in
             { model
                 | scene =
                     model.scene
                         |> Maybe.map
                             (Scene.map
-                                (Graph.traverse
+                                (traverseTree
                                     (\graph ->
                                         if model.selectedGraph == Just graph then
                                             updateGraph graph

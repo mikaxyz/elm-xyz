@@ -4,6 +4,7 @@ import Asset
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Tree exposing (Tree)
 import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
@@ -11,7 +12,6 @@ import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Gizmo as Gizmo
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -30,11 +30,11 @@ init assets =
         |> Maybe.map render
         |> Maybe.withDefault []
         |> (\x ->
-                Graph.init
+                Tree.tree
                     (positionHandle 0.01 (vec3 0 0 0)
                         |> Object.withOptionDragToRotateXY
                     )
-                    |> Graph.withChildren x
+                    x
            )
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4)
@@ -47,7 +47,7 @@ positionHandle size v =
         |> Object.withPosition v
 
 
-render : Assets -> List (Graph (Object Material.Name))
+render : Assets -> List (Tree (Object Material.Name))
 render assets =
     let
         normalGuide : Vertex -> Object materialId
@@ -79,7 +79,7 @@ render assets =
                 ]
                 |> Object.init
 
-        normalGuides : List ( Int, Vertex ) -> List (Graph (Object Material.Name))
+        normalGuides : List ( Int, Vertex ) -> List (Tree (Object Material.Name))
         normalGuides vs =
             vs
                 |> List.map
@@ -90,11 +90,11 @@ render assets =
                             , tangent = v.tangent
                         }
                     )
-                |> List.map (\v -> Graph.init (normalGuide v))
+                |> List.map (\v -> Tree.singleton (normalGuide v))
 
-        addNormalGuides : ( List Vertex, List ( Int, Int, Int ) ) -> Graph (Object Material.Name) -> Graph (Object Material.Name)
+        addNormalGuides : ( List Vertex, List ( Int, Int, Int ) ) -> Tree (Object Material.Name) -> Tree (Object Material.Name)
         addNormalGuides mesh graph =
-            graph |> Graph.mapChildren (\children -> children ++ (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
+            graph |> Tree.mapChildren (\children -> children ++ (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
 
         wireframeTri : ( Vertex, Vertex, Vertex ) -> Object materialId
         wireframeTri ( v1, v2, v3 ) =
@@ -112,12 +112,12 @@ render assets =
                 |> Object.init
                 |> Object.withPosition v.position
 
-        normalGizmos : List Vertex -> List (Graph (Object Material.Name))
+        normalGizmos : List Vertex -> List (Tree (Object Material.Name))
         normalGizmos vs =
             vs
-                |> List.map (\v -> Graph.init (gizmo v))
+                |> List.map (\v -> Tree.singleton (gizmo v))
 
-        objectToGraphWithNormalGizmo : Vec3 -> Material.Name -> ( List Vertex, List ( Int, Int, Int ) ) -> Graph (Object Material.Name)
+        objectToGraphWithNormalGizmo : Vec3 -> Material.Name -> ( List Vertex, List ( Int, Int, Int ) ) -> Tree (Object Material.Name)
         objectToGraphWithNormalGizmo pos material mesh =
             --mesh
             --    |> Object.initWithIndexedTriangles
@@ -152,7 +152,7 @@ render assets =
             --                []
             --                :: children
             --        )
-            Graph.init
+            Tree.tree
                 (mesh
                     |> Object.initWithIndexedTriangles
                     |> Object.withPosition pos
@@ -162,7 +162,8 @@ render assets =
                  --|> Object.withOptionDragToRotateXY
                  --|> objectToGraph
                 )
-                |> Graph.traverse (addNormalGuides mesh)
+                []
+                |> addNormalGuides mesh
 
         --|> Graph.fmap ((++) (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
         --|> Graph.map ((++) (normalGizmos <| Tuple.first mesh))
@@ -191,7 +192,7 @@ render assets =
         |> Object.withNormalMap assets.normal
         |> Object.withDiffuseMap assets.diffuse
         |> Object.withMaterialName Material.Advanced
-        |> Graph.init
+        |> Tree.singleton
     ]
 
 

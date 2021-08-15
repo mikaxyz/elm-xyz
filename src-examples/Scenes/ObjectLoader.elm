@@ -4,10 +4,10 @@ import Http
 import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Tree
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -18,7 +18,7 @@ init =
 
 
 rootObject =
-    Graph.init
+    Tree.singleton
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 0 -1, vec3 1 0.1 1 )
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.5 0)
@@ -55,7 +55,7 @@ addMesh material tris pos scene =
                         --case graph of
                         --    Graph root children ->
                         --        Graph root (Graph x [] :: children)
-                        graph |> Graph.mapChildren (\children -> Graph.init x :: children)
+                        graph |> Tree.appendChild (Tree.singleton x)
                     )
                     scene
            )

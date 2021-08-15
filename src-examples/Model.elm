@@ -35,11 +35,11 @@ import Scenes.NormalMapping
 import Scenes.ObjectLoader
 import Scenes.Sandbox
 import Scenes.Textures
+import Tree exposing (Tree)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object exposing (Object)
 
 
@@ -111,7 +111,7 @@ type alias Model =
     , assets : AssetStore.Store Asset.Obj Asset.Texture
     , hud : Hud
     , keyboard : Keyboard.State
-    , selectedGraph : Maybe (Graph (Object Material.Name))
+    , selectedGraph : Maybe (Tree (Object Material.Name))
     }
 
 
