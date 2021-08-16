@@ -96,63 +96,47 @@ applyHudValue hudObject hudValue value model =
 
         SelectedGraph ->
             let
-                updateGraph : Tree (Object.Object materialId) -> Tree (Object.Object materialId)
-                updateGraph graph =
+                updateObject : Object.Object materialId -> Object.Object materialId
+                updateObject object =
                     let
                         position =
                             case hudValue of
                                 HudValue_Vec3_X ->
-                                    graph
-                                        |> Tree.label
+                                    object
                                         |> Object.position
                                         |> Vec3.setX value
 
                                 HudValue_Vec3_Y ->
-                                    graph
-                                        |> Tree.label
+                                    object
                                         |> Object.position
                                         |> Vec3.setY value
 
                                 HudValue_Vec3_Z ->
-                                    graph
-                                        |> Tree.label
+                                    object
                                         |> Object.position
                                         |> Vec3.setZ value
 
                                 HudValue_Vec3_Roll ->
-                                    graph
-                                        |> Tree.label
+                                    object
                                         |> Object.position
                     in
-                    graph |> Tree.mapLabel (Object.withPosition position)
-
-                traverseTree : (Tree a -> Tree a) -> Tree a -> Tree a
-                traverseTree f tree =
-                    let
-                        object =
-                            Tree.label tree
-
-                        children =
-                            Tree.children tree
-                    in
-                    f (Tree.tree object (children |> List.map (traverseTree f)))
+                    Object.withPosition position object
             in
             { model
                 | scene =
                     model.scene
                         |> Maybe.map
                             (Scene.map
-                                (traverseTree
-                                    (\graph ->
-                                        if model.selectedGraph == Just graph then
-                                            updateGraph graph
+                                (Tree.indexedMap
+                                    (\index object ->
+                                        if model.selectedTreeIndex == Just index then
+                                            updateObject object
 
                                         else
-                                            graph
+                                            object
                                     )
                                 )
                             )
-                , selectedGraph = model.selectedGraph |> Maybe.map updateGraph
             }
 
 
@@ -239,32 +223,37 @@ update msg model =
                 ( model, Cmd.none )
 
         DragEnd pos ->
+            let
+                selectedTreeIndexAtClickPosition : Scene.Scene materialId -> Browser.Dom.Element -> Maybe Int
+                selectedTreeIndexAtClickPosition scene viewPortElement =
+                    Util.selectGraphAtClickPosition
+                        { theta = model.theta
+                        , drag = model.drag
+                        , viewport = Model.viewport
+                        , viewPortElement = viewPortElement
+                        , sceneOptions = Model.sceneOptions model
+                        }
+                        scene
+                        ( Vec2.getX pos, Vec2.getY pos )
+                        |> Maybe.map Tuple.first
+            in
             ( { model
                 | dragger = Nothing
                 , dragTarget = Model.Default
-                , selectedGraph =
-                    case Maybe.map2 Tuple.pair model.scene model.viewPortElement of
-                        Just ( scene, viewPortElement ) ->
-                            if model.dragTarget == Model.Default then
-                                Util.selectGraphAtClickPosition
-                                    { theta = model.theta
-                                    , drag = model.drag
-                                    , viewport = Model.viewport
-                                    , viewPortElement = viewPortElement
-                                    , sceneOptions = Model.sceneOptions model
-                                    }
-                                    scene
-                                    ( Vec2.getX pos, Vec2.getY pos )
-
-                            else
-                                model.selectedGraph
-
-                        Nothing ->
-                            Nothing
                 , drag =
                     model.dragger
                         |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
                         |> Maybe.withDefault model.drag
+                , selectedTreeIndex =
+                    if model.dragTarget == Model.Default then
+                        Maybe.map2 Tuple.pair model.scene model.viewPortElement
+                            |> Maybe.andThen
+                                (\( scene, viewPortElement ) ->
+                                    selectedTreeIndexAtClickPosition scene viewPortElement
+                                )
+
+                    else
+                        model.selectedTreeIndex
               }
             , Cmd.none
             )

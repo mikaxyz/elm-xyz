@@ -61,8 +61,12 @@ sceneView defaultTexture (Hud hud) model scene =
                     (Model.getDrag model)
                     model.theta
                     (Model.sceneOptions model)
-                    (\graph ->
-                        if model.selectedGraph == Just graph then
+                    (\tree ->
+                        let
+                            index =
+                                Tuple.first (Tree.label tree)
+                        in
+                        if model.selectedTreeIndex == Just index then
                             Just { showBoundingBox = True }
 
                         else
@@ -79,6 +83,18 @@ sceneView defaultTexture (Hud hud) model scene =
             [ sidebarView model.hud
                 (Scene.camera scene)
                 (Scene.pointLights scene)
+                (Scene.getGraph scene
+                    |> Tree.indexedMap Tuple.pair
+                    |> Tree.foldl
+                        (\( i, x ) acc ->
+                            if model.selectedTreeIndex == Just i then
+                                Just x
+
+                            else
+                                acc
+                        )
+                        Nothing
+                )
                 model
             ]
         ]
@@ -100,8 +116,8 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : Hud -> Camera -> List PointLight -> Model -> Html Msg
-sidebarView (Hud hud) camera pointLights model =
+sidebarView : Hud -> Camera -> List PointLight -> Maybe (Object Material.Name) -> Model -> Html Msg
+sidebarView (Hud hud) camera pointLights selectedObject model =
     div
         [ class "sidebar"
         , classList [ ( "sidebar--expanded", hud.sidebarExpanded ) ]
@@ -126,8 +142,8 @@ sidebarView (Hud hud) camera pointLights model =
             --    ]
             -- TODO: Make this input work. Store other value?
             , rangeInput "Roll" Camera HudValue_Vec3_Roll -1 1 True (Camera.roll camera)
-            , model.selectedGraph
-                |> Maybe.map selectedGraphWidget
+            , selectedObject
+                |> Maybe.map selectedObjectWidget
                 |> Maybe.withDefault (pointLightWidgets pointLights)
             ]
         , button
@@ -138,9 +154,9 @@ sidebarView (Hud hud) camera pointLights model =
         ]
 
 
-selectedGraphWidget : Tree (Object Material.Name) -> Html Msg
-selectedGraphWidget graph =
-    vector3Widget "Object" SelectedGraph (graph |> Tree.label |> Object.position |> Vec3.toRecord)
+selectedObjectWidget : Object Material.Name -> Html Msg
+selectedObjectWidget object =
+    vector3Widget "Object" SelectedGraph (object |> Object.position |> Vec3.toRecord)
 
 
 pointLightWidgets lights =

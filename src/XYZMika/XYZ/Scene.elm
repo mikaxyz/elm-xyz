@@ -226,7 +226,7 @@ render :
     -> Vec2
     -> Float
     -> Maybe Options
-    -> (Tree (Object materialId) -> Maybe GraphRenderOptions)
+    -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
@@ -253,7 +253,7 @@ render defaultTexture renderOptions viewport drag theta options graphRenderOptio
         defaultTexture
         (PointLightNode (Light.position scene.rendererOptions.lights.point1)
             :: PointLightNode (Light.position scene.rendererOptions.lights.point2)
-            :: GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph)
+            :: GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
             :: []
             |> withGridPlane renderOptions.showGridX AxisX
             |> withGridPlane renderOptions.showGridY AxisY
@@ -277,8 +277,12 @@ type Axis
     | AxisZ
 
 
+type alias Renderable materialId =
+    { index : Int, sceneMatrix : Mat4, object : Object materialId }
+
+
 type Node materialId
-    = GraphNode (Tree ( Mat4, Object materialId ))
+    = GraphNode (Tree (Renderable materialId))
     | GridPlaneNode Axis
     | PointLightNode Vec3
 
@@ -288,7 +292,7 @@ renderGraph :
     -> Float
     -> Renderer.Options
     -> RenderOptions
-    -> (Tree (Object materialId) -> Maybe GraphRenderOptions)
+    -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
     -> Uniforms u
     -> Texture
     -> List (Node materialId)
@@ -389,17 +393,17 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
 
                     GraphNode graph ->
                         let
-                            ( sceneMatrix, object ) =
+                            { sceneMatrix, object } =
                                 Tree.label graph
 
-                            children : List (Tree ( Mat4, Object materialId ))
+                            children : List (Tree (Renderable materialId))
                             children =
                                 Tree.children graph
 
                             graphRenderOptions : Maybe GraphRenderOptions
                             graphRenderOptions =
                                 graph
-                                    |> Tree.map Tuple.second
+                                    |> Tree.map (\x -> ( x.index, x.object ))
                                     |> graphRenderOptionsFn
 
                             sceneRotationMatrix =

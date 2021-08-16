@@ -35,12 +35,10 @@ import Scenes.NormalMapping
 import Scenes.ObjectLoader
 import Scenes.Sandbox
 import Scenes.Textures
-import Tree exposing (Tree)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
-import XYZMika.XYZ.Scene.Object exposing (Object)
 
 
 type Msg
@@ -111,7 +109,7 @@ type alias Model =
     , assets : AssetStore.Store Asset.Obj Asset.Texture
     , hud : Hud
     , keyboard : Keyboard.State
-    , selectedGraph : Maybe (Tree (Object Material.Name))
+    , selectedTreeIndex : Maybe Int
     }
 
 
@@ -158,7 +156,7 @@ init =
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
     , viewPortElement = Nothing
-    , selectedGraph = Nothing
+    , selectedTreeIndex = Nothing
     }
         |> loadScene
         |> (\( model, cmd ) ->
