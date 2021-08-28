@@ -3,7 +3,7 @@ module Update exposing (update)
 import Browser.Dom
 import Keyboard
 import Math.Vector2 as Vec2 exposing (Vec2)
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
 import Task
@@ -13,6 +13,7 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
+import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 import XYZMika.XYZ.Scene.Util as Util
 
@@ -229,61 +230,149 @@ update msg model =
             )
 
         OnKeyDown key ->
+            let
+                lightDistance =
+                    6
+            in
             case key of
-                -- TODO: Make these create common Lighting rigs instead...
-                --Keyboard.Alpha 'X' ->
-                --    ( model
-                --        |> Model.mapRendererOptions
-                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.down
-                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).down
-                --            )
-                --    , Cmd.none
-                --    )
-                --
-                --Keyboard.Alpha 'W' ->
-                --    ( model
-                --        |> Model.mapRendererOptions
-                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.up
-                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).up
-                --            )
-                --    , Cmd.none
-                --    )
-                --
-                --Keyboard.Alpha 'D' ->
-                --    ( model
-                --        |> Model.mapRendererOptions
-                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.right
-                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).right
-                --            )
-                --    , Cmd.none
-                --    )
-                --
-                --Keyboard.Alpha 'A' ->
-                --    ( model
-                --        |> Model.mapRendererOptions
-                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.left
-                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).left
-                --            )
-                --    , Cmd.none
-                --    )
-                --
-                --Keyboard.Alpha 'E' ->
-                --    ( model
-                --        |> Model.mapRendererOptions
-                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.backward
-                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).forward
-                --            )
-                --    , Cmd.none
-                --    )
-                --
-                --Keyboard.Alpha 'Z' ->
-                --    ( model
-                --        |> Model.mapRendererOptions
-                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
-                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).backward
-                --            )
-                --    , Cmd.none
-                --    )
+                Keyboard.Alpha 'X' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 0 -lightDistance 0)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 1
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
+                Keyboard.Alpha 'W' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 0 lightDistance 0)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 1
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
+                Keyboard.Alpha 'D' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 lightDistance 0 0)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 1
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
+                Keyboard.Alpha 'A' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 -lightDistance 0 0)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 1
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
+                Keyboard.Alpha 'E' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 0 0 -lightDistance)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 1
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
+                Keyboard.Alpha 'Z' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 0 0 lightDistance)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 1
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
+                Keyboard.Alpha 'C' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 -4 2 4)
+                                            |> Light.withColor (vec3 1 0 0)
+                                            |> Light.withIntensity 0.5
+                                        , Light.pointLight (vec3 4 2 4)
+                                            |> Light.withColor (vec3 0 1 0)
+                                            |> Light.withIntensity 0.5
+                                        , Light.pointLight (vec3 0 2 -4)
+                                            |> Light.withColor (vec3 0 0 1)
+                                            |> Light.withIntensity 0.5
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
+                Keyboard.Alpha 'Q' ->
+                    ( { model
+                        | scene =
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.replaceLightsWithLightsInRoot
+                                        [ Light.pointLight (vec3 -4 2 2)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 0.2
+                                        , Light.pointLight (vec3 -2 4 0.5)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 0.2
+                                        , Light.pointLight (vec3 0 5 0)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 0.2
+                                        , Light.pointLight (vec3 2 4 0.5)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 0.2
+                                        , Light.pointLight (vec3 4 2 2)
+                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withIntensity 0.2
+                                        ]
+                                    )
+                      }
+                    , Cmd.none
+                    )
+
                 Keyboard.Alpha 'S' ->
                     ( model |> Model.mapRendererOptions (always XYZMika.XYZ.Material.defaultOptions)
                     , Cmd.none

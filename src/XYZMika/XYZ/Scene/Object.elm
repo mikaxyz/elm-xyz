@@ -6,7 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
-    , light, maybeLight, pointLight, toHumanReadable
+    , light, maybeLight, pointLight, toEmpty, toHumanReadable
     )
 
 {-|
@@ -57,13 +57,17 @@ import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 
 
 type Object materialId
-    = Mesh (ObjectData materialId)
+    = Empty (ObjectData materialId)
+    | Mesh (ObjectData materialId)
     | Light (ObjectData materialId) Light
 
 
 toHumanReadable : Object materialId -> String
 toHumanReadable object =
     case object of
+        Empty _ ->
+            "Empty"
+
         Mesh _ ->
             "Mesh"
 
@@ -88,6 +92,27 @@ type alias ObjectData materialId =
 
 
 -- Create
+
+
+toEmpty : Object materialId -> Object materialId
+toEmpty object =
+    let
+        objectDataWithoutMesh data =
+            { data
+                | mesh = WebGL.triangles []
+                , triangles = []
+                , boundingBox = ( vec3 0 0 0, vec3 0 0 0 )
+            }
+    in
+    case object of
+        Empty objectData ->
+            Empty (objectDataWithoutMesh objectData)
+
+        Mesh objectData ->
+            Empty (objectDataWithoutMesh objectData)
+
+        Light objectData _ ->
+            Empty (objectDataWithoutMesh objectData)
 
 
 pointLight : Float -> Vec3 -> Vec3 -> Object materialId
@@ -127,6 +152,9 @@ light v light_ =
 maybeLight : Object materialId -> Maybe Light
 maybeLight object =
     case object of
+        Empty _ ->
+            Nothing
+
         Mesh _ ->
             Nothing
 
@@ -242,6 +270,9 @@ vMax v1 v2 =
 withGlSetting : WebGL.Settings.Setting -> Object materialId -> Object materialId
 withGlSetting x object =
     case object of
+        Empty objectData ->
+            Empty { objectData | glSetting = Just x }
+
         Mesh objectData ->
             Mesh { objectData | glSetting = Just x }
 
@@ -252,6 +283,9 @@ withGlSetting x object =
 glSetting : Object materialId -> Maybe WebGL.Settings.Setting
 glSetting object =
     case object of
+        Empty objectData ->
+            objectData.glSetting
+
         Mesh objectData ->
             objectData.glSetting
 
@@ -296,6 +330,9 @@ withNormalMap x obj =
 mapOptions : (Maybe Options -> Maybe Options) -> Object materialId -> Object materialId
 mapOptions f obj =
     case obj of
+        Empty data ->
+            Empty { data | options = f data.options }
+
         Mesh data ->
             Mesh { data | options = f data.options }
 
@@ -306,6 +343,9 @@ mapOptions f obj =
 mapData : (ObjectData materialId -> ObjectData materialId) -> Object materialId -> Object materialId
 mapData f obj =
     case obj of
+        Empty data ->
+            Empty (f data)
+
         Mesh data ->
             Mesh (f data)
 
@@ -316,6 +356,9 @@ mapData f obj =
 get : (ObjectData materialId -> a) -> Object materialId -> a
 get f obj =
     case obj of
+        Empty data ->
+            f data
+
         Mesh data ->
             f data
 

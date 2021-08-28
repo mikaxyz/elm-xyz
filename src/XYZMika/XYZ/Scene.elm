@@ -11,6 +11,7 @@ module XYZMika.XYZ.Scene exposing
     , init
     , map
     , render
+    , replaceLightsWithLightsInRoot
     , withCamera
     , withCameraMap
     , withCameraPosition
@@ -91,6 +92,39 @@ withCameraMap f (Scene scene) =
 map : (Tree (Object materialId) -> Tree (Object materialId)) -> Scene materialId -> Scene materialId
 map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
+
+
+replaceLightsWithLightsInRoot : List Light.Light -> Scene materialId -> Scene materialId
+replaceLightsWithLightsInRoot lights scene =
+    scene
+        |> map
+            (\tree ->
+                Tree.tree
+                    (Object.initWithTriangles [])
+                    ((tree
+                        |> Tree.map
+                            (\object ->
+                                case Object.maybeLight object of
+                                    Just _ ->
+                                        Object.toEmpty object
+
+                                    Nothing ->
+                                        object
+                            )
+                     )
+                        :: (lights
+                                |> List.map
+                                    (\light ->
+                                        Object.light
+                                            (Light.position light
+                                                |> Maybe.withDefault (vec3 0 0 0)
+                                            )
+                                            light
+                                            |> Tree.singleton
+                                    )
+                           )
+                    )
+            )
 
 
 graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object materialId) -> Tree ( Mat4, Object materialId )
