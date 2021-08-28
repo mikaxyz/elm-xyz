@@ -1,79 +1,101 @@
 module XYZMika.XYZ.Scene.Light exposing
-    ( PointLight
-    , color
+    ( Light
+    , directional
+    , maybeDirectionalLight
+    , maybePointLight
     , pointLight
     , position
-    , toVec4
+    , toHumanReadable
     , withColor
     , withIntensity
     , withPosition
-    , withPositionMap
     )
 
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Math.Vector4 as Vec4 exposing (Vec4)
+import Math.Vector3 exposing (Vec3)
+import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight exposing (DirectionalLight)
+import XYZMika.XYZ.Scene.Light.PointLight as PointLight exposing (PointLight)
 
 
-type PointLight
-    = PointLight
-        { position : Vec3
-        , intensity : Float
-        , color : Vec3
-        }
+type Light
+    = DirectionalLight DirectionalLight
+    | PointLight PointLight
 
 
-pointLight : Vec3 -> PointLight
+pointLight : Vec3 -> Light
 pointLight p =
-    PointLight
-        { position = p
-        , intensity = 1.0
-        , color = vec3 1 1 1
-        }
+    PointLight (PointLight.light p)
 
 
-withPosition : Vec3 -> PointLight -> PointLight
-withPosition x (PointLight light) =
-    PointLight { light | position = x }
+directional : Vec3 -> Light
+directional direction =
+    DirectionalLight (DirectionalLight.light direction)
 
 
-withPositionMap : (Vec3 -> Vec3) -> PointLight -> PointLight
-withPositionMap f (PointLight light) =
-    PointLight { light | position = f light.position }
+withPosition : Vec3 -> Light -> Light
+withPosition x light =
+    case light of
+        DirectionalLight light_ ->
+            DirectionalLight light_
+
+        PointLight light_ ->
+            PointLight (light_ |> PointLight.withPosition x)
 
 
-withIntensity : Float -> PointLight -> PointLight
-withIntensity x (PointLight light) =
-    PointLight { light | intensity = x }
+withIntensity : Float -> Light -> Light
+withIntensity x light =
+    case light of
+        DirectionalLight light_ ->
+            DirectionalLight light_
+
+        PointLight light_ ->
+            PointLight (light_ |> PointLight.withIntensity x)
 
 
-withColor : Vec3 -> PointLight -> PointLight
-withColor x (PointLight light) =
-    PointLight { light | color = x }
+withColor : Vec3 -> Light -> Light
+withColor x light =
+    case light of
+        DirectionalLight light_ ->
+            DirectionalLight light_
+
+        PointLight light_ ->
+            PointLight (light_ |> PointLight.withColor x)
 
 
-position : PointLight -> Vec3
-position (PointLight light) =
-    light.position
+position : Light -> Maybe Vec3
+position light =
+    case light of
+        DirectionalLight _ ->
+            Nothing
+
+        PointLight light_ ->
+            Just (PointLight.position light_)
 
 
-color : PointLight -> Vec3
-color (PointLight light) =
-    light.color
+maybePointLight : Light -> Maybe PointLight
+maybePointLight light =
+    case light of
+        DirectionalLight _ ->
+            Nothing
+
+        PointLight x ->
+            Just x
 
 
-type alias Options =
-    { lights :
-        { directional : Vec3
-        , point1 : PointLight
-        , point2 : PointLight
-        }
-    }
+maybeDirectionalLight : Light -> Maybe DirectionalLight
+maybeDirectionalLight light =
+    case light of
+        DirectionalLight x ->
+            Just x
+
+        PointLight _ ->
+            Nothing
 
 
-toVec4 : PointLight -> Vec4
-toVec4 (PointLight light) =
-    Vec4.vec4
-        (Vec3.getX light.position)
-        (Vec3.getY light.position)
-        (Vec3.getZ light.position)
-        light.intensity
+toHumanReadable : Light -> String
+toHumanReadable light =
+    case light of
+        DirectionalLight _ ->
+            "DirectionalLight"
+
+        PointLight x ->
+            "PointLight"

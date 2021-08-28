@@ -2,57 +2,54 @@ module XYZMika.XYZ.Material exposing
     ( Material
     , Options
     , Renderer
+    , addLight
     , defaultOptions
+    , directionalLights
     , fragmentShader
     , material
-    , setDirectionalLight
-    , setPointLight
+    , pointLightByIndex
     , toEntity
     , uniforms
     , vertexShader
     )
 
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
+import XYZMika.XYZ.Scene.Light as Light exposing (Light)
+import XYZMika.XYZ.Scene.Light.DirectionalLight exposing (DirectionalLight)
+import XYZMika.XYZ.Scene.Light.PointLight exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
 type alias Options =
-    { lights :
-        { directional : Vec3
-        , point1 : PointLight
-        , point2 : PointLight
-        }
+    { lights : List Light
     }
+
+
+addLight : Light -> Options -> Options
+addLight x options =
+    { options | lights = x :: options.lights }
+
+
+pointLightByIndex : Int -> Options -> Maybe PointLight
+pointLightByIndex i options =
+    options.lights
+        |> List.filterMap Light.maybePointLight
+        |> List.drop i
+        |> List.head
+
+
+directionalLights : Options -> List DirectionalLight
+directionalLights options =
+    options.lights
+        |> List.filterMap Light.maybeDirectionalLight
 
 
 defaultOptions : Options
 defaultOptions =
-    { lights =
-        { directional = Vec3.fromRecord { x = -1, y = -1, z = -3 }
-        , point1 =
-            Light.pointLight (vec3 2 2 3)
-                |> Light.withIntensity 0.8
-                |> Light.withColor (vec3 0.8 0.6 0.5)
-        , point2 =
-            Light.pointLight (vec3 -1 3 -2)
-                |> Light.withIntensity 0.3
-                |> Light.withColor (vec3 0.1 0.3 1)
-        }
-    }
-
-
-setDirectionalLight : Vec3 -> Options -> Options
-setDirectionalLight x options =
-    (\lights -> { options | lights = { lights | directional = x } }) options.lights
-
-
-setPointLight : Vec3 -> Options -> Options
-setPointLight x options =
-    (\lights -> { options | lights = { lights | point1 = lights.point1 |> Light.withPosition x } }) options.lights
+    { lights = [ Light.directional (vec3 0 1 3) ] }
 
 
 type alias Renderer materialId uniforms =

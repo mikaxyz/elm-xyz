@@ -2,11 +2,11 @@ module XYZMika.XYZ.Mesh.Tree exposing (tree)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3)
+import Tree exposing (Tree)
 import WebGL exposing (..)
 import XYZMika.Color as Color
 import XYZMika.XYZ.Data.Node exposing (Node(..))
 import XYZMika.XYZ.Mesh.Primitives exposing (bone2)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -14,7 +14,7 @@ branchMultiplier =
     0.05
 
 
-tree : Int -> Int -> List (Graph (Object materialId))
+tree : Int -> Int -> List (Tree (Object materialId))
 tree i r =
     nodes i r
         |> treeFromNodes 0 []
@@ -35,18 +35,16 @@ nodes i r =
             (nodes (i - 1) -1)
 
 
-treeFromNodes : Float -> List (Graph (Object materialId)) -> Node Branch -> List (Graph (Object materialId))
+treeFromNodes : Float -> List (Tree (Object materialId)) -> Node Branch -> List (Tree (Object materialId))
 treeFromNodes y t node =
     case node of
         Empty ->
             t
 
         Node branch left right ->
-            [ Graph (object y branch)
-                (List.append
-                    (treeFromNodes branch.l [] left)
-                    (treeFromNodes branch.l [] right)
-                )
+            [ Tree.singleton (object y branch)
+                |> Tree.mapChildren ((++) (treeFromNodes branch.l [] left))
+                |> Tree.mapChildren ((++) (treeFromNodes branch.l [] right))
             ]
 
 

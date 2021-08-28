@@ -5,13 +5,13 @@ import Color
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Tree exposing (Tree)
 import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -27,12 +27,12 @@ init assets =
         |> getAssets
         |> Maybe.map render
         |> Maybe.withDefault []
-        |> (\x -> Graph (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.init) x)
+        |> (\x -> Tree.tree (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.init) x)
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4.5)
 
 
-render : Assets -> List (Graph (Object Material.Name))
+render : Assets -> List (Tree (Object Material.Name))
 render cube =
     let
         positionHandle size v =
@@ -40,7 +40,7 @@ render cube =
                 |> Object.initWithTriangles
                 |> Object.withPosition v
 
-        normalBone : Vertex -> Graph (Object Material.Name)
+        normalBone : Vertex -> Tree (Object Material.Name)
         normalBone v =
             WebGL.lines
                 [ ( v, { v | position = Vec3.add v.position v.normal } )
@@ -50,9 +50,9 @@ render cube =
                 ]
                 |> Object.init
                 --|> Object.withPosition v.position
-                |> (\obj -> Graph obj [ Graph (positionHandle 0.02 v.position) [] ])
+                |> (\obj -> Tree.tree obj [ Tree.singleton (positionHandle 0.02 v.position) ])
 
-        normalGuides : List (Graph (Object Material.Name))
+        normalGuides : List (Tree (Object Material.Name))
         normalGuides =
             cube.verticesIndexed
                 |> Tuple.first
@@ -73,13 +73,10 @@ render cube =
         wireframe triangles =
             triangles
                 |> List.map wireframeTri
-
-        objectToGraph x =
-            Graph x []
     in
     [ positionHandle 0.02 (Vec3.vec3 0 0 0)
         |> Object.withOptionDragToRotateXY
-        |> (\x -> Graph x normalGuides)
+        |> (\x -> Tree.tree x normalGuides)
 
     --, positionHandle 0.02 (Vec3.vec3 0 0 0)
     --    |> Object.withOptionDragToRotateXY
@@ -90,21 +87,21 @@ render cube =
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withMaterialName Material.Advanced
-        |> objectToGraph
+        |> Tree.singleton
     , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 -1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withMaterialName Material.Advanced
-        |> objectToGraph
+        |> Tree.singleton
     , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withColor Color.grey
         |> Object.withMaterialName Material.Advanced
-        |> objectToGraph
+        |> Tree.singleton
     ]
 
 

@@ -5,9 +5,9 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
+import Tree exposing (Tree)
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -27,7 +27,7 @@ selectGraphAtClickPosition :
     }
     -> Scene.Scene materialId
     -> ( Float, Float )
-    -> Maybe (Graph (Object materialId))
+    -> Maybe ( Int, Tree (Object materialId) )
 selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOptions } scene pos =
     let
         clickPosition =
@@ -39,48 +39,71 @@ selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOption
                 scene
                 pos
 
-        graphWithHitInfo : Graph ( Maybe TriangleHitByRay, Object materialId )
+        graphWithHitInfo : Tree ( Maybe TriangleHitByRay, Int, Object materialId )
         graphWithHitInfo =
             Scene.getGraph scene
                 |> Scene.graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
-                |> Graph.map
-                    (\( mat, object ) ->
-                        ( objectClickedInScene clickPosition mat scene object, object )
+                |> Tree.indexedMap
+                    (\index ( mat, object ) ->
+                        ( objectClickedInScene clickPosition mat scene object, index, object )
                     )
 
-        hitDistance : Maybe TriangleHitByRay
+        hitDistance : Maybe ( Int, TriangleHitByRay )
         hitDistance =
-            Graph.toList graphWithHitInfo
-                |> List.filterMap (\( d, _ ) -> d)
-                |> List.sortBy (\(TriangleHitByRay distance _) -> distance)
+            Tree.flatten graphWithHitInfo
+                --|> List.map
+                --    (\( hit, distance, object ) ->
+                --        let
+                --            _ =
+                --                case Object.asLight object of
+                --                    Just light ->
+                --                        Debug.log "LIGHT" light
+                --
+                --                    Nothing ->
+                --                        object
+                --        in
+                --        ( hit, distance, object )
+                --    )
+                |> List.filterMap (\( d, index, _ ) -> d |> Maybe.map (\d_ -> ( index, d_ )))
+                |> List.sortBy (\( _, TriangleHitByRay distance _ ) -> distance)
                 |> List.head
 
         getGraphByDistance :
-            Graph ( Maybe TriangleHitByRay, Object materialId )
-            -> TriangleHitByRay
-            -> Maybe (Graph (Object materialId))
-        getGraphByDistance graph distance =
-            case graph of
-                Graph ( distance_, object ) children ->
-                    if distance_ == Just distance then
-                        Graph.map (\( _, obj ) -> obj) (Graph ( distance_, object ) children)
-                            |> Just
+            Tree ( Maybe TriangleHitByRay, Int, Object materialId )
+            -> ( Int, TriangleHitByRay )
+            -> Maybe ( Int, Tree (Object materialId) )
+        getGraphByDistance graph ( index, distance ) =
+            let
+                ( distance_, _, _ ) =
+                    Tree.label graph
 
-                    else
-                        children
-                            |> List.foldl
-                                (\g_ acc ->
-                                    case getGraphByDistance g_ distance of
-                                        Just x ->
-                                            Just x
+                children : List (Tree ( Maybe TriangleHitByRay, Int, Object materialId ))
+                children =
+                    Tree.children graph
+            in
+            if distance_ == Just distance then
+                Just ( index, Tree.map (\( _, _, obj ) -> obj) graph )
 
-                                        Nothing ->
-                                            acc
-                                )
-                                Nothing
+            else
+                children
+                    |> List.foldl
+                        (\g_ acc ->
+                            let
+                                ( _, childIndex, _ ) =
+                                    Tree.label g_
+                            in
+                            case getGraphByDistance g_ ( childIndex, distance ) of
+                                Just x ->
+                                    Just x
+
+                                Nothing ->
+                                    acc
+                        )
+                        Nothing
     in
     hitDistance
         |> Maybe.andThen (getGraphByDistance graphWithHitInfo)
+        |> Debug.log "found"
 
 
 

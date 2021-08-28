@@ -8,7 +8,8 @@ import Html.Events exposing (onClick, onInput)
 import Json.Decode as JD
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
+import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
+import Tree exposing (Tree)
 import WebGL
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore
@@ -16,8 +17,6 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
-import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -61,8 +60,12 @@ sceneView defaultTexture (Hud hud) model scene =
                     (Model.getDrag model)
                     model.theta
                     (Model.sceneOptions model)
-                    (\graph ->
-                        if model.selectedGraph == Just graph then
+                    (\tree ->
+                        let
+                            index =
+                                Tuple.first (Tree.label tree)
+                        in
+                        if model.selectedTreeIndex == Just index then
                             Just { showBoundingBox = True }
 
                         else
@@ -78,7 +81,18 @@ sceneView defaultTexture (Hud hud) model scene =
             ]
             [ sidebarView model.hud
                 (Scene.camera scene)
-                (Scene.pointLights scene)
+                (Scene.getGraph scene
+                    |> Tree.indexedMap Tuple.pair
+                    |> Tree.foldl
+                        (\( i, x ) acc ->
+                            if model.selectedTreeIndex == Just i then
+                                Just x
+
+                            else
+                                acc
+                        )
+                        Nothing
+                )
                 model
             ]
         ]
@@ -100,8 +114,8 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : Hud -> Camera -> List PointLight -> Model -> Html Msg
-sidebarView (Hud hud) camera pointLights model =
+sidebarView : Hud -> Camera -> Maybe (Object Material.Name) -> Model -> Html Msg
+sidebarView (Hud hud) camera selectedObject model =
     div
         [ class "sidebar"
         , classList [ ( "sidebar--expanded", hud.sidebarExpanded ) ]
@@ -126,9 +140,9 @@ sidebarView (Hud hud) camera pointLights model =
             --    ]
             -- TODO: Make this input work. Store other value?
             , rangeInput "Roll" Camera HudValue_Vec3_Roll -1 1 True (Camera.roll camera)
-            , model.selectedGraph
-                |> Maybe.map selectedGraphWidget
-                |> Maybe.withDefault (pointLightWidgets pointLights)
+            , selectedObject
+                |> Maybe.map selectedObjectWidget
+                |> Maybe.withDefault (text "")
             ]
         , button
             [ onClick (HudMsg ToggleSidebar)
@@ -138,40 +152,12 @@ sidebarView (Hud hud) camera pointLights model =
         ]
 
 
-selectedGraphWidget : Graph (Object Material.Name) -> Html Msg
-selectedGraphWidget (Graph object _) =
-    vector3Widget "Object" SelectedGraph (Object.position object |> Vec3.toRecord)
-
-
-pointLightWidgets lights =
-    lights
-        |> List.indexedMap pointLightControl
-        |> div []
-
-
-pointLightControl : Int -> PointLight -> Html Msg
-pointLightControl index light =
-    let
-        lightHudObject : Maybe HudLightObject
-        lightHudObject =
-            case index of
-                0 ->
-                    Just PointLight1
-
-                1 ->
-                    Just PointLight2
-
-                _ ->
-                    Nothing
-    in
-    lightHudObject
-        |> Maybe.map
-            (\x ->
-                Light.position light
-                    |> Vec3.toRecord
-                    |> vector3Widget ("Point light " ++ String.fromInt (index + 1)) (LightHudObject x)
-            )
-        |> Maybe.withDefault (text "")
+selectedObjectWidget : Object Material.Name -> Html Msg
+selectedObjectWidget object =
+    vector3Widget
+        (Object.toHumanReadable object)
+        SelectedGraph
+        (object |> Object.position |> Vec3.toRecord)
 
 
 valueToHtml x =

@@ -1,6 +1,8 @@
 module XYZMika.XYZ.Mesh.Cube exposing
     ( colorful
+    , cubeVerts
     , gray
+    , grayVerts
     , pairsColorfulWithBounds
     , pairsWithBounds
     , pairsWithBoundsAndColor
@@ -81,6 +83,19 @@ gray =
         )
 
 
+grayVerts : Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
+grayVerts =
+    cubeVerts
+        (Colors
+            Color.grey50
+            Color.grey50
+            Color.grey50
+            Color.grey50
+            Color.grey50
+            Color.grey50
+        )
+
+
 withColor : Color -> Float -> Float -> Float -> Mesh Vertex
 withColor color =
     cube (Colors color color color color color color)
@@ -93,6 +108,14 @@ cube colors w h l =
         , vec3 w h l |> Vec3.scale 0.5
         )
         |> WebGL.triangles
+
+
+cubeVerts : Colors -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
+cubeVerts colors w h l =
+    withBoundsAndColors colors
+        ( vec3 -w -h -l |> Vec3.scale 0.5
+        , vec3 w h l |> Vec3.scale 0.5
+        )
 
 
 cornersWithBounds : ( Vec3, Vec3 ) -> Corners

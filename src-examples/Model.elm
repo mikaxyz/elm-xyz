@@ -1,7 +1,6 @@
 module Model exposing
     ( DragTarget(..)
     , Hud(..)
-    , HudLightObject(..)
     , HudMsg(..)
     , HudObject(..)
     , HudValue(..)
@@ -39,8 +38,6 @@ import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph)
-import XYZMika.XYZ.Scene.Object exposing (Object)
 
 
 type Msg
@@ -111,7 +108,7 @@ type alias Model =
     , assets : AssetStore.Store Asset.Obj Asset.Texture
     , hud : Hud
     , keyboard : Keyboard.State
-    , selectedGraph : Maybe (Graph (Object Material.Name))
+    , selectedTreeIndex : Maybe Int
     }
 
 
@@ -128,13 +125,7 @@ type HudValue
 
 type HudObject
     = Camera
-    | LightHudObject HudLightObject
     | SelectedGraph
-
-
-type HudLightObject
-    = PointLight1
-    | PointLight2
 
 
 getDrag model =
@@ -158,7 +149,7 @@ init =
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
     , viewPortElement = Nothing
-    , selectedGraph = Nothing
+    , selectedTreeIndex = Nothing
     }
         |> loadScene
         |> (\( model, cmd ) ->

@@ -3,6 +3,7 @@ module Scenes.Landscape exposing (init, sceneOptions)
 import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Tree exposing (Tree)
 import WebGL exposing (Mesh, Shader)
 import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
@@ -10,7 +11,6 @@ import XYZMika.XYZ.Generator.Perlin as Perlin
 import XYZMika.XYZ.Mesh.Landscape
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
-import XYZMika.XYZ.Scene.Graph exposing (Graph(..))
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -57,11 +57,11 @@ init =
                 , elevation = elevation
                 }
 
-        normalBone : Vertex -> Graph (Object Material.Name)
+        normalBone : Vertex -> Tree (Object Material.Name)
         normalBone v =
             WebGL.lines [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
                 |> Object.init
-                |> (\obj -> Graph obj [])
+                |> Tree.singleton
 
         normalGuides =
             landscape
@@ -75,13 +75,13 @@ init =
                     )
                 |> List.map normalBone
 
-        bone : Vec3 -> Graph (Object Material.Name)
+        bone : Vec3 -> Tree (Object Material.Name)
         bone v =
             XYZMika.XYZ.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
                 |> WebGL.triangles
                 |> Object.init
                 |> Object.withPosition (Vec3.setY -1 v)
-                |> (\obj -> Graph obj [])
+                |> Tree.singleton
 
         elevationBones density =
             landscape
@@ -107,7 +107,7 @@ init =
             |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY
-            |> (\obj -> Graph obj helpers)
+            |> (\obj -> Tree.tree obj helpers)
         )
         |> Scene.withCameraPosition (vec3 0 4 7)
 

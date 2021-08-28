@@ -4,22 +4,17 @@ import Browser.Dom
 import Keyboard
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
+import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
 import Task
+import Tree exposing (Tree)
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
-import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph(..))
-import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 import XYZMika.XYZ.Scene.Util as Util
-
-
-pointLightDistance =
-    5
 
 
 onResize ( model, cmd ) =
@@ -64,39 +59,10 @@ applyHudValue hudObject hudValue value model =
                             )
             }
 
-        LightHudObject lightHudObject ->
-            let
-                updateLight light =
-                    case hudValue of
-                        HudValue_Vec3_X ->
-                            Light.withPositionMap (Vec3.setX value) light
-
-                        HudValue_Vec3_Y ->
-                            Light.withPositionMap (Vec3.setY value) light
-
-                        HudValue_Vec3_Z ->
-                            Light.withPositionMap (Vec3.setZ value) light
-
-                        HudValue_Vec3_Roll ->
-                            light
-            in
-            { model
-                | scene =
-                    model.scene
-                        |> Maybe.map
-                            (\scene ->
-                                case lightHudObject of
-                                    PointLight1 ->
-                                        scene |> Scene.withPointLight1Map updateLight
-
-                                    PointLight2 ->
-                                        scene |> Scene.withPointLight2Map updateLight
-                            )
-            }
-
         SelectedGraph ->
             let
-                updateGraph (Graph object children) =
+                updateObject : Object.Object materialId -> Object.Object materialId
+                updateObject object =
                     let
                         position =
                             case hudValue of
@@ -116,26 +82,26 @@ applyHudValue hudObject hudValue value model =
                                         |> Vec3.setZ value
 
                                 HudValue_Vec3_Roll ->
-                                    object |> Object.position
+                                    object
+                                        |> Object.position
                     in
-                    Graph (object |> Object.withPosition position) children
+                    Object.withPosition position object
             in
             { model
                 | scene =
                     model.scene
                         |> Maybe.map
                             (Scene.map
-                                (Graph.traverse
-                                    (\(Graph object children) ->
-                                        if model.selectedGraph == Just (Graph object children) then
-                                            updateGraph (Graph object children)
+                                (Tree.indexedMap
+                                    (\index object ->
+                                        if model.selectedTreeIndex == Just index then
+                                            updateObject object
 
                                         else
-                                            Graph object children
+                                            object
                                     )
                                 )
                             )
-                , selectedGraph = model.selectedGraph |> Maybe.map updateGraph
             }
 
 
@@ -222,32 +188,37 @@ update msg model =
                 ( model, Cmd.none )
 
         DragEnd pos ->
+            let
+                selectedTreeIndexAtClickPosition : Scene.Scene materialId -> Browser.Dom.Element -> Maybe Int
+                selectedTreeIndexAtClickPosition scene viewPortElement =
+                    Util.selectGraphAtClickPosition
+                        { theta = model.theta
+                        , drag = model.drag
+                        , viewport = Model.viewport
+                        , viewPortElement = viewPortElement
+                        , sceneOptions = Model.sceneOptions model
+                        }
+                        scene
+                        ( Vec2.getX pos, Vec2.getY pos )
+                        |> Maybe.map Tuple.first
+            in
             ( { model
                 | dragger = Nothing
                 , dragTarget = Model.Default
-                , selectedGraph =
-                    case Maybe.map2 Tuple.pair model.scene model.viewPortElement of
-                        Just ( scene, viewPortElement ) ->
-                            if model.dragTarget == Model.Default then
-                                Util.selectGraphAtClickPosition
-                                    { theta = model.theta
-                                    , drag = model.drag
-                                    , viewport = Model.viewport
-                                    , viewPortElement = viewPortElement
-                                    , sceneOptions = Model.sceneOptions model
-                                    }
-                                    scene
-                                    ( Vec2.getX pos, Vec2.getY pos )
-
-                            else
-                                model.selectedGraph
-
-                        Nothing ->
-                            Nothing
                 , drag =
                     model.dragger
                         |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
                         |> Maybe.withDefault model.drag
+                , selectedTreeIndex =
+                    if model.dragTarget == Model.Default then
+                        Maybe.map2 Tuple.pair model.scene model.viewPortElement
+                            |> Maybe.andThen
+                                (\( scene, viewPortElement ) ->
+                                    selectedTreeIndexAtClickPosition scene viewPortElement
+                                )
+
+                    else
+                        model.selectedTreeIndex
               }
             , Cmd.none
             )
@@ -259,60 +230,60 @@ update msg model =
 
         OnKeyDown key ->
             case key of
-                Keyboard.Alpha 'X' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.down
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).down
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'W' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.up
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).up
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'D' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.right
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).right
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'A' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.left
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).left
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'E' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.backward
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).forward
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'Z' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).backward
-                            )
-                    , Cmd.none
-                    )
-
+                -- TODO: Make these create common Lighting rigs instead...
+                --Keyboard.Alpha 'X' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.down
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).down
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'W' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.up
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).up
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'D' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.right
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).right
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'A' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.left
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).left
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'E' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.backward
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).forward
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'Z' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).backward
+                --            )
+                --    , Cmd.none
+                --    )
                 Keyboard.Alpha 'S' ->
                     ( model |> Model.mapRendererOptions (always XYZMika.XYZ.Material.defaultOptions)
                     , Cmd.none
