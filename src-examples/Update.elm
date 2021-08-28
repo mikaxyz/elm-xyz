@@ -8,6 +8,7 @@ import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, 
 import Scenes.ObjectLoader
 import Task
 import Tree exposing (Tree)
+import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
@@ -118,7 +119,7 @@ update msg model =
         OnViewportElement (Err error) ->
             let
                 _ =
-                    Debug.log "error" error
+                    Dbug.log "error" error
             in
             ( model, Cmd.none )
 
