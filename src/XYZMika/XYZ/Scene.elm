@@ -6,19 +6,14 @@ module XYZMika.XYZ.Scene exposing
     , camera
     , defaultOptions
     , defaultRenderOptions
-    , direction
     , getGraph
     , graphWithMatrix
-    , inDirection
     , init
     , map
-    , pointLights
     , render
     , withCamera
     , withCameraMap
     , withCameraPosition
-    , withPointLight1Map
-    , withPointLight2Map
     , withRendererOptionsMap
     )
 
@@ -39,25 +34,9 @@ import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
-import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
+import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
-
-
-direction : { right : Vec3, left : Vec3, up : Vec3, down : Vec3, forward : Vec3, backward : Vec3 }
-direction =
-    inDirection 10
-
-
-inDirection : Float -> { right : Vec3, left : Vec3, up : Vec3, down : Vec3, forward : Vec3, backward : Vec3 }
-inDirection d =
-    { right = vec3 d 0 0
-    , left = vec3 -d 0 0
-    , up = vec3 0 d 0
-    , down = vec3 0 -d 0
-    , forward = vec3 0 0 -d
-    , backward = vec3 0 0 d
-    }
 
 
 type Scene materialId
@@ -89,43 +68,6 @@ camera (Scene scene) =
     scene.camera
 
 
-pointLights : Scene materialId -> List PointLight
-pointLights (Scene scene) =
-    [ scene.rendererOptions.lights.point1
-    , scene.rendererOptions.lights.point2
-    ]
-
-
-withPointLight1Map : (PointLight -> PointLight) -> Scene materialId -> Scene materialId
-withPointLight1Map f (Scene scene) =
-    let
-        rendererOptions =
-            scene.rendererOptions
-
-        lights =
-            rendererOptions.lights
-
-        pointLight =
-            lights.point1
-    in
-    Scene { scene | rendererOptions = { rendererOptions | lights = { lights | point1 = f pointLight } } }
-
-
-withPointLight2Map : (PointLight -> PointLight) -> Scene materialId -> Scene materialId
-withPointLight2Map f (Scene scene) =
-    let
-        rendererOptions =
-            scene.rendererOptions
-
-        lights =
-            rendererOptions.lights
-
-        pointLight =
-            lights.point2
-    in
-    Scene { scene | rendererOptions = { rendererOptions | lights = { lights | point2 = f pointLight } } }
-
-
 withRendererOptionsMap : (Renderer.Options -> Renderer.Options) -> Scene materialId -> Scene materialId
 withRendererOptionsMap f (Scene scene) =
     Scene { scene | rendererOptions = f scene.rendererOptions }
@@ -149,12 +91,6 @@ withCameraMap f (Scene scene) =
 map : (Tree (Object materialId) -> Tree (Object materialId)) -> Scene materialId -> Scene materialId
 map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
-
-
-
---map : (Graph materialId -> Graph materialId) -> Scene materialId -> Scene materialId
---map f (Scene scene) =
---    Scene { scene | graph = scene.graph |> List.map f }
 
 
 graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object materialId) -> Tree ( Mat4, Object materialId )
@@ -239,47 +175,34 @@ render defaultTexture renderOptions viewport drag theta options graphRenderOptio
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
 
-        lightsInGraph : List ( Mat4, PointLight )
+        lightsInGraph : List ( Mat4, Light )
         lightsInGraph =
             graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph
                 |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object)
                 |> Tree.foldl
                     (\{ index, sceneMatrix, object } acc ->
-                        Object.toPointLight object
+                        Object.maybeLight object
                             |> Maybe.map (\light -> ( sceneMatrix, light ) :: acc)
                             |> Maybe.withDefault acc
                     )
                     []
 
-        addPointLight : Int -> PointLight -> Renderer.Options -> Renderer.Options
-        addPointLight index light ({ lights } as rendererOptions_) =
-            case index of
-                1 ->
-                    { rendererOptions_ | lights = { lights | point1 = light } }
-
-                2 ->
-                    { rendererOptions_ | lights = { lights | point2 = light } }
-
-                _ ->
-                    rendererOptions_
-
-        createRendererOptions : Renderer.Options -> ( Int, Renderer.Options )
-        createRendererOptions rendererOptions_ =
+        ( numberOfLights, rendererOptionsWithLights ) =
             lightsInGraph
                 |> List.foldl
                     (\( transform, light ) ( index, acc ) ->
                         ( index + 1
-                        , acc
-                            |> addPointLight (index + 1)
-                                (light
-                                    |> Light.withPosition (vec3 0 0 0 |> Mat4.transform transform)
-                                )
+                        , acc |> Renderer.addLight (Light.withPosition (vec3 0 0 0 |> Mat4.transform transform) light)
                         )
                     )
-                    ( 0, rendererOptions_ )
+                    ( 0, (\x -> { x | lights = [] }) scene.rendererOptions )
 
-        ( numberOfLights, rendererOptions ) =
-            createRendererOptions scene.rendererOptions
+        rendererOptions =
+            if numberOfLights > 0 then
+                rendererOptionsWithLights
+
+            else
+                scene.rendererOptions
     in
     renderGraph
         drag
@@ -293,10 +216,11 @@ render defaultTexture renderOptions viewport drag theta options graphRenderOptio
         , sceneRotationMatrix = Mat4.identity
         }
         defaultTexture
-        (PointLightNode (Light.position rendererOptions.lights.point1)
-            :: PointLightNode (Light.position rendererOptions.lights.point2)
-            :: GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
-            :: []
+        (GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
+            :: (rendererOptions.lights
+                    |> List.filterMap Light.position
+                    |> List.map PointLightNode
+               )
             |> withGridPlane renderOptions.showGridX AxisX
             |> withGridPlane renderOptions.showGridY AxisY
             |> withGridPlane renderOptions.showGridZ AxisZ
@@ -498,8 +422,13 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                 graphRenderOptions
                                     |> Maybe.map .showBoundingBox
                                     |> Maybe.withDefault renderOptions.showBoundingBoxes
+
+                            showGeometry =
+                                Object.maybeLight object
+                                    |> Maybe.map (always False)
+                                    |> Maybe.withDefault renderOptions.showGeometry
                         in
-                        case ( renderOptions.showGeometry, showBoundingBox ) of
+                        case ( showGeometry, showBoundingBox ) of
                             ( True, True ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
@@ -538,6 +467,14 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                         renderer
 
                             _ ->
-                                []
+                                renderGraph drag
+                                    theta
+                                    rendererOptions
+                                    renderOptions
+                                    graphRenderOptionsFn
+                                    { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
+                                    defaultTexture
+                                    (List.map GraphNode children)
+                                    renderer
             )
         |> List.concat

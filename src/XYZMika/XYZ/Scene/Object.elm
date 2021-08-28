@@ -6,7 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
-    , light, toPointLight
+    , light, maybeLight, pointLight, toHumanReadable
     )
 
 {-|
@@ -53,7 +53,7 @@ import WebGL.Settings
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube as Cube
-import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
+import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 
 
 type Object materialId
@@ -61,8 +61,14 @@ type Object materialId
     | Light (ObjectData materialId) Light
 
 
-type Light
-    = PointLight PointLight
+toHumanReadable : Object materialId -> String
+toHumanReadable object =
+    case object of
+        Mesh _ ->
+            "Mesh"
+
+        Light _ light_ ->
+            Light.toHumanReadable light_
 
 
 type alias ObjectData materialId =
@@ -84,7 +90,16 @@ type alias ObjectData materialId =
 -- Create
 
 
-light : Vec3 -> PointLight -> Object materialId
+pointLight : Float -> Vec3 -> Vec3 -> Object materialId
+pointLight intensity position_ color_ =
+    light position_
+        (Light.pointLight (Vec3.vec3 0 0 0)
+            |> Light.withIntensity intensity
+            |> Light.withColor color_
+        )
+
+
+light : Vec3 -> Light -> Object materialId
 light v light_ =
     let
         size =
@@ -106,16 +121,16 @@ light v light_ =
         , color = Color.white
         , glSetting = Nothing
         }
-        (PointLight light_)
+        light_
 
 
-toPointLight : Object materialId -> Maybe PointLight
-toPointLight object =
+maybeLight : Object materialId -> Maybe Light
+maybeLight object =
     case object of
         Mesh _ ->
             Nothing
 
-        Light _ (PointLight light_) ->
+        Light _ light_ ->
             Just light_
 
 

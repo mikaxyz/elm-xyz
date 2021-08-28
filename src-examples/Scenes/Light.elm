@@ -23,7 +23,8 @@ init =
             --|> Object.withPosition (vec3 0 -0.5 0)
             |> Object.withOptionDragToRotateY
         )
-        [ Tree.tree
+        [ Object.pointLight 1.0 (vec3 0 3 -3) (vec3 1 1 1) |> Tree.singleton
+        , Tree.tree
             (XYZMika.XYZ.Mesh.Cube.withBoundsAndColor Color.lightPurple ( vec3 -0.5 -0.5 -0.5, vec3 0.5 0.5 0.5 )
                 |> Object.initWithTriangles
                 |> Object.withMaterialName Material.Advanced

@@ -4,7 +4,7 @@ import Browser.Dom
 import Keyboard
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Model exposing (Hud(..), HudLightObject(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
+import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Scenes.ObjectLoader
 import Task
 import Tree exposing (Tree)
@@ -13,13 +13,8 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
-import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 import XYZMika.XYZ.Scene.Util as Util
-
-
-pointLightDistance =
-    5
 
 
 onResize ( model, cmd ) =
@@ -61,36 +56,6 @@ applyHudValue hudObject hudValue value model =
                                         HudValue_Vec3_Roll ->
                                             Camera.withOrbitY (value - Camera.roll camera) camera
                                 )
-                            )
-            }
-
-        LightHudObject lightHudObject ->
-            let
-                updateLight light =
-                    case hudValue of
-                        HudValue_Vec3_X ->
-                            Light.withPositionMap (Vec3.setX value) light
-
-                        HudValue_Vec3_Y ->
-                            Light.withPositionMap (Vec3.setY value) light
-
-                        HudValue_Vec3_Z ->
-                            Light.withPositionMap (Vec3.setZ value) light
-
-                        HudValue_Vec3_Roll ->
-                            light
-            in
-            { model
-                | scene =
-                    model.scene
-                        |> Maybe.map
-                            (\scene ->
-                                case lightHudObject of
-                                    PointLight1 ->
-                                        scene |> Scene.withPointLight1Map updateLight
-
-                                    PointLight2 ->
-                                        scene |> Scene.withPointLight2Map updateLight
                             )
             }
 
@@ -265,60 +230,60 @@ update msg model =
 
         OnKeyDown key ->
             case key of
-                Keyboard.Alpha 'X' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.down
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).down
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'W' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.up
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).up
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'D' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.right
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).right
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'A' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.left
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).left
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'E' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.backward
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).forward
-                            )
-                    , Cmd.none
-                    )
-
-                Keyboard.Alpha 'Z' ->
-                    ( model
-                        |> Model.mapRendererOptions
-                            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
-                                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).backward
-                            )
-                    , Cmd.none
-                    )
-
+                -- TODO: Make these create common Lighting rigs instead...
+                --Keyboard.Alpha 'X' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.down
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).down
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'W' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.up
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).up
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'D' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.right
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).right
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'A' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.left
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).left
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'E' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.backward
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).forward
+                --            )
+                --    , Cmd.none
+                --    )
+                --
+                --Keyboard.Alpha 'Z' ->
+                --    ( model
+                --        |> Model.mapRendererOptions
+                --            (XYZMika.XYZ.Material.setDirectionalLight Scene.direction.forward
+                --                >> XYZMika.XYZ.Material.setPointLight (Scene.inDirection pointLightDistance).backward
+                --            )
+                --    , Cmd.none
+                --    )
                 Keyboard.Alpha 'S' ->
                     ( model |> Model.mapRendererOptions (always XYZMika.XYZ.Material.defaultOptions)
                     , Cmd.none

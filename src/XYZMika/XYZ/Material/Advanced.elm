@@ -2,13 +2,14 @@ module XYZMika.XYZ.Material.Advanced exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
-import Math.Vector3 exposing (Vec3)
-import Math.Vector4 exposing (Vec4)
+import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material)
-import XYZMika.XYZ.Scene.Light as Light
+import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
+import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms as Scene
 
@@ -23,7 +24,7 @@ type alias Uniforms =
     , sceneMatrix : Mat4
     , sceneRotationMatrix : Mat4
     , objectColor : Vec3
-    , directionalLight : Vec3
+    , directionalLight : Vec4
     , diffuseMap : Texture
     , hasDiffuseMap : Bool
     , normalMap : Texture
@@ -34,6 +35,12 @@ type alias Uniforms =
     , pointLight1Color : Vec3
     , pointLight2 : Vec4
     , pointLight2Color : Vec3
+    , pointLight3 : Vec4
+    , pointLight3Color : Vec3
+    , pointLight4 : Vec4
+    , pointLight4Color : Vec3
+    , pointLight5 : Vec4
+    , pointLight5Color : Vec3
     }
 
 
@@ -53,6 +60,29 @@ type alias Varyings =
 
 renderer : Material.Options -> Texture -> Scene.Uniforms u -> Object materialId -> Entity
 renderer options defaultTexture uniforms object =
+    let
+        pointLight : Int -> { light : Vec4, color : Vec3 }
+        pointLight i =
+            options
+                |> Material.pointLightByIndex (i - 1)
+                |> Maybe.map
+                    (\light ->
+                        { light = PointLight.toVec4 light
+                        , color = PointLight.color light
+                        }
+                    )
+                |> Maybe.withDefault
+                    { light = vec4 0 0 0 0
+                    , color = vec3 0 0 0
+                    }
+
+        directionalLight =
+            options
+                |> Material.directionalLights
+                |> List.head
+                |> Maybe.map DirectionalLight.toVec4
+                |> Maybe.withDefault (vec4 0 0 0 0)
+    in
     material
         { sceneCamera = uniforms.sceneCamera
         , scenePerspective = uniforms.scenePerspective
@@ -61,17 +91,23 @@ renderer options defaultTexture uniforms object =
 
         --
         , objectColor = Object.colorVec3 object
-        , directionalLight = options.lights.directional
+        , directionalLight = directionalLight |> Debug.log "DIDIDID"
         , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
         , hasDiffuseMap = Object.diffuseMap object /= Nothing
         , hasNormalMap = Object.normalMap object /= Nothing
         , normalMap = object |> Object.normalMapWithDefault defaultTexture
 
         --
-        , pointLight1 = Light.toVec4 options.lights.point1
-        , pointLight1Color = Light.color options.lights.point1
-        , pointLight2 = Light.toVec4 options.lights.point2
-        , pointLight2Color = Light.color options.lights.point2
+        , pointLight1 = pointLight 1 |> .light
+        , pointLight1Color = pointLight 1 |> .color
+        , pointLight2 = pointLight 2 |> .light
+        , pointLight2Color = pointLight 2 |> .color
+        , pointLight3 = pointLight 3 |> .light
+        , pointLight3Color = pointLight 3 |> .color
+        , pointLight4 = pointLight 4 |> .light
+        , pointLight4Color = pointLight 4 |> .color
+        , pointLight5 = pointLight 5 |> .light
+        , pointLight5Color = pointLight 5 |> .color
         }
         |> Material.toEntity object
 
@@ -135,7 +171,7 @@ fragmentShader =
         uniform mat4 sceneMatrix;
         uniform mat4 sceneRotationMatrix;
 
-        uniform vec3 directionalLight;
+        uniform vec4 directionalLight;
         uniform sampler2D diffuseMap;
         uniform bool hasDiffuseMap;
         uniform sampler2D normalMap;
@@ -143,9 +179,14 @@ fragmentShader =
 
         uniform vec4 pointLight1;
         uniform vec3 pointLight1Color;
-
         uniform vec4 pointLight2;
         uniform vec3 pointLight2Color;
+        uniform vec4 pointLight3;
+        uniform vec3 pointLight3Color;
+        uniform vec4 pointLight4;
+        uniform vec3 pointLight4Color;
+        uniform vec4 pointLight5;
+        uniform vec3 pointLight5Color;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -198,9 +239,9 @@ fragmentShader =
 
         vec3 f_directionalLight (vec3 normal) {
             highp vec3 color = vec3(1.0, 1.0, 1.0);
-            highp vec3 directionalVector = normalize(directionalLight);
+            highp vec3 directionalVector = normalize(directionalLight.xyz);
             highp float intensity = max(dot(normal, directionalVector), 0.0);
-            return color * intensity;
+            return color * intensity * directionalLight.w;
         }
 
         void main () {
@@ -234,6 +275,20 @@ fragmentShader =
             }
             if (pointLight2.w > 0.0) {
                lighting += pointLight2.w * f_pointLight(normal, pointLight2.xyz) * pointLight2Color;
+            }
+            if (pointLight3.w > 0.0) {
+               lighting += pointLight3.w * f_pointLight(normal, pointLight3.xyz) * pointLight3Color;
+            }
+            if (pointLight4.w > 0.0) {
+               lighting += pointLight4.w * f_pointLight(normal, pointLight4.xyz) * pointLight4Color;
+            }
+            if (pointLight5.w > 0.0) {
+               lighting += pointLight5.w * f_pointLight(normal, pointLight5.xyz) * pointLight5Color;
+            }
+
+
+            if (directionalLight.w > 0.0) {
+                lighting += f_directionalLight(normal);
             }
 //            lighting += 0.8 * f_pointLight_PassThrough(normal);
 

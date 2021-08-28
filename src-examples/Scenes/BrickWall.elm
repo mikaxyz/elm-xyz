@@ -33,7 +33,10 @@ init assets =
         |> (\x ->
                 Tree.tree
                     (positionHandle 0.01 (vec3 0 0 0))
-                    [ Object.light (Vec3.vec3 2 2 -3) (Light.pointLight (Vec3.vec3 0 0 0)) |> Tree.singleton
+                    [ pointLight 0.2 (Vec3.vec3 2 2 0) (vec3 0.1 0.3 1)
+                    , pointLight 0.2 (Vec3.vec3 2 2 1) (vec3 0.8 0.8 0.3)
+                    , pointLight 0.2 (Vec3.vec3 2 2 2) (vec3 0.8 0.1 0)
+                    , pointLight 0.2 (Vec3.vec3 2 2 3) (vec3 0.5 0.1 1)
                     , Tree.tree
                         (positionHandle 0.01 (vec3 0 2 0)
                             |> Object.withOptionDragToRotateXY
@@ -43,6 +46,16 @@ init assets =
            )
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCamera { position = vec3 0 3 8, target = vec3 0 1 0 }
+
+
+pointLight : Float -> Vec3 -> Vec3 -> Tree (Object materialId)
+pointLight intensity position color =
+    Object.light position
+        (Light.pointLight (Vec3.vec3 0 0 0)
+            |> Light.withIntensity intensity
+            |> Light.withColor color
+        )
+        |> Tree.singleton
 
 
 positionHandle : Float -> Vec3 -> Object materialId
@@ -194,7 +207,7 @@ render assets =
     , assets.cube
         |> objectToGraphWithNormalGizmo (Vec3.vec3 0 d2 0)
             Material.Advanced
-            [ Object.light (Vec3.vec3 0 1 0) (Light.pointLight (Vec3.vec3 0 0 0)) |> Tree.singleton ]
+            [ pointLight 0.4 (Vec3.vec3 0 1 0) (Vec3.vec3 1 1 1) ]
     , assets.cube
         |> objectToGraphWithNormalGizmo (Vec3.vec3 d1 0 0) Material.Advanced []
     , assets.cube
