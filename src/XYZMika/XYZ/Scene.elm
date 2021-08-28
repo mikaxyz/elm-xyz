@@ -449,7 +449,10 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                     |> graphRenderOptionsFn
 
                             sceneRotationMatrix =
-                                Object.rotation object
+                                object
+                                    |> Object.rotationWithDrag drag
+                                    |> Object.rotationInTime theta
+                                    |> Object.rotation
                                     |> Mat4.mul uniforms.sceneRotationMatrix
 
                             entity : Uniforms u -> Entity
