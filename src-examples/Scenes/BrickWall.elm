@@ -5,7 +5,6 @@ import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
-import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
@@ -90,12 +89,11 @@ render assets =
                 scale =
                     0.2
             in
-            WebGL.lines
-                [ ( v1, { v1 | position = Vec3.add v1.position (Vec3.scale scale v1.normal) } )
-                , ( v2, { v2 | position = Vec3.add v2.position (Vec3.scale scale v2.tangent) } )
-                , ( v3, { v3 | position = Vec3.add v3.position (Vec3.scale scale biTangent) } )
-                ]
-                |> Object.init
+            [ ( v1, { v1 | position = Vec3.add v1.position (Vec3.scale scale v1.normal) } )
+            , ( v2, { v2 | position = Vec3.add v2.position (Vec3.scale scale v2.tangent) } )
+            , ( v3, { v3 | position = Vec3.add v3.position (Vec3.scale scale biTangent) } )
+            ]
+                |> Object.initWithLines
 
         normalGuides : List ( Int, Vertex ) -> List (Tree (Object Material.Name))
         normalGuides vs =
@@ -116,8 +114,8 @@ render assets =
 
         wireframeTri : ( Vertex, Vertex, Vertex ) -> Object materialId
         wireframeTri ( v1, v2, v3 ) =
-            WebGL.lines [ ( v1, v2 ), ( v2, v3 ), ( v3, v1 ) ]
-                |> Object.init
+            [ ( v1, v2 ), ( v2, v3 ), ( v3, v1 ) ]
+                |> Object.initWithLines
 
         wireframe : List ( Vertex, Vertex, Vertex ) -> List (Object Material.Name)
         wireframe triangles =
@@ -127,7 +125,7 @@ render assets =
         gizmo : Vertex -> Object materialId
         gizmo v =
             Gizmo.axis
-                |> Object.init
+                |> Object.initWithTriangles
                 |> Object.withPosition v.position
 
         normalGizmos : List Vertex -> List (Tree (Object Material.Name))
@@ -186,8 +184,8 @@ render assets =
                  --|> objectToGraph
                 )
                 children
+                |> addNormalGuides mesh
 
-        --|> addNormalGuides mesh
         --|> Graph.fmap ((++) (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
         --|> Graph.map ((++) (normalGizmos <| Tuple.first mesh))
         --|> Graph.mapChildren ((++) (normalGizmos <| Tuple.first mesh))

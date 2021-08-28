@@ -24,7 +24,7 @@ init =
         )
         [ Tree.tree
             (XYZMika.XYZ.Mesh.Cube.colorful 0.01 0.01 0.01
-                |> Object.init
+                |> Object.initWithTriangles
                 |> Object.withPosition (vec3 0 0.1 0)
             )
             (tree 8 0)

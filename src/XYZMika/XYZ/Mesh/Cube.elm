@@ -1,21 +1,14 @@
 module XYZMika.XYZ.Mesh.Cube exposing
     ( colorful
-    , cubeVerts
+    , cube
     , gray
-    , grayVerts
     , pairsColorfulWithBounds
-    , pairsWithBounds
-    , pairsWithBoundsAndColor
-    , pairsWithBoundsAndColors
     , withBounds
     , withBoundsAndColor
-    , withBoundsAndColors
     , withBoundsColorful
-    , withColor
     )
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import WebGL exposing (..)
 import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Primitives exposing (quadWithNormal)
@@ -65,12 +58,12 @@ type alias Corners =
     }
 
 
-colorful : Float -> Float -> Float -> Mesh Vertex
+colorful : Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
 colorful =
     cube colorsColorful
 
 
-gray : Float -> Float -> Float -> Mesh Vertex
+gray : Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
 gray =
     cube
         (Colors
@@ -83,35 +76,8 @@ gray =
         )
 
 
-grayVerts : Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
-grayVerts =
-    cubeVerts
-        (Colors
-            Color.grey50
-            Color.grey50
-            Color.grey50
-            Color.grey50
-            Color.grey50
-            Color.grey50
-        )
-
-
-withColor : Color -> Float -> Float -> Float -> Mesh Vertex
-withColor color =
-    cube (Colors color color color color color color)
-
-
-cube : Colors -> Float -> Float -> Float -> Mesh Vertex
+cube : Colors -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
 cube colors w h l =
-    withBoundsAndColors colors
-        ( vec3 -w -h -l |> Vec3.scale 0.5
-        , vec3 w h l |> Vec3.scale 0.5
-        )
-        |> WebGL.triangles
-
-
-cubeVerts : Colors -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
-cubeVerts colors w h l =
     withBoundsAndColors colors
         ( vec3 -w -h -l |> Vec3.scale 0.5
         , vec3 w h l |> Vec3.scale 0.5
@@ -146,20 +112,9 @@ cornersWithBounds ( v1, v2 ) =
     }
 
 
-pairsWithBounds : ( Vec3, Vec3 ) -> List ( Vertex, Vertex )
-pairsWithBounds =
-    pairsWithBoundsAndColors colorsWhite
-
-
 pairsColorfulWithBounds : ( Vec3, Vec3 ) -> List ( Vertex, Vertex )
 pairsColorfulWithBounds =
     pairsWithBoundsAndColors colorsColorful
-
-
-pairsWithBoundsAndColor : Color -> ( Vec3, Vec3 ) -> List ( Vertex, Vertex )
-pairsWithBoundsAndColor color =
-    pairsWithBoundsAndColors
-        (Colors color color color color color color)
 
 
 pairsWithBoundsAndColors : Colors -> ( Vec3, Vec3 ) -> List ( Vertex, Vertex )

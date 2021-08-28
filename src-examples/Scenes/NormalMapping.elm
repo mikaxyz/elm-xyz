@@ -3,10 +3,8 @@ module Scenes.NormalMapping exposing (init, sceneOptions)
 import Asset
 import Color
 import Material
-import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
-import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
@@ -27,7 +25,7 @@ init assets =
         |> getAssets
         |> Maybe.map render
         |> Maybe.withDefault []
-        |> (\x -> Tree.tree (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.init) x)
+        |> Tree.tree (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.initWithTriangles)
         |> Scene.init { gizmoMaterial = Material.Simple }
         |> Scene.withCameraPosition (vec3 0 0 4.5)
 
@@ -42,14 +40,9 @@ render cube =
 
         normalBone : Vertex -> Tree (Object Material.Name)
         normalBone v =
-            WebGL.lines
-                [ ( v, { v | position = Vec3.add v.position v.normal } )
-
-                --, ( v, { v | position = Vec3.add v.position v.tangent } )
-                --, ( v, { v | position = Vec3.add v.position v.biTangent } )
-                ]
-                |> Object.init
-                --|> Object.withPosition v.position
+            [ ( v, { v | position = Vec3.add v.position v.normal } )
+            ]
+                |> Object.initWithLines
                 |> (\obj -> Tree.tree obj [ Tree.singleton (positionHandle 0.02 v.position) ])
 
         normalGuides : List (Tree (Object Material.Name))
@@ -66,8 +59,8 @@ render cube =
                 |> List.map normalBone
 
         wireframeTri ( v1, v2, v3 ) =
-            WebGL.lines [ ( v1, v2 ), ( v2, v3 ), ( v3, v1 ) ]
-                |> Object.init
+            [ ( v1, v2 ), ( v2, v3 ), ( v3, v1 ) ]
+                |> Object.initWithLines
 
         wireframe : List ( Vertex, Vertex, Vertex ) -> List (Object Material.Name)
         wireframe triangles =

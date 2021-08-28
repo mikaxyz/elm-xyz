@@ -1,12 +1,11 @@
 module XYZMika.XYZ.Scene.Object exposing
-    ( Object, init, initWithTriangles, initWithIndexedTriangles
+    ( Object, initWithTriangles, initWithLines, initWithIndexedTriangles, light, pointLight
     , withPosition, withRotation, withColor, withMaterialName, withGlSetting
     , withDiffuseMap, withNormalMap
     , mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
-    , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
-    , rotationInTime, rotationWithDrag
-    , light, maybeLight, pointLight, toEmpty, toHumanReadable
+    , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toEmpty, toHumanReadable
+    , rotationInTime, rotationWithDrag, maybeLight
     )
 
 {-|
@@ -14,7 +13,7 @@ module XYZMika.XYZ.Scene.Object exposing
 
 # Create
 
-@docs Object, init, initWithTriangles, initWithIndexedTriangles
+@docs Object, initWithTriangles, initWithLines, initWithIndexedTriangles, light, pointLight
 
 
 ## Modify
@@ -34,12 +33,12 @@ module XYZMika.XYZ.Scene.Object exposing
 
 ## Modify
 
-@docs withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
+@docs withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toEmpty, toHumanReadable
 
 
 ## Read
 
-@docs rotationInTime, rotationWithDrag
+@docs rotationInTime, rotationWithDrag, maybeLight
 
 -}
 
@@ -131,7 +130,7 @@ light v light_ =
             0.2
 
         verts =
-            Cube.grayVerts size size size
+            Cube.gray size size size
     in
     Light
         { position = v
@@ -162,11 +161,6 @@ maybeLight object =
             Just light_
 
 
-init : Mesh Vertex -> Object materialId
-init x =
-    initWithBounds ( vec3 0 0 0, vec3 0 0 0 ) [] x
-
-
 initWithBounds : ( Vec3, Vec3 ) -> List ( Vec3, Vec3, Vec3 ) -> Mesh Vertex -> Object a
 initWithBounds bounds tris x =
     Mesh
@@ -175,6 +169,26 @@ initWithBounds bounds tris x =
         , mesh = x
         , triangles = tris
         , boundingBox = bounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , options = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        }
+
+
+initWithLines : List ( Vertex, Vertex ) -> Object materialId
+initWithLines x =
+    Mesh
+        { position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.lines x
+        , triangles = []
+        , boundingBox =
+            x
+                |> List.foldl (\( v1, v2 ) acc -> v1 :: v2 :: acc) []
+                |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
         , options = Nothing

@@ -3,7 +3,6 @@ module XYZMika.XYZ.Mesh.Tree exposing (tree)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3)
 import Tree exposing (Tree)
-import WebGL exposing (..)
 import XYZMika.Color as Color
 import XYZMika.XYZ.Data.Node exposing (Node(..))
 import XYZMika.XYZ.Mesh.Primitives exposing (bone2)

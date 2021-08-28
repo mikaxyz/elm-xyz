@@ -4,7 +4,6 @@ import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
-import WebGL exposing (Mesh, Shader)
 import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Generator.Perlin as Perlin
@@ -59,8 +58,8 @@ init =
 
         normalBone : Vertex -> Tree (Object Material.Name)
         normalBone v =
-            WebGL.lines [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
-                |> Object.init
+            [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
+                |> Object.initWithLines
                 |> Tree.singleton
 
         normalGuides =
@@ -78,8 +77,7 @@ init =
         bone : Vec3 -> Tree (Object Material.Name)
         bone v =
             XYZMika.XYZ.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
-                |> WebGL.triangles
-                |> Object.init
+                |> Object.initWithTriangles
                 |> Object.withPosition (Vec3.setY -1 v)
                 |> Tree.singleton
 
@@ -102,8 +100,7 @@ init =
     in
     Scene.init { gizmoMaterial = Material.Simple }
         (landscape
-            |> (\( v, vmap ) -> WebGL.indexedTriangles v vmap)
-            |> Object.init
+            |> Object.initWithIndexedTriangles
             |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY

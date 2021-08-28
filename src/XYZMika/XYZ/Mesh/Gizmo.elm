@@ -1,18 +1,17 @@
-module XYZMika.XYZ.Mesh.Gizmo exposing (..)
+module XYZMika.XYZ.Mesh.Gizmo exposing (axis)
 
 import Color
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import WebGL exposing (Mesh)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 
 
-axis : Mesh Vertex
+axis : List ( Vertex, Vertex, Vertex )
 axis =
     axisAtPosition (vec3 0 0 0)
 
 
-axisAtPosition : Vec3 -> Mesh Vertex
+axisAtPosition : Vec3 -> List ( Vertex, Vertex, Vertex )
 axisAtPosition t =
     let
         size =
@@ -42,4 +41,3 @@ axisAtPosition t =
     XYZMika.XYZ.Mesh.Cube.withBoundsAndColor Color.darkRed xBounds
         ++ XYZMika.XYZ.Mesh.Cube.withBoundsAndColor Color.darkGreen yBounds
         ++ XYZMika.XYZ.Mesh.Cube.withBoundsAndColor Color.darkBlue zBounds
-        |> WebGL.triangles
