@@ -51,19 +51,6 @@ selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOption
         hitDistance : Maybe ( Int, TriangleHitByRay )
         hitDistance =
             Tree.flatten graphWithHitInfo
-                --|> List.map
-                --    (\( hit, distance, object ) ->
-                --        let
-                --            _ =
-                --                case Object.asLight object of
-                --                    Just light ->
-                --                        Debug.log "LIGHT" light
-                --
-                --                    Nothing ->
-                --                        object
-                --        in
-                --        ( hit, distance, object )
-                --    )
                 |> List.filterMap (\( d, index, _ ) -> d |> Maybe.map (\d_ -> ( index, d_ )))
                 |> List.sortBy (\( _, TriangleHitByRay distance _ ) -> distance)
                 |> List.head
@@ -103,7 +90,6 @@ selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOption
     in
     hitDistance
         |> Maybe.andThen (getGraphByDistance graphWithHitInfo)
-        |> Debug.log "found"
 
 
 

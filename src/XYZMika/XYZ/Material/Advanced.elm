@@ -91,7 +91,7 @@ renderer options defaultTexture uniforms object =
 
         --
         , objectColor = Object.colorVec3 object
-        , directionalLight = directionalLight |> Debug.log "DIDIDID"
+        , directionalLight = directionalLight
         , diffuseMap = object |> Object.diffuseMapWithDefault defaultTexture
         , hasDiffuseMap = Object.diffuseMap object /= Nothing
         , hasNormalMap = Object.normalMap object /= Nothing

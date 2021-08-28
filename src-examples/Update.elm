@@ -25,7 +25,7 @@ onResize ( model, cmd ) =
 
 updateHud : HudMsg -> Hud -> ( Hud, Cmd Msg )
 updateHud msg (Hud hud) =
-    case msg |> Debug.log "MSG" of
+    case msg of
         Click ->
             ( Hud hud, Cmd.none )
 
