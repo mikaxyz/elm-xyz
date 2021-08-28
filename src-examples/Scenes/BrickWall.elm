@@ -9,9 +9,10 @@ import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
-import XYZMika.XYZ.Mesh.Cube
+import XYZMika.XYZ.Mesh.Cube as Cube
 import XYZMika.XYZ.Mesh.Gizmo as Gizmo
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -31,18 +32,22 @@ init assets =
         |> Maybe.withDefault []
         |> (\x ->
                 Tree.tree
-                    (positionHandle 0.01 (vec3 0 0 0)
-                        |> Object.withOptionDragToRotateXY
-                    )
-                    x
+                    (positionHandle 0.01 (vec3 0 0 0))
+                    [ Object.light (Vec3.vec3 2 2 -3) (Light.pointLight (Vec3.vec3 0 0 0)) |> Tree.singleton
+                    , Tree.tree
+                        (positionHandle 0.01 (vec3 0 2 0)
+                            |> Object.withOptionDragToRotateXY
+                        )
+                        x
+                    ]
            )
         |> Scene.init { gizmoMaterial = Material.Simple }
-        |> Scene.withCameraPosition (vec3 0 0 4)
+        |> Scene.withCamera { position = vec3 0 3 8, target = vec3 0 1 0 }
 
 
 positionHandle : Float -> Vec3 -> Object materialId
 positionHandle size v =
-    XYZMika.XYZ.Mesh.Cube.withBoundsColorful ( vec3 -size -size -size, vec3 size size size )
+    Cube.withBoundsColorful ( vec3 -size -size -size, vec3 size size size )
         |> Object.initWithTriangles
         |> Object.withPosition v
 
@@ -117,8 +122,13 @@ render assets =
             vs
                 |> List.map (\v -> Tree.singleton (gizmo v))
 
-        objectToGraphWithNormalGizmo : Vec3 -> Material.Name -> ( List Vertex, List ( Int, Int, Int ) ) -> Tree (Object Material.Name)
-        objectToGraphWithNormalGizmo pos material mesh =
+        objectToGraphWithNormalGizmo :
+            Vec3
+            -> Material.Name
+            -> List (Tree (Object Material.Name))
+            -> ( List Vertex, List ( Int, Int, Int ) )
+            -> Tree (Object Material.Name)
+        objectToGraphWithNormalGizmo pos material children mesh =
             --mesh
             --    |> Object.initWithIndexedTriangles
             --    |> Object.withPosition pos
@@ -162,9 +172,9 @@ render assets =
                  --|> Object.withOptionDragToRotateXY
                  --|> objectToGraph
                 )
-                []
-                |> addNormalGuides mesh
+                children
 
+        --|> addNormalGuides mesh
         --|> Graph.fmap ((++) (Tuple.first mesh |> List.indexedMap Tuple.pair |> normalGuides))
         --|> Graph.map ((++) (normalGizmos <| Tuple.first mesh))
         --|> Graph.mapChildren ((++) (normalGizmos <| Tuple.first mesh))
@@ -176,15 +186,17 @@ render assets =
             d1
     in
     [ assets.cube
-        |> objectToGraphWithNormalGizmo (Vec3.vec3 -d1 0 0) Material.Advanced
+        |> objectToGraphWithNormalGizmo (Vec3.vec3 -d1 0 0) Material.Advanced []
     , assets.cube
-        |> objectToGraphWithNormalGizmo (Vec3.vec3 0 -d2 0) Material.Advanced
+        |> objectToGraphWithNormalGizmo (Vec3.vec3 0 -d2 0) Material.Advanced []
     , assets.cube
-        |> objectToGraphWithNormalGizmo (Vec3.vec3 0 0 0) Material.Advanced
+        |> objectToGraphWithNormalGizmo (Vec3.vec3 0 0 0) Material.Advanced []
     , assets.cube
-        |> objectToGraphWithNormalGizmo (Vec3.vec3 0 d2 0) Material.Advanced
+        |> objectToGraphWithNormalGizmo (Vec3.vec3 0 d2 0)
+            Material.Advanced
+            [ Object.light (Vec3.vec3 0 1 0) (Light.pointLight (Vec3.vec3 0 0 0)) |> Tree.singleton ]
     , assets.cube
-        |> objectToGraphWithNormalGizmo (Vec3.vec3 d1 0 0) Material.Advanced
+        |> objectToGraphWithNormalGizmo (Vec3.vec3 d1 0 0) Material.Advanced []
     , assets.cube
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (Vec3.vec3 0 -2 0)

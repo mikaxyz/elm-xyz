@@ -238,11 +238,53 @@ render defaultTexture renderOptions viewport drag theta options graphRenderOptio
 
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
+
+        lightsInGraph : List ( Mat4, PointLight )
+        lightsInGraph =
+            graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph
+                |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object)
+                |> Tree.foldl
+                    (\{ index, sceneMatrix, object } acc ->
+                        Object.toPointLight object
+                            |> Maybe.map (\light -> ( sceneMatrix, light ) :: acc)
+                            |> Maybe.withDefault acc
+                    )
+                    []
+
+        addPointLight : Int -> PointLight -> Renderer.Options -> Renderer.Options
+        addPointLight index light ({ lights } as rendererOptions_) =
+            case index of
+                1 ->
+                    { rendererOptions_ | lights = { lights | point1 = light } }
+
+                2 ->
+                    { rendererOptions_ | lights = { lights | point2 = light } }
+
+                _ ->
+                    rendererOptions_
+
+        createRendererOptions : Renderer.Options -> ( Int, Renderer.Options )
+        createRendererOptions rendererOptions_ =
+            lightsInGraph
+                |> List.foldl
+                    (\( transform, light ) ( index, acc ) ->
+                        ( index + 1
+                        , acc
+                            |> addPointLight (index + 1)
+                                (light
+                                    |> Light.withPosition (vec3 0 0 0 |> Mat4.transform transform)
+                                )
+                        )
+                    )
+                    ( 0, rendererOptions_ )
+
+        ( numberOfLights, rendererOptions ) =
+            createRendererOptions scene.rendererOptions
     in
     renderGraph
         drag
         theta
-        scene.rendererOptions
+        rendererOptions
         renderOptions
         graphRenderOptions
         { sceneCamera = Camera.toMat4 scene.camera
@@ -251,8 +293,8 @@ render defaultTexture renderOptions viewport drag theta options graphRenderOptio
         , sceneRotationMatrix = Mat4.identity
         }
         defaultTexture
-        (PointLightNode (Light.position scene.rendererOptions.lights.point1)
-            :: PointLightNode (Light.position scene.rendererOptions.lights.point2)
+        (PointLightNode (Light.position rendererOptions.lights.point1)
+            :: PointLightNode (Light.position rendererOptions.lights.point2)
             :: GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
             :: []
             |> withGridPlane renderOptions.showGridX AxisX

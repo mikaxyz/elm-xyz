@@ -6,6 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY
     , rotationInTime, rotationWithDrag
+    , light, toPointLight
     )
 
 {-|
@@ -51,10 +52,17 @@ import WebGL exposing (Mesh)
 import WebGL.Settings
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
+import XYZMika.XYZ.Mesh.Cube as Cube
+import XYZMika.XYZ.Scene.Light as Light exposing (PointLight)
 
 
 type Object materialId
     = Mesh (ObjectData materialId)
+    | Light (ObjectData materialId) Light
+
+
+type Light
+    = PointLight PointLight
 
 
 type alias ObjectData materialId =
@@ -74,6 +82,41 @@ type alias ObjectData materialId =
 
 
 -- Create
+
+
+light : Vec3 -> PointLight -> Object materialId
+light v light_ =
+    let
+        size =
+            0.2
+
+        verts =
+            Cube.grayVerts size size size
+    in
+    Light
+        { position = v
+        , rotation = Mat4.identity
+        , mesh = verts |> WebGL.triangles
+        , triangles = verts |> List.map toVec3s
+        , boundingBox = verts |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , options = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        }
+        (PointLight light_)
+
+
+toPointLight : Object materialId -> Maybe PointLight
+toPointLight object =
+    case object of
+        Mesh _ ->
+            Nothing
+
+        Light _ (PointLight light_) ->
+            Just light_
 
 
 init : Mesh Vertex -> Object materialId
@@ -182,13 +225,23 @@ vMax v1 v2 =
 
 
 withGlSetting : WebGL.Settings.Setting -> Object materialId -> Object materialId
-withGlSetting x (Mesh objectData) =
-    Mesh { objectData | glSetting = Just x }
+withGlSetting x object =
+    case object of
+        Mesh objectData ->
+            Mesh { objectData | glSetting = Just x }
+
+        Light objectData light_ ->
+            Light { objectData | glSetting = Just x } light_
 
 
 glSetting : Object materialId -> Maybe WebGL.Settings.Setting
-glSetting (Mesh objectData) =
-    objectData.glSetting
+glSetting object =
+    case object of
+        Mesh objectData ->
+            objectData.glSetting
+
+        Light objectData _ ->
+            objectData.glSetting
 
 
 withPosition : Vec3 -> Object materialId -> Object materialId
@@ -231,6 +284,9 @@ mapOptions f obj =
         Mesh data ->
             Mesh { data | options = f data.options }
 
+        Light data light_ ->
+            Light { data | options = f data.options } light_
+
 
 mapData : (ObjectData materialId -> ObjectData materialId) -> Object materialId -> Object materialId
 mapData f obj =
@@ -238,11 +294,17 @@ mapData f obj =
         Mesh data ->
             Mesh (f data)
 
+        Light data light_ ->
+            Light (f data) light_
+
 
 get : (ObjectData materialId -> a) -> Object materialId -> a
 get f obj =
     case obj of
         Mesh data ->
+            f data
+
+        Light data _ ->
             f data
 
 
