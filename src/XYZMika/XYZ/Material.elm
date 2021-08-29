@@ -3,17 +3,18 @@ module XYZMika.XYZ.Material exposing
     , Options
     , Renderer
     , addLight
-    , defaultOptions
+    , createOptions
     , directionalLights
     , fragmentShader
+    , lights
     , material
     , pointLightByIndex
     , toEntity
     , uniforms
     , vertexShader
+    , withLights
     )
 
-import Math.Vector3 exposing (vec3)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
@@ -23,18 +24,29 @@ import XYZMika.XYZ.Scene.Light.PointLight exposing (PointLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
-type alias Options =
-    { lights : List Light
-    }
+type Options
+    = Options
+        { lights : List Light
+        }
+
+
+lights : Options -> List Light
+lights (Options options) =
+    options.lights
+
+
+withLights : List Light -> Options -> Options
+withLights lights_ (Options options) =
+    Options { options | lights = lights_ }
 
 
 addLight : Light -> Options -> Options
-addLight x options =
-    { options | lights = x :: options.lights }
+addLight x (Options options) =
+    Options { options | lights = x :: options.lights }
 
 
 pointLightByIndex : Int -> Options -> Maybe PointLight
-pointLightByIndex i options =
+pointLightByIndex i (Options options) =
     options.lights
         |> List.filterMap Light.maybePointLight
         |> List.drop i
@@ -42,14 +54,14 @@ pointLightByIndex i options =
 
 
 directionalLights : Options -> List DirectionalLight
-directionalLights options =
+directionalLights (Options options) =
     options.lights
         |> List.filterMap Light.maybeDirectionalLight
 
 
-defaultOptions : Options
-defaultOptions =
-    { lights = [ Light.directional (vec3 0 1 3) ] }
+createOptions : Options
+createOptions =
+    Options { lights = [] }
 
 
 type alias Renderer materialId uniforms =

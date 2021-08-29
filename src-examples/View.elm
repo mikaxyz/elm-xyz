@@ -7,7 +7,7 @@ import Html.Attributes as HA exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode as JD
 import Material
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Tree exposing (Tree)
 import WebGL
@@ -17,6 +17,7 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
+import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
@@ -55,7 +56,8 @@ sceneView defaultTexture (Hud hud) model scene =
                 ]
                 (Scene.render
                     defaultTexture
-                    model.renderOptions
+                    [ Light.directional (vec3 -1 1 1) ]
+                    model.sceneOptions
                     Model.viewport
                     (Model.getDrag model)
                     model.theta

@@ -1,11 +1,9 @@
 module XYZMika.XYZ.Scene exposing
     ( GraphRenderOptions
     , Options
-    , RenderOptions
     , Scene
     , camera
     , defaultOptions
-    , defaultRenderOptions
     , getGraph
     , graphWithMatrix
     , init
@@ -15,7 +13,6 @@ module XYZMika.XYZ.Scene exposing
     , withCamera
     , withCameraMap
     , withCameraPosition
-    , withRendererOptionsMap
     )
 
 import Color
@@ -37,6 +34,7 @@ import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
+import XYZMika.XYZ.Scene.Options as SceneOptions
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
@@ -44,7 +42,6 @@ type Scene materialId
     = Scene
         { graph : Tree (Object materialId)
         , camera : Camera
-        , rendererOptions : Renderer.Options
         }
 
 
@@ -53,7 +50,6 @@ init graph =
     Scene
         { graph = graph
         , camera = Camera.init (vec3 0 3 4) (vec3 0 0 0)
-        , rendererOptions = Renderer.defaultOptions
         }
 
 
@@ -65,11 +61,6 @@ getGraph (Scene scene) =
 camera : Scene materialId -> Camera
 camera (Scene scene) =
     scene.camera
-
-
-withRendererOptionsMap : (Renderer.Options -> Renderer.Options) -> Scene materialId -> Scene materialId
-withRendererOptionsMap f (Scene scene) =
-    Scene { scene | rendererOptions = f scene.rendererOptions }
 
 
 withCamera : { position : Vec3, target : Vec3 } -> Scene materialId -> Scene materialId
@@ -161,35 +152,15 @@ defaultOptions =
     }
 
 
-type alias RenderOptions =
-    { showGeometry : Bool
-    , showBoundingBoxes : Bool
-    , showBoundingBoxesOverlay : Bool
-    , showGridX : Bool
-    , showGridY : Bool
-    , showGridZ : Bool
-    }
-
-
 type alias GraphRenderOptions =
     { showBoundingBox : Bool
     }
 
 
-defaultRenderOptions : RenderOptions
-defaultRenderOptions =
-    { showGeometry = True
-    , showBoundingBoxes = False
-    , showBoundingBoxesOverlay = False
-    , showGridX = False
-    , showGridY = True
-    , showGridZ = False
-    }
-
-
 render :
     Texture
-    -> RenderOptions
+    -> List Light
+    -> SceneOptions.Options
     -> { a | width : Int, height : Int }
     -> Vec2
     -> Float
@@ -198,7 +169,7 @@ render :
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-render defaultTexture renderOptions viewport drag theta options graphRenderOptions (Scene scene) renderer =
+render defaultTexture defaultLights sceneOptions viewport drag theta options graphRenderOptions (Scene scene) renderer =
     --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
     let
         options_ =
@@ -227,20 +198,21 @@ render defaultTexture renderOptions viewport drag theta options graphRenderOptio
                         , acc |> Renderer.addLight (Light.withPosition (vec3 0 0 0 |> Mat4.transform transform) light)
                         )
                     )
-                    ( 0, (\x -> { x | lights = [] }) scene.rendererOptions )
+                    ( 0, Renderer.createOptions |> Renderer.withLights [] )
 
+        rendererOptions : Renderer.Options
         rendererOptions =
             if numberOfLights > 0 then
                 rendererOptionsWithLights
 
             else
-                scene.rendererOptions
+                Renderer.createOptions |> Renderer.withLights defaultLights
     in
     renderGraph
         drag
         theta
         rendererOptions
-        renderOptions
+        sceneOptions
         graphRenderOptions
         { sceneCamera = Camera.toMat4 scene.camera
         , scenePerspective = options_.perspective aspectRatio
@@ -249,13 +221,13 @@ render defaultTexture renderOptions viewport drag theta options graphRenderOptio
         }
         defaultTexture
         (GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
-            :: (rendererOptions.lights
+            :: (Renderer.lights rendererOptions
                     |> List.filterMap Light.position
                     |> List.map PointLightNode
                )
-            |> withGridPlane renderOptions.showGridX AxisX
-            |> withGridPlane renderOptions.showGridY AxisY
-            |> withGridPlane renderOptions.showGridZ AxisZ
+            |> withGridPlane (SceneOptions.showGridX sceneOptions) AxisX
+            |> withGridPlane (SceneOptions.showGridY sceneOptions) AxisY
+            |> withGridPlane (SceneOptions.showGridZ sceneOptions) AxisZ
         )
         renderer
 
@@ -289,14 +261,14 @@ renderGraph :
     Vec2
     -> Float
     -> Renderer.Options
-    -> RenderOptions
+    -> SceneOptions.Options
     -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
     -> Uniforms u
     -> Texture
     -> List (Node materialId)
     -> Renderer materialId (Uniforms u)
     -> List Entity
-renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn uniforms defaultTexture nodes renderer =
+renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniforms defaultTexture nodes renderer =
     nodes
         |> List.map
             (\node ->
@@ -429,7 +401,7 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                     overlay =
                                         graphRenderOptions
                                             |> Maybe.map .showBoundingBox
-                                            |> Maybe.withDefault renderOptions.showBoundingBoxesOverlay
+                                            |> Maybe.withDefault (SceneOptions.showBoundingBoxesOverlay sceneOptions)
 
                                     options =
                                         if overlay then
@@ -453,12 +425,12 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                             showBoundingBox =
                                 graphRenderOptions
                                     |> Maybe.map .showBoundingBox
-                                    |> Maybe.withDefault renderOptions.showBoundingBoxes
+                                    |> Maybe.withDefault (SceneOptions.showBoundingBoxes sceneOptions)
 
                             showGeometry =
                                 Object.maybeLight object
                                     |> Maybe.map (always False)
-                                    |> Maybe.withDefault renderOptions.showGeometry
+                                    |> Maybe.withDefault (SceneOptions.showGeometry sceneOptions)
                         in
                         case ( showGeometry, showBoundingBox ) of
                             ( True, True ) ->
@@ -467,7 +439,7 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                     :: renderGraph drag
                                         theta
                                         rendererOptions
-                                        renderOptions
+                                        sceneOptions
                                         graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                         defaultTexture
@@ -479,7 +451,7 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                     :: renderGraph drag
                                         theta
                                         rendererOptions
-                                        renderOptions
+                                        sceneOptions
                                         graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                         defaultTexture
@@ -491,7 +463,7 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                     :: renderGraph drag
                                         theta
                                         rendererOptions
-                                        renderOptions
+                                        sceneOptions
                                         graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                         defaultTexture
@@ -502,7 +474,7 @@ renderGraph drag theta rendererOptions renderOptions graphRenderOptionsFn unifor
                                 renderGraph drag
                                     theta
                                     rendererOptions
-                                    renderOptions
+                                    sceneOptions
                                     graphRenderOptionsFn
                                     { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     defaultTexture

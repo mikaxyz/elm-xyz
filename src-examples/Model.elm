@@ -11,8 +11,7 @@ module Model exposing
     , getDrag
     , init
     , loadScene
-    , mapRenderOptions
-    , mapRendererOptions
+    , mapSceneOptions
     , nextScene
     , prevScene
     , sceneOptions
@@ -36,8 +35,8 @@ import Scenes.Sandbox
 import Scenes.Textures
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
-import XYZMika.XYZ.Material
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
+import XYZMika.XYZ.Scene.Options as SceneOptions
 
 
 type Msg
@@ -102,7 +101,7 @@ type alias Model =
     , lastDrag : Vec2
     , dragTarget : DragTarget
     , scene : Maybe (Scene Material.Name)
-    , renderOptions : Scene.RenderOptions
+    , sceneOptions : SceneOptions.Options
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
     , assets : AssetStore.Store Asset.Obj Asset.Texture
@@ -142,7 +141,7 @@ init =
     , lastDrag = vec2 0 0
     , dragTarget = Default
     , scene = Nothing
-    , renderOptions = Scene.defaultRenderOptions
+    , sceneOptions = SceneOptions.create
     , scenes = [ BrickWall, ObjectLoader, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
@@ -163,14 +162,9 @@ init =
            )
 
 
-mapRenderOptions : (Scene.RenderOptions -> Scene.RenderOptions) -> Model -> Model
-mapRenderOptions f model =
-    { model | renderOptions = f model.renderOptions }
-
-
-mapRendererOptions : (XYZMika.XYZ.Material.Options -> XYZMika.XYZ.Material.Options) -> Model -> Model
-mapRendererOptions f model =
-    { model | scene = model.scene |> Maybe.map (Scene.withRendererOptionsMap f) }
+mapSceneOptions : (SceneOptions.Options -> SceneOptions.Options) -> Model -> Model
+mapSceneOptions f model =
+    { model | sceneOptions = f model.sceneOptions }
 
 
 nextScene : Model -> ( Model, Cmd Msg )

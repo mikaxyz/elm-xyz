@@ -10,12 +10,12 @@ import Task
 import Tree exposing (Tree)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore
-import XYZMika.XYZ.Material
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
+import XYZMika.XYZ.Scene.Options as SceneOptions
 import XYZMika.XYZ.Scene.Util as Util
 
 
@@ -375,37 +375,37 @@ update msg model =
                     )
 
                 Keyboard.Alpha 'S' ->
-                    ( model |> Model.mapRendererOptions (always XYZMika.XYZ.Material.defaultOptions)
+                    ( { model | scene = model.scene |> Maybe.map (Scene.replaceLightsWithLightsInRoot []) }
                     , Cmd.none
                     )
 
                 Keyboard.Digit 1 ->
-                    ( model |> Model.mapRenderOptions (\x -> { x | showGeometry = not x.showGeometry })
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGeometryOption)
                     , Cmd.none
                     )
 
                 Keyboard.Digit 2 ->
-                    ( model |> Model.mapRenderOptions (\x -> { x | showBoundingBoxes = not x.showBoundingBoxes })
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showBoundingBoxesOption)
                     , Cmd.none
                     )
 
                 Keyboard.Digit 3 ->
-                    ( model |> Model.mapRenderOptions (\x -> { x | showBoundingBoxesOverlay = not x.showBoundingBoxesOverlay })
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showBoundingBoxesOverlayOption)
                     , Cmd.none
                     )
 
                 Keyboard.Digit 4 ->
-                    ( model |> Model.mapRenderOptions (\x -> { x | showGridX = not x.showGridX })
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridXOption)
                     , Cmd.none
                     )
 
                 Keyboard.Digit 5 ->
-                    ( model |> Model.mapRenderOptions (\x -> { x | showGridY = not x.showGridY })
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                     , Cmd.none
                     )
 
                 Keyboard.Digit 6 ->
-                    ( model |> Model.mapRenderOptions (\x -> { x | showGridZ = not x.showGridZ })
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridZOption)
                     , Cmd.none
                     )
 
