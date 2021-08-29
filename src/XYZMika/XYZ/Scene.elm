@@ -45,17 +45,15 @@ type Scene materialId
         { graph : Tree (Object materialId)
         , camera : Camera
         , rendererOptions : Renderer.Options
-        , gizmoMaterial : materialId
         }
 
 
-init : { gizmoMaterial : materialId } -> Tree (Object materialId) -> Scene materialId
-init { gizmoMaterial } graph =
+init : Tree (Object materialId) -> Scene materialId
+init graph =
     Scene
         { graph = graph
         , camera = Camera.init (vec3 0 3 4) (vec3 0 0 0)
         , rendererOptions = Renderer.defaultOptions
-        , gizmoMaterial = gizmoMaterial
         }
 
 

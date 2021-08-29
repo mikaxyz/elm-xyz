@@ -26,7 +26,7 @@ init assets =
         |> Maybe.map render
         |> Maybe.withDefault []
         |> Tree.tree (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.initWithTriangles)
-        |> Scene.init { gizmoMaterial = Material.Simple }
+        |> Scene.init
         |> Scene.withCameraPosition (vec3 0 0 4.5)
 
 

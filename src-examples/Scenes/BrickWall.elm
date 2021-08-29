@@ -43,7 +43,7 @@ init assets =
                         x
                     ]
            )
-        |> Scene.init { gizmoMaterial = Material.Simple }
+        |> Scene.init
         |> Scene.withCamera { position = vec3 0 3 8, target = vec3 0 1 0 }
 
 

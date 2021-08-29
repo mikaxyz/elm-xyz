@@ -44,7 +44,7 @@ init assets =
             (getTreeAssets assets)
             |> Maybe.withDefault []
         )
-        |> Scene.init { gizmoMaterial = Material.Simple }
+        |> Scene.init
 
 
 

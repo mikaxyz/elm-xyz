@@ -98,7 +98,7 @@ init =
         helpers =
             normalGuides ++ elevationBones 4
     in
-    Scene.init { gizmoMaterial = Material.Simple }
+    Scene.init
         (landscape
             |> Object.initWithIndexedTriangles
             |> Object.withMaterialName Material.Advanced

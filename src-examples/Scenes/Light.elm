@@ -68,7 +68,7 @@ init =
                 )
             ]
         ]
-        |> Scene.init { gizmoMaterial = Material.Simple }
+        |> Scene.init
         |> Scene.withCameraPosition (vec3 0 4 7)
 
 

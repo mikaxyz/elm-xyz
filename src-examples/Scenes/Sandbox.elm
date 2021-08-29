@@ -29,7 +29,7 @@ init =
             )
             (tree 8 0)
         ]
-        |> Scene.init { gizmoMaterial = Material.Simple }
+        |> Scene.init
         |> Scene.withCameraPosition (vec3 0 1 2.5)
 
 
