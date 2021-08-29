@@ -178,35 +178,28 @@ render defaultTexture defaultLights sceneOptions viewport drag theta options gra
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
 
-        lightsInGraph : List ( Mat4, Light )
-        lightsInGraph =
+        lightsInScene : List Light
+        lightsInScene =
             graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph
-                |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object)
                 |> Tree.foldl
-                    (\{ index, sceneMatrix, object } acc ->
-                        Object.maybeLight object
-                            |> Maybe.map (\light -> ( sceneMatrix, light ) :: acc)
-                            |> Maybe.withDefault acc
+                    (\( transform, object ) acc ->
+                        case Object.maybeLight object of
+                            Just light ->
+                                Light.withPosition (vec3 0 0 0 |> Mat4.transform transform) light :: acc
+
+                            Nothing ->
+                                acc
                     )
                     []
 
-        ( numberOfLights, rendererOptionsWithLights ) =
-            lightsInGraph
-                |> List.foldl
-                    (\( transform, light ) ( index, acc ) ->
-                        ( index + 1
-                        , acc |> Renderer.addLight (Light.withPosition (vec3 0 0 0 |> Mat4.transform transform) light)
-                        )
-                    )
-                    ( 0, Renderer.createOptions |> Renderer.withLights [] )
-
         rendererOptions : Renderer.Options
         rendererOptions =
-            if numberOfLights > 0 then
-                rendererOptionsWithLights
+            case lightsInScene of
+                [] ->
+                    Renderer.createOptions |> Renderer.withLights defaultLights
 
-            else
-                Renderer.createOptions |> Renderer.withLights defaultLights
+                lights ->
+                    Renderer.createOptions |> Renderer.withLights lights
     in
     renderGraph
         drag

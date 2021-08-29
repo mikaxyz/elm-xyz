@@ -2,7 +2,6 @@ module XYZMika.XYZ.Material exposing
     ( Material
     , Options
     , Renderer
-    , addLight
     , createOptions
     , directionalLights
     , fragmentShader
@@ -30,9 +29,9 @@ type Options
         }
 
 
-lights : Options -> List Light
-lights (Options options) =
-    options.lights
+createOptions : Options
+createOptions =
+    Options { lights = [] }
 
 
 withLights : List Light -> Options -> Options
@@ -40,9 +39,9 @@ withLights lights_ (Options options) =
     Options { options | lights = lights_ }
 
 
-addLight : Light -> Options -> Options
-addLight x (Options options) =
-    Options { options | lights = x :: options.lights }
+lights : Options -> List Light
+lights (Options options) =
+    options.lights
 
 
 pointLightByIndex : Int -> Options -> Maybe PointLight
@@ -57,11 +56,6 @@ directionalLights : Options -> List DirectionalLight
 directionalLights (Options options) =
     options.lights
         |> List.filterMap Light.maybeDirectionalLight
-
-
-createOptions : Options
-createOptions =
-    Options { lights = [] }
 
 
 type alias Renderer materialId uniforms =
