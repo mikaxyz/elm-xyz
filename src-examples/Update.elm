@@ -241,7 +241,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 0 -lightDistance 0)
                                             |> Light.withColor (vec3 1 1 1)
                                             |> Light.withIntensity 1
@@ -256,7 +256,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 0 lightDistance 0)
                                             |> Light.withColor (vec3 1 1 1)
                                             |> Light.withIntensity 1
@@ -271,7 +271,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 lightDistance 0 0)
                                             |> Light.withColor (vec3 1 1 1)
                                             |> Light.withIntensity 1
@@ -286,7 +286,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 -lightDistance 0 0)
                                             |> Light.withColor (vec3 1 1 1)
                                             |> Light.withIntensity 1
@@ -301,7 +301,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 0 0 -lightDistance)
                                             |> Light.withColor (vec3 1 1 1)
                                             |> Light.withIntensity 1
@@ -316,7 +316,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 0 0 lightDistance)
                                             |> Light.withColor (vec3 1 1 1)
                                             |> Light.withIntensity 1
@@ -331,7 +331,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 -4 2 4)
                                             |> Light.withColor (vec3 1 0 0)
                                             |> Light.withIntensity 0.5
@@ -352,7 +352,7 @@ update msg model =
                         | scene =
                             model.scene
                                 |> Maybe.map
-                                    (Scene.replaceLightsWithLightsInRoot
+                                    (Scene.withLights
                                         [ Light.pointLight (vec3 -4 2 2)
                                             |> Light.withColor (vec3 1 1 1)
                                             |> Light.withIntensity 0.2
@@ -375,7 +375,7 @@ update msg model =
                     )
 
                 Keyboard.Alpha 'S' ->
-                    ( { model | scene = model.scene |> Maybe.map (Scene.replaceLightsWithLightsInRoot []) }
+                    ( { model | scene = model.scene |> Maybe.map Scene.withLightsInGraph }
                     , Cmd.none
                     )
 

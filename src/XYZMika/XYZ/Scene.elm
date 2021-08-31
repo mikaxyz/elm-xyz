@@ -9,10 +9,11 @@ module XYZMika.XYZ.Scene exposing
     , init
     , map
     , render
-    , replaceLightsWithLightsInRoot
     , withCamera
     , withCameraMap
     , withCameraPosition
+    , withLights
+    , withLightsInGraph
     )
 
 import Color
@@ -83,37 +84,84 @@ map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
 
 
-replaceLightsWithLightsInRoot : List Light.Light -> Scene materialId -> Scene materialId
-replaceLightsWithLightsInRoot lights scene =
+withLightsInGraph : Scene materialId -> Scene materialId
+withLightsInGraph scene =
+    scene
+        |> setSceneLightsEnabled True
+        |> replaceLightsInRoot []
+
+
+withLights : List Light.Light -> Scene materialId -> Scene materialId
+withLights lights scene =
+    scene
+        |> setSceneLightsEnabled False
+        |> replaceLightsInRoot lights
+
+
+setSceneLightsEnabled : Bool -> Scene materialId -> Scene materialId
+setSceneLightsEnabled enabled scene =
+    let
+        enable object =
+            case Object.maybeLightDisabled object of
+                Just _ ->
+                    Object.enable object
+
+                Nothing ->
+                    object
+
+        disable object =
+            case Object.maybeLight object of
+                Just _ ->
+                    Object.disable object
+
+                Nothing ->
+                    object
+    in
     scene
         |> map
             (\tree ->
-                Tree.tree
-                    (Object.initWithTriangles [])
-                    ((tree
-                        |> Tree.map
-                            (\object ->
-                                case Object.maybeLight object of
-                                    Just _ ->
-                                        Object.toEmpty object
+                tree
+                    |> Tree.map
+                        (if enabled then
+                            enable
 
-                                    Nothing ->
-                                        object
-                            )
-                     )
-                        :: (lights
-                                |> List.map
-                                    (\light ->
-                                        Object.light
-                                            (Light.position light
-                                                |> Maybe.withDefault (vec3 0 0 0)
-                                            )
-                                            light
-                                            |> Tree.singleton
-                                    )
-                           )
-                    )
+                         else
+                            disable
+                        )
             )
+
+
+replaceLightsInRoot : List Light -> Scene materialId -> Scene materialId
+replaceLightsInRoot lights scene =
+    let
+        appendLightsGroup tree =
+            case lights of
+                [] ->
+                    tree
+
+                nonEmptyList ->
+                    nonEmptyList
+                        |> List.map
+                            (\light ->
+                                Object.light
+                                    (Light.position light
+                                        |> Maybe.withDefault (vec3 0 0 0)
+                                    )
+                                    light
+                                    |> Tree.singleton
+                            )
+                        |> Tree.tree (Object.group "defaultLights")
+                        |> (\x -> Tree.appendChild x tree)
+
+        removeExisting tree =
+            case Tree.label tree |> Object.maybeGroup "defaultLights" of
+                Just _ ->
+                    Nothing
+
+                Nothing ->
+                    Just tree
+    in
+    scene |> map (Tree.mapChildren (List.filterMap removeExisting) >> appendLightsGroup)
 
 
 graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object materialId) -> Tree ( Mat4, Object materialId )
@@ -424,8 +472,11 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                 Object.maybeLight object
                                     |> Maybe.map (always False)
                                     |> Maybe.withDefault (SceneOptions.showGeometry sceneOptions)
+
+                            enabled =
+                                not (Object.isDisabled object)
                         in
-                        case ( showGeometry, showBoundingBox ) of
+                        case ( enabled && showGeometry, enabled && showBoundingBox ) of
                             ( True, True ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }

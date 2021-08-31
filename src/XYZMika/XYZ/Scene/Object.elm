@@ -4,8 +4,9 @@ module XYZMika.XYZ.Scene.Object exposing
     , withDiffuseMap, withNormalMap
     , mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
-    , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toEmpty, toHumanReadable
+    , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toHumanReadable
     , rotationInTime, rotationWithDrag, maybeLight
+    , disable, enable, group, isDisabled, maybeGroup, maybeLightDisabled
     )
 
 {-|
@@ -56,22 +57,26 @@ import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 
 
 type Object materialId
-    = Empty (ObjectData materialId)
+    = Disabled (Object materialId)
     | Mesh (ObjectData materialId)
     | Light (ObjectData materialId) Light
+    | Group String (ObjectData materialId)
 
 
 toHumanReadable : Object materialId -> String
 toHumanReadable object =
     case object of
-        Empty _ ->
-            "Empty"
+        Disabled _ ->
+            "Disabled"
 
         Mesh _ ->
             "Mesh"
 
         Light _ light_ ->
             Light.toHumanReadable light_
+
+        Group name _ ->
+            "Group <" ++ name ++ ">"
 
 
 type alias ObjectData materialId =
@@ -89,29 +94,36 @@ type alias ObjectData materialId =
     }
 
 
-
--- Create
-
-
-toEmpty : Object materialId -> Object materialId
-toEmpty object =
-    let
-        objectDataWithoutMesh data =
-            { data
-                | mesh = WebGL.triangles []
-                , triangles = []
-                , boundingBox = ( vec3 0 0 0, vec3 0 0 0 )
-            }
-    in
+disable : Object materialId -> Object materialId
+disable object =
     case object of
-        Empty objectData ->
-            Empty (objectDataWithoutMesh objectData)
+        Disabled x ->
+            Disabled x
 
         Mesh objectData ->
-            Empty (objectDataWithoutMesh objectData)
+            Disabled (Mesh objectData)
 
-        Light objectData _ ->
-            Empty (objectDataWithoutMesh objectData)
+        Light objectData light_ ->
+            Disabled (Light objectData light_)
+
+        Group name data ->
+            Disabled (Group name data)
+
+
+enable : Object materialId -> Object materialId
+enable object =
+    case object of
+        Disabled x ->
+            x
+
+        Mesh objectData ->
+            Mesh objectData
+
+        Light objectData light_ ->
+            Light objectData light_
+
+        Group name data ->
+            Group name data
 
 
 pointLight : Float -> Vec3 -> Vec3 -> Object materialId
@@ -121,6 +133,23 @@ pointLight intensity position_ color_ =
             |> Light.withIntensity intensity
             |> Light.withColor color_
         )
+
+
+group : String -> Object materialId
+group name =
+    Group name
+        { position = vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = [] |> WebGL.triangles
+        , triangles = []
+        , boundingBox = ( vec3 0 0 0, vec3 0 0 0 )
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , options = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        }
 
 
 light : Vec3 -> Light -> Object materialId
@@ -151,7 +180,7 @@ light v light_ =
 maybeLight : Object materialId -> Maybe Light
 maybeLight object =
     case object of
-        Empty _ ->
+        Disabled _ ->
             Nothing
 
         Mesh _ ->
@@ -159,6 +188,61 @@ maybeLight object =
 
         Light _ light_ ->
             Just light_
+
+        Group name data ->
+            Nothing
+
+
+maybeLightDisabled : Object materialId -> Maybe Light
+maybeLightDisabled object =
+    case object of
+        Disabled object_ ->
+            maybeLight object_
+
+        Mesh _ ->
+            Nothing
+
+        Light _ _ ->
+            Nothing
+
+        Group _ _ ->
+            Nothing
+
+
+maybeGroup : String -> Object materialId -> Maybe (Object materialId)
+maybeGroup name object =
+    case object of
+        Disabled _ ->
+            Nothing
+
+        Mesh _ ->
+            Nothing
+
+        Light _ _ ->
+            Nothing
+
+        Group name_ data ->
+            if name_ == name then
+                Just (Group name_ data)
+
+            else
+                Nothing
+
+
+isDisabled : Object materialId -> Bool
+isDisabled object =
+    case object of
+        Disabled _ ->
+            True
+
+        Mesh _ ->
+            False
+
+        Light _ _ ->
+            False
+
+        Group _ _ ->
+            False
 
 
 initWithBounds : ( Vec3, Vec3 ) -> List ( Vec3, Vec3, Vec3 ) -> Mesh Vertex -> Object a
@@ -284,8 +368,8 @@ vMax v1 v2 =
 withGlSetting : WebGL.Settings.Setting -> Object materialId -> Object materialId
 withGlSetting x object =
     case object of
-        Empty objectData ->
-            Empty { objectData | glSetting = Just x }
+        Disabled object_ ->
+            Disabled object_
 
         Mesh objectData ->
             Mesh { objectData | glSetting = Just x }
@@ -293,18 +377,24 @@ withGlSetting x object =
         Light objectData light_ ->
             Light { objectData | glSetting = Just x } light_
 
+        Group name data ->
+            Group name { data | glSetting = Just x }
+
 
 glSetting : Object materialId -> Maybe WebGL.Settings.Setting
 glSetting object =
     case object of
-        Empty objectData ->
-            objectData.glSetting
+        Disabled object_ ->
+            glSetting object_
 
         Mesh objectData ->
             objectData.glSetting
 
         Light objectData _ ->
             objectData.glSetting
+
+        Group _ data ->
+            data.glSetting
 
 
 withPosition : Vec3 -> Object materialId -> Object materialId
@@ -344,8 +434,8 @@ withNormalMap x obj =
 mapOptions : (Maybe Options -> Maybe Options) -> Object materialId -> Object materialId
 mapOptions f obj =
     case obj of
-        Empty data ->
-            Empty { data | options = f data.options }
+        Disabled obj_ ->
+            Disabled obj_
 
         Mesh data ->
             Mesh { data | options = f data.options }
@@ -353,12 +443,15 @@ mapOptions f obj =
         Light data light_ ->
             Light { data | options = f data.options } light_
 
+        Group name data ->
+            Group name { data | options = f data.options }
+
 
 mapData : (ObjectData materialId -> ObjectData materialId) -> Object materialId -> Object materialId
 mapData f obj =
     case obj of
-        Empty data ->
-            Empty (f data)
+        Disabled obj_ ->
+            Disabled obj_
 
         Mesh data ->
             Mesh (f data)
@@ -366,17 +459,23 @@ mapData f obj =
         Light data light_ ->
             Light (f data) light_
 
+        Group name data ->
+            Group name (f data)
+
 
 get : (ObjectData materialId -> a) -> Object materialId -> a
 get f obj =
     case obj of
-        Empty data ->
-            f data
+        Disabled obj_ ->
+            get f obj_
 
         Mesh data ->
             f data
 
         Light data _ ->
+            f data
+
+        Group name data ->
             f data
 
 
