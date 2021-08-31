@@ -81,7 +81,9 @@ sceneView defaultTexture (Hud hud) model scene =
             [ class "app__sidebar"
             , classList [ ( "app__sidebar--expanded", hud.sidebarExpanded ) ]
             ]
-            [ sidebarView model.hud
+            [ sidebarView
+                { treeCount = Tree.count (Scene.getGraph scene) }
+                model.hud
                 (Scene.camera scene)
                 (Scene.getGraph scene
                     |> Tree.indexedMap Tuple.pair
@@ -116,8 +118,8 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : Hud -> Camera -> Maybe (Object Material.Name) -> Model -> Html Msg
-sidebarView (Hud hud) camera selectedObject model =
+sidebarView : { treeCount : Int } -> Hud -> Camera -> Maybe (Object Material.Name) -> Model -> Html Msg
+sidebarView { treeCount } (Hud hud) camera selectedObject model =
     div
         [ class "sidebar"
         , classList [ ( "sidebar--expanded", hud.sidebarExpanded ) ]
@@ -128,6 +130,7 @@ sidebarView (Hud hud) camera selectedObject model =
             ]
             [ header []
                 [ h1 [ class "sidebar__title" ] [ text <| Model.currentSceneName model ]
+                , p [] [ text <| "Node count: " ++ String.fromInt treeCount ]
                 ]
             , Camera.position camera
                 |> Vec3.toRecord
