@@ -3,7 +3,7 @@ module Scenes.NormalMapping exposing (init, sceneOptions)
 import Asset
 import Color
 import Material
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
@@ -32,49 +32,7 @@ init assets =
 
 render : Assets -> List (Tree (Object Material.Name))
 render cube =
-    let
-        positionHandle size v =
-            XYZMika.XYZ.Mesh.Cube.withBoundsColorful ( vec3 -size -size -size, vec3 size size size )
-                |> Object.initWithTriangles
-                |> Object.withPosition v
-
-        normalBone : Vertex -> Tree (Object Material.Name)
-        normalBone v =
-            [ ( v, { v | position = Vec3.add v.position v.normal } )
-            ]
-                |> Object.initWithLines
-                |> (\obj -> Tree.tree obj [ Tree.singleton (positionHandle 0.02 v.position) ])
-
-        normalGuides : List (Tree (Object Material.Name))
-        normalGuides =
-            cube.verticesIndexed
-                |> Tuple.first
-                |> List.map
-                    (\v ->
-                        { v
-                            | color = vec3 0.8 0.2 0.2
-                            , normal = Vec3.scale 0.2 v.normal
-                        }
-                    )
-                |> List.map normalBone
-
-        wireframeTri ( v1, v2, v3 ) =
-            [ ( v1, v2 ), ( v2, v3 ), ( v3, v1 ) ]
-                |> Object.initWithLines
-
-        wireframe : List ( Vertex, Vertex, Vertex ) -> List (Object Material.Name)
-        wireframe triangles =
-            triangles
-                |> List.map wireframeTri
-    in
-    [ positionHandle 0.02 (Vec3.vec3 0 0 0)
-        |> Object.withOptionDragToRotateXY
-        |> (\x -> Tree.tree x normalGuides)
-
-    --, positionHandle 0.02 (Vec3.vec3 0 0 0)
-    --    |> Object.withOptionDragToRotateXY
-    --    |> (\x -> Graph x (cube.vertices |> wireframe |> List.map objectToGraph))
-    , cube.verticesIndexed
+    [ cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 0 0 0)
         |> Object.withOptionDragToRotateXY
