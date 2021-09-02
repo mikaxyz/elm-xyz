@@ -6,6 +6,10 @@ type Obj
     | Tree
     | Cube
     | UvCube
+    | Monkey
+    | Deer
+    | Wolf
+    | Cat
 
 
 objPath : Obj -> String
@@ -22,6 +26,18 @@ objPath texture =
 
         UvCube ->
             "obj/uvcube/uvcube.obj"
+
+        Deer ->
+            "obj/deer.obj"
+
+        Monkey ->
+            "obj/monkey.obj"
+
+        Wolf ->
+            "obj/wolf.obj"
+
+        Cat ->
+            "obj/cat.obj"
 
 
 type Texture

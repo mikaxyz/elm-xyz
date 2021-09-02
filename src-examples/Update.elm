@@ -5,12 +5,10 @@ import Keyboard
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
-import Scenes.ObjectLoader
 import Task
 import Tree exposing (Tree)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore
-import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
 import XYZMika.XYZ.Scene.Light as Light
@@ -417,22 +415,6 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
-
-        GotObj material ( options, pos, str ) ->
-            ( { model
-                | scene =
-                    model.scene
-                        |> Maybe.map
-                            (\scene ->
-                                Scenes.ObjectLoader.addMesh
-                                    material
-                                    (XYZMika.XYZ.Parser.Obj.parse options str).triangles
-                                    pos
-                                    scene
-                            )
-              }
-            , Cmd.none
-            )
 
         AssetLoaded scale asset ->
             onResize

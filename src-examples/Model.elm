@@ -25,12 +25,11 @@ import Browser.Dom
 import Keyboard
 import Material
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
-import Math.Vector3 exposing (Vec3, vec3)
+import Scenes.Animals
 import Scenes.BrickWall
 import Scenes.Landscape
 import Scenes.Light
 import Scenes.NormalMapping
-import Scenes.ObjectLoader
 import Scenes.Sandbox
 import Scenes.Textures
 import XYZMika.Debug as Dbug
@@ -47,7 +46,6 @@ type Msg
     | Drag Vec2
     | DragBy Vec2
     | DragEnd Vec2
-    | GotObj (Maybe Material.Name) ( { scale : Float, color : Vec3 }, Vec3, String )
     | AssetLoaded Float AssetStore.Content
       --
     | KeyboardMsg Keyboard.Msg
@@ -142,7 +140,7 @@ init =
     , dragTarget = Default
     , scene = Nothing
     , sceneOptions = SceneOptions.create
-    , scenes = [ BrickWall, ObjectLoader, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
+    , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
     , currentSceneIndex = 0
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
@@ -192,7 +190,7 @@ type ActiveScene
     | NormalMapping
     | Textures
     | Sandbox
-    | ObjectLoader
+    | Animals
     | Light
     | Landscape
 
@@ -212,8 +210,8 @@ currentSceneName model =
         Just Sandbox ->
             "Sandbox"
 
-        Just ObjectLoader ->
-            "ObjectLoader"
+        Just Animals ->
+            "Animals"
 
         Just Landscape ->
             "Landscape"
@@ -240,8 +238,8 @@ sceneOptions model =
         Just Sandbox ->
             Scenes.Sandbox.sceneOptions
 
-        Just ObjectLoader ->
-            Scenes.ObjectLoader.sceneOptions
+        Just Animals ->
+            Scenes.Animals.sceneOptions
 
         Just Landscape ->
             Scenes.Landscape.sceneOptions
@@ -270,8 +268,8 @@ updateAssetStore assets model =
                     Just Sandbox ->
                         m
 
-                    Just ObjectLoader ->
-                        m
+                    Just Animals ->
+                        { m | scene = Scenes.Animals.init m.assets |> Just }
 
                     Just Landscape ->
                         m
@@ -329,39 +327,19 @@ loadScene model =
             , Cmd.none
             )
 
-        Just ObjectLoader ->
-            ( { model
-                | scene = Just Scenes.ObjectLoader.init
-              }
-            , Cmd.batch
-                [ Scenes.ObjectLoader.getObj
-                    { scale = 0.001, color = vec3 1 0.5 0.5 }
-                    (vec3 0 0 -0.5)
-                    "obj/deer.obj"
-                    (GotObj (Just Material.Advanced))
+        Just Animals ->
+            { model | scene = Just <| Scenes.Animals.init model.assets }
+                |> (\model_ ->
+                        ( model_
+                        , Cmd.batch
+                            [ AssetStore.loadObj Asset.Deer model_.assets (AssetLoaded 0.001)
+                            , AssetStore.loadObj Asset.Wolf model_.assets (AssetLoaded 0.001)
+                            , AssetStore.loadObj Asset.Cat model_.assets (AssetLoaded 0.001)
 
-                --, Scenes.ObjectLoader.getObj
-                --    { scale = 0.3, color = vec3 0.5 0.5 1 }
-                --    (vec3 -1 1 0)
-                --    "obj/monkey.obj"
-                --    (GotObj (Just Material.Advanced))
-                , Scenes.ObjectLoader.getObj
-                    { scale = 0.001, color = vec3 1 1 0.5 }
-                    (vec3 0 0.04 0.5)
-                    "obj/cat.obj"
-                    (GotObj (Just Material.Advanced))
-                , Scenes.ObjectLoader.getObj
-                    { scale = 0.001, color = vec3 0.5 1 1 }
-                    (vec3 0 0.04 0)
-                    "obj/wolf.obj"
-                    (GotObj (Just Material.Advanced))
-                , Scenes.ObjectLoader.getObj
-                    { scale = 1, color = vec3 0.5 1 0.5 }
-                    (vec3 0 0.5 -1.5)
-                    "obj/cube.obj"
-                    (GotObj (Just Material.Advanced))
-                ]
-            )
+                            --, AssetStore.loadObj Asset.Monkey model_.assets (AssetLoaded 0.1)
+                            ]
+                        )
+                   )
 
         Just Landscape ->
             ( { model
