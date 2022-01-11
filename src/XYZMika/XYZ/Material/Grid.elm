@@ -77,7 +77,6 @@ fragmentShader =
     [glsl|
         precision highp float;
 
-        uniform vec3 color;
         uniform int axis;
         varying vec3 v_fragPos;
         varying vec3 v_uv;
