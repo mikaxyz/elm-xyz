@@ -56,45 +56,45 @@ render : BallAssets -> TreeAssets -> List (Tree (Object Material.Name))
 render ball tree =
     --[ ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles
-    --    |> Object.withMaterialName Material.Advanced
+    --    |> Object.withMaterialName Material.Textured
     --    |> Object.withPosition (vec3 -0.7 -0.31 0)
     --    |> (\x -> Graph x [])
     --, ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles
     --    |> Object.withNormalMap ball.normal
-    --    |> Object.withMaterialName Material.Advanced
+    --    |> Object.withMaterialName Material.Textured
     --    |> Object.withPosition (vec3 0 -0.31 0)
     --    |> (\x -> Graph x [])
     --, ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles
     --    |> Object.withDiffuseMap ball.diffuse
     --    |> Object.withNormalMap ball.normal
-    --    |> Object.withMaterialName Material.Advanced
+    --    |> Object.withMaterialName Material.Textured
     --    |> Object.withPosition (vec3 0.7 -0.31 0)
     --    |> (\x -> Graph x [])
     [ ball.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withDiffuseMap ball.diffuse
         |> Object.withNormalMap ball.normal
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Object.withPosition (vec3 0 0 0)
         |> Tree.singleton
     , ball.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withNormalMap ball.normal
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Object.withPosition (vec3 -0.7 0 0)
         |> Tree.singleton
     , tree.vertices
         |> Object.initWithTriangles
         |> Object.withDiffuseMap tree.diffuse
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Object.withPosition (vec3 -2 0 -3)
         |> Tree.singleton
     , tree.vertices
         |> Object.initWithTriangles
         |> Object.withDiffuseMap tree.diffuse
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Object.withPosition (vec3 2 0 -5)
         |> Tree.singleton
     , ball.verticesIndexed
@@ -102,7 +102,7 @@ render ball tree =
         |> Object.withDiffuseMap ball.diffuse
         |> Object.withNormalMap ball.normal
         |> Object.withColor Color.yellow
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Object.withPosition (vec3 1 0 -3)
         |> Object.withOptionRotationInTime
             (\theta ->

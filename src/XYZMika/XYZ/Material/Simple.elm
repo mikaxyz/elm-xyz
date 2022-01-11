@@ -14,8 +14,8 @@ type alias Varyings =
     }
 
 
-renderer : Material.Options -> Texture -> Uniforms u -> Object materialId -> Entity
-renderer _ _ uniforms object =
+renderer : Material.Options -> Uniforms u -> Object materialId -> Entity
+renderer _ uniforms object =
     material uniforms
         |> Material.toEntity object
 

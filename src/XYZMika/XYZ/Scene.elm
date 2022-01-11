@@ -24,7 +24,6 @@ import Tree exposing (Tree)
 import WebGL exposing (Entity, Shader)
 import WebGL.Settings
 import WebGL.Settings.DepthTest
-import WebGL.Texture exposing (Texture)
 import XYZMika.Color
 import XYZMika.XYZ.Material as Renderer exposing (Renderer)
 import XYZMika.XYZ.Material.Gizmo
@@ -206,8 +205,7 @@ type alias GraphRenderOptions =
 
 
 render :
-    Texture
-    -> List Light
+    List Light
     -> SceneOptions.Options
     -> { a | width : Int, height : Int }
     -> Vec2
@@ -217,8 +215,7 @@ render :
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-render defaultTexture defaultLights sceneOptions viewport drag theta options graphRenderOptions (Scene scene) renderer =
-    --TODO: Remove defaultTexture. Require a texture in object if Advanced renderer?
+render defaultLights sceneOptions viewport drag theta options graphRenderOptions (Scene scene) renderer =
     let
         options_ =
             options |> Maybe.withDefault defaultOptions
@@ -260,7 +257,6 @@ render defaultTexture defaultLights sceneOptions viewport drag theta options gra
         , sceneMatrix = Mat4.identity
         , sceneRotationMatrix = Mat4.identity
         }
-        defaultTexture
         (GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
             :: (Renderer.lights rendererOptions
                     |> List.filterMap Light.position
@@ -305,11 +301,10 @@ renderGraph :
     -> SceneOptions.Options
     -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
     -> Uniforms u
-    -> Texture
     -> List (Node materialId)
     -> Renderer materialId (Uniforms u)
     -> List Entity
-renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniforms defaultTexture nodes renderer =
+renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
     nodes
         |> List.map
             (\node ->
@@ -429,7 +424,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                 object
                                     |> Object.materialName
                                     |> renderer
-                                    |> (\r -> r rendererOptions defaultTexture uniforms_ object)
+                                    |> (\r -> r rendererOptions uniforms_ object)
 
                             boundingBox : Uniforms u -> Entity
                             boundingBox uniforms_ =
@@ -486,7 +481,6 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                         sceneOptions
                                         graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                        defaultTexture
                                         (List.map GraphNode children)
                                         renderer
 
@@ -498,7 +492,6 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                         sceneOptions
                                         graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                        defaultTexture
                                         (List.map GraphNode children)
                                         renderer
 
@@ -510,7 +503,6 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                         sceneOptions
                                         graphRenderOptionsFn
                                         { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                        defaultTexture
                                         (List.map GraphNode children)
                                         renderer
 
@@ -521,7 +513,6 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                     sceneOptions
                                     graphRenderOptionsFn
                                     { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                    defaultTexture
                                     (List.map GraphNode children)
                                     renderer
             )

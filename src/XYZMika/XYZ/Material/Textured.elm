@@ -1,16 +1,21 @@
-module XYZMika.XYZ.Material.Advanced exposing (renderer)
+module XYZMika.XYZ.Material.Textured exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
+import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material)
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms as Scene
+
+
+
+-- NORMAL MAPPING: https://learnopengl.com/Advanced-Lighting/Normal-Mapping
 
 
 type alias Uniforms =
@@ -20,6 +25,10 @@ type alias Uniforms =
     , sceneRotationMatrix : Mat4
     , objectColor : Vec3
     , directionalLight : Vec4
+    , diffuseMap : Texture
+    , hasDiffuseMap : Bool
+    , normalMap : Texture
+    , hasNormalMap : Bool
 
     --
     , pointLight1 : Vec4
@@ -49,8 +58,8 @@ type alias Varyings =
     }
 
 
-renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer options uniforms object =
+renderer : Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer fallbackTexture options uniforms object =
     let
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
@@ -83,6 +92,10 @@ renderer options uniforms object =
         --
         , objectColor = Object.colorVec3 object
         , directionalLight = directionalLight
+        , diffuseMap = object |> Object.diffuseMapWithDefault fallbackTexture
+        , hasDiffuseMap = Object.diffuseMap object /= Nothing
+        , hasNormalMap = Object.normalMap object /= Nothing
+        , normalMap = object |> Object.normalMapWithDefault fallbackTexture
 
         --
         , pointLight1 = pointLight 1 |> .light
@@ -159,6 +172,10 @@ fragmentShader =
         uniform mat4 sceneRotationMatrix;
 
         uniform vec4 directionalLight;
+        uniform sampler2D diffuseMap;
+        uniform bool hasDiffuseMap;
+        uniform sampler2D normalMap;
+        uniform bool hasNormalMap;
 
         uniform vec4 pointLight1;
         uniform vec3 pointLight1Color;
@@ -199,6 +216,7 @@ fragmentShader =
         }
 
         vec3 f_pointLight_PassThrough (vec3 normal, vec3 lightPosition) {
+//            highp vec3 color = vec3(0.6, 0.5, 0.2);
             highp vec3 color = vec3(1.0, 1.0, 1.0);
             highp float falloff = 2.0;
             highp vec3 position = vec3(sceneMatrix * vec4(lightPosition, 1.0));
@@ -215,6 +233,7 @@ fragmentShader =
             highp float intensity = pow(pointLightDiff, 1.0);
             highp float distance = distance(lightPosition, v_fragPos);
 
+//            return color * (intensity / distance);
             return color * intensity;
         }
 
@@ -226,8 +245,29 @@ fragmentShader =
         }
 
         void main () {
-            vec3 diffuse = v_color;
-            vec3 normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
+            vec3 diffuse;
+            if(hasDiffuseMap) {
+                diffuse = texture2D(diffuseMap, v_uv).rgb;
+            } else {
+                diffuse = v_color;
+            }
+
+
+            highp mat3 TBN = mat3(v_t, v_b, v_n);
+            vec3 normal;
+            if(hasNormalMap) {
+                normal = texture2D(normalMap, v_uv).xyz;
+                normal = normal * 2.0 - 1.0;
+                normal = normalize(TBN * normal);
+            } else {
+                normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
+            }
+
+//            vec3 lighting = vec3(0,0,0);
+//            lighting += 0.3 * f_directionalLight(normal);
+//            lighting += 0.3 * f_pointLight(normal);
+//            lighting += 0.3 * f_pointLight_PassThrough(normal);
+
 
             vec3 lighting = vec3(0,0,0);
             if (pointLight1.w > 0.0) {
@@ -250,6 +290,12 @@ fragmentShader =
             if (directionalLight.w > 0.0) {
                 lighting += f_directionalLight(normal);
             }
+//            lighting += 0.8 * f_pointLight_PassThrough(normal);
+
+//            vec3 lighting = vec3(1,1,1);
+////            lighting *= f_directionalLight(normal);
+//            lighting *= f_pointLight(normal);
+////            lighting *= f_pointLight_PassThrough(normal);
 
             gl_FragColor =  vec4(lighting * diffuse, 1.0);
         }

@@ -23,8 +23,8 @@ type alias Varyings =
     }
 
 
-renderer : Material.Options -> Texture -> Scene.Uniforms u -> Object materialId -> Entity
-renderer _ _ uniforms object =
+renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer _ uniforms object =
     material
         { sceneCamera = uniforms.sceneCamera
         , scenePerspective = uniforms.scenePerspective

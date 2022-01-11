@@ -55,7 +55,6 @@ sceneView defaultTexture (Hud hud) model scene =
                 , id "viewport"
                 ]
                 (Scene.render
-                    defaultTexture
                     [ Light.directional (vec3 -1 1 1) ]
                     model.sceneOptions
                     Model.viewport
@@ -74,7 +73,7 @@ sceneView defaultTexture (Hud hud) model scene =
                             Nothing
                     )
                     scene
-                    renderer
+                    (renderer defaultTexture)
                 )
             ]
         , aside
@@ -103,16 +102,16 @@ sceneView defaultTexture (Hud hud) model scene =
 
 
 renderer :
-    Maybe Material.Name
+    Texture
+    -> Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
-    -> Texture
     -> Uniforms u
     -> Object Material.Name
     -> WebGL.Entity
-renderer name =
+renderer fallbackTexture name =
     case name of
         Just materialName ->
-            Material.renderer materialName
+            Material.renderer fallbackTexture materialName
 
         Nothing ->
             XYZMika.XYZ.Material.Simple.renderer

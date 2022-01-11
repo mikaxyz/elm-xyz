@@ -70,7 +70,7 @@ render assets =
                     |> Object.withPosition pos
                     |> Object.withNormalMap assets.normal
                     |> Object.withDiffuseMap assets.diffuse
-                    |> Object.withMaterialName Material.Advanced
+                    |> Object.withMaterialName Material.Textured
                 )
 
         d1 =
@@ -92,7 +92,7 @@ render assets =
         |> Object.withRotation (Mat4.makeScale3 5 1 5)
         |> Object.withNormalMap assets.normal
         |> Object.withDiffuseMap assets.diffuse
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Tree.singleton
     ]
 

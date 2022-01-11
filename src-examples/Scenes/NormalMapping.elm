@@ -37,21 +37,21 @@ render cube =
         |> Object.withPosition (vec3 0 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Tree.singleton
     , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 -1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Tree.singleton
     , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 1.5 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withColor Color.grey
-        |> Object.withMaterialName Material.Advanced
+        |> Object.withMaterialName Material.Textured
         |> Tree.singleton
     ]
 

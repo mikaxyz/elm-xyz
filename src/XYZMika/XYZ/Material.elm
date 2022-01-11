@@ -15,7 +15,6 @@ module XYZMika.XYZ.Material exposing
     )
 
 import WebGL exposing (Entity, Shader)
-import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 import XYZMika.XYZ.Scene.Light.DirectionalLight exposing (DirectionalLight)
@@ -61,7 +60,6 @@ directionalLights (Options options) =
 type alias Renderer materialId uniforms =
     Maybe materialId
     -> Options
-    -> Texture
     -> uniforms
     -> Object materialId
     -> Entity
