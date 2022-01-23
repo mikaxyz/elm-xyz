@@ -3,13 +3,15 @@ module Scenes.NormalMapping exposing (init, sceneOptions)
 import Asset
 import Color
 import Material
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Matrix4 as Mat4
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -29,12 +31,16 @@ init assets =
         |> Tree.tree (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.initWithTriangles)
         |> Scene.init
         |> Scene.withCameraPosition (vec3 -3 1.5 2.5)
+        --|> Scene.withCameraPosition (vec3 -2 1 1.5)
         |> Scene.withCameraTarget (vec3 0 0.5 0)
 
 
 render : Assets -> List (Tree (Object Material.Name))
 render cube =
-    [ cube.verticesIndexed
+    [ pointLight 0.1 (vec3 5 5 -5) (vec3 0.85 0.95 1)
+    , pointLight 0.8 (vec3 -3 3 10) (vec3 0.99 0.99 0.9)
+    , pointLight 0.2 (vec3 -6 -3 -6) (vec3 0.99 0.99 0.99)
+    , cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 0 0.55 0)
         |> Object.withDiffuseMap cube.diffuse
@@ -43,6 +49,16 @@ render cube =
         |> Object.withMaterialName Material.Textured
         |> Tree.singleton
     ]
+
+
+pointLight : Float -> Vec3 -> Vec3 -> Tree (Object materialId)
+pointLight intensity position color =
+    Object.light position
+        (Light.pointLight (vec3 0 0 0)
+            |> Light.withIntensity intensity
+            |> Light.withColor color
+        )
+        |> Tree.singleton
 
 
 getAssets : Store Asset.Obj Asset.Texture -> Maybe Assets
