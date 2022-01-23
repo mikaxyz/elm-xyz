@@ -141,7 +141,7 @@ init =
     , scene = Nothing
     , sceneOptions = SceneOptions.create
     , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
-    , currentSceneIndex = 0
+    , currentSceneIndex = 3
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
@@ -290,8 +290,9 @@ loadScene model =
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.UvCube model_.assets (AssetLoaded 1)
-                            , AssetStore.loadTexture Asset.UvCubeDiffuse model_.assets (AssetLoaded 1)
+                            [ AssetStore.loadObj Asset.Sneaker model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.SneakerNormal model_.assets (AssetLoaded 1)
                             ]
                         )
                    )

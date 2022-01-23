@@ -16,6 +16,7 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 type alias Assets =
     { verticesIndexed : ( List Vertex, List ( Int, Int, Int ) )
     , diffuse : Texture
+    , normal : Texture
     }
 
 
@@ -37,20 +38,7 @@ render cube =
         |> Object.withPosition (vec3 0 0 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
-        |> Object.withMaterialName Material.Textured
-        |> Tree.singleton
-    , cube.verticesIndexed
-        |> Object.initWithIndexedTriangles
-        |> Object.withPosition (vec3 -1.5 0 0)
-        |> Object.withOptionDragToRotateXY
-        |> Object.withDiffuseMap cube.diffuse
-        |> Object.withMaterialName Material.Textured
-        |> Tree.singleton
-    , cube.verticesIndexed
-        |> Object.initWithIndexedTriangles
-        |> Object.withPosition (vec3 1.5 0 0)
-        |> Object.withOptionDragToRotateXY
-        |> Object.withColor Color.grey
+        |> Object.withNormalMap cube.normal
         |> Object.withMaterialName Material.Textured
         |> Tree.singleton
     ]
@@ -58,10 +46,11 @@ render cube =
 
 getAssets : Store Asset.Obj Asset.Texture -> Maybe Assets
 getAssets assets =
-    Maybe.map2
+    Maybe.map3
         Assets
-        (AssetStore.verticesIndexed Asset.UvCube assets)
-        (AssetStore.texture Asset.UvCubeDiffuse assets)
+        (AssetStore.verticesIndexed Asset.Sneaker assets)
+        (AssetStore.texture Asset.SneakerDiffuse assets)
+        (AssetStore.texture Asset.SneakerNormal assets)
 
 
 sceneOptions : Maybe Options

@@ -10,6 +10,7 @@ type Obj
     | Deer
     | Wolf
     | Cat
+    | Sneaker
 
 
 objPath : Obj -> String
@@ -39,6 +40,9 @@ objPath texture =
         Cat ->
             "obj/cat.obj"
 
+        Sneaker ->
+            "obj/used-new-balance-574-classic-free/nb574.obj"
+
 
 type Texture
     = Empty
@@ -49,6 +53,8 @@ type Texture
     | UvCubeDiffuse
     | BrickWallDiffuse
     | BrickWallNormal
+    | SneakerDiffuse
+    | SneakerNormal
 
 
 texturePath : Texture -> String
@@ -77,3 +83,9 @@ texturePath texture =
 
         BrickWallNormal ->
             "obj/Brick_Wall_017_SD/Brick_Wall_017_normal.jpg"
+
+        SneakerDiffuse ->
+            "obj/used-new-balance-574-classic-free/textures/nb574.jpg"
+
+        SneakerNormal ->
+            "obj/used-new-balance-574-classic-free/textures/normals.jpg"
