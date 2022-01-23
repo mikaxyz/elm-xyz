@@ -3,6 +3,7 @@ module XYZMika.XYZ.AssetStore exposing
     , Store
     , addMeshToStore
     , addToStore
+    , addToStoreWithTransform
     , init
     , loadObj
     , loadTexture
@@ -14,6 +15,7 @@ module XYZMika.XYZ.AssetStore exposing
 
 import Dict exposing (Dict)
 import Http
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
@@ -92,13 +94,23 @@ verticesIndexed obj (Store { objPath, assets }) =
 
 
 addToStore : Float -> Content -> Store obj texture -> Store obj texture
-addToStore scale content (Store ({ assets } as store)) =
+addToStore =
+    addToStoreWithTransform Mat4.identity
+
+
+addToStoreWithTransform : Mat4 -> Float -> Content -> Store obj texture -> Store obj texture
+addToStoreWithTransform transform scale content (Store ({ assets } as store)) =
     let
         ( path, asset ) =
             case content of
                 Obj path_ x ->
                     ( path_
-                    , XYZMika.XYZ.Parser.Obj.parse { scale = scale, color = vec3 1 1 1 } x
+                    , XYZMika.XYZ.Parser.Obj.parse
+                        { transform = transform
+                        , scale = scale
+                        , color = vec3 1 1 1
+                        }
+                        x
                         |> (\{ triangles, indexedTriangles } -> Mesh triangles indexedTriangles (WebGL.triangles triangles))
                     )
 

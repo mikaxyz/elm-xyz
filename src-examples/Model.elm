@@ -24,7 +24,9 @@ import Asset
 import Browser.Dom
 import Keyboard
 import Material
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
+import Math.Vector3 as Vec3
 import Scenes.Animals
 import Scenes.BrickWall
 import Scenes.Landscape
@@ -47,6 +49,7 @@ type Msg
     | DragBy Vec2
     | DragEnd Vec2
     | AssetLoaded Float AssetStore.Content
+    | AssetLoadedWithTransform Mat4 Float AssetStore.Content
       --
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
@@ -290,7 +293,15 @@ loadScene model =
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.Sneaker model_.assets (AssetLoaded 1)
+                            [ AssetStore.loadObj Asset.Sneaker
+                                model_.assets
+                                (AssetLoadedWithTransform
+                                    (Mat4.makeRotate (-0.5 * pi) Vec3.i
+                                     -- TODO: Can we translate without messing with lighting (normals)?
+                                     --|> Mat4.translate3 0 -5 0
+                                    )
+                                    0.3
+                                )
                             , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets (AssetLoaded 1)
                             , AssetStore.loadTexture Asset.SneakerNormal model_.assets (AssetLoaded 1)
                             ]

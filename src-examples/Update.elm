@@ -422,3 +422,10 @@ update msg model =
                     |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
                 , Cmd.none
                 )
+
+        AssetLoadedWithTransform transform scale asset ->
+            onResize
+                ( model
+                    |> Model.updateAssetStore (AssetStore.addToStoreWithTransform transform scale asset model.assets)
+                , Cmd.none
+                )

@@ -35,7 +35,7 @@ render : Assets -> List (Tree (Object Material.Name))
 render cube =
     [ cube.verticesIndexed
         |> Object.initWithIndexedTriangles
-        |> Object.withPosition (vec3 0 0 0)
+        |> Object.withPosition (vec3 0 0.55 0)
         |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withNormalMap cube.normal
