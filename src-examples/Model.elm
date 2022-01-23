@@ -1,5 +1,6 @@
 module Model exposing
-    ( DragTarget(..)
+    ( ActiveScene(..)
+    , DragTarget(..)
     , Hud(..)
     , HudMsg(..)
     , HudObject(..)
