@@ -175,6 +175,7 @@ nextScene : Model -> ( Model, Cmd Msg )
 nextScene model =
     { model
         | currentSceneIndex = model.currentSceneIndex + 1 |> modBy (Array.length model.scenes)
+        , sceneOptions = SceneOptions.create
     }
         |> loadScene
 
@@ -183,6 +184,7 @@ prevScene : Model -> ( Model, Cmd Msg )
 prevScene model =
     { model
         | currentSceneIndex = model.currentSceneIndex - 1 |> modBy (Array.length model.scenes)
+        , sceneOptions = SceneOptions.create
     }
         |> loadScene
 
@@ -294,7 +296,7 @@ loadScene model =
         Just NormalMapping ->
             { model | scene = Just <| Scenes.NormalMapping.init model.assets }
                 |> (\model_ ->
-                        ( model_
+                        ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
                             [ AssetStore.loadXyz Asset.SneakerXyz
                                 model_.assets
