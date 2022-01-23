@@ -28,7 +28,8 @@ init assets =
         |> Maybe.withDefault []
         |> Tree.tree (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.initWithTriangles)
         |> Scene.init
-        |> Scene.withCameraPosition (vec3 0 1.5 4.5)
+        |> Scene.withCameraPosition (vec3 -3 1.5 2.5)
+        |> Scene.withCameraTarget (vec3 0 0.5 0)
 
 
 render : Assets -> List (Tree (Object Material.Name))

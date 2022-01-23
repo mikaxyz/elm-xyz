@@ -12,6 +12,7 @@ module XYZMika.XYZ.Scene exposing
     , withCamera
     , withCameraMap
     , withCameraPosition
+    , withCameraTarget
     , withLights
     , withLightsInGraph
     )
@@ -71,6 +72,11 @@ withCamera { position, target } (Scene scene) =
 withCameraPosition : Vec3 -> Scene materialId -> Scene materialId
 withCameraPosition position (Scene scene) =
     Scene { scene | camera = scene.camera |> Camera.withPosition position }
+
+
+withCameraTarget : Vec3 -> Scene materialId -> Scene materialId
+withCameraTarget target (Scene scene) =
+    Scene { scene | camera = scene.camera |> Camera.withTarget target }
 
 
 withCameraMap : (Camera -> Camera) -> Scene materialId -> Scene materialId

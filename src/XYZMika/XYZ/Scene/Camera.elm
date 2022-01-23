@@ -9,6 +9,7 @@ module XYZMika.XYZ.Scene.Camera exposing
     , withPan
     , withPosition
     , withPositionMap
+    , withTarget
     , withZoom
     )
 
@@ -46,6 +47,11 @@ withPosition x (Camera camera) =
 withPositionMap : (Vec3 -> Vec3) -> Camera -> Camera
 withPositionMap f (Camera camera) =
     Camera { camera | position = f camera.position }
+
+
+withTarget : Vec3 -> Camera -> Camera
+withTarget x (Camera camera) =
+    Camera { camera | target = x }
 
 
 roll : Camera -> Float
