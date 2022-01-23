@@ -11,6 +11,7 @@ type Obj
     | Wolf
     | Cat
     | Sneaker
+    | SneakerXyz
 
 
 objPath : Obj -> String
@@ -42,6 +43,9 @@ objPath texture =
 
         Sneaker ->
             "obj/used-new-balance-574-classic-free/nb574.obj"
+
+        SneakerXyz ->
+            "obj/sneaker.xyz"
 
 
 type Texture

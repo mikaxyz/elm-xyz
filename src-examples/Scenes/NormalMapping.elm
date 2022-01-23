@@ -36,7 +36,6 @@ render cube =
     [ cube.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withPosition (vec3 0 0.55 0)
-        |> Object.withOptionDragToRotateXY
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withNormalMap cube.normal
         |> Object.withMaterialName Material.Textured
@@ -48,7 +47,7 @@ getAssets : Store Asset.Obj Asset.Texture -> Maybe Assets
 getAssets assets =
     Maybe.map3
         Assets
-        (AssetStore.verticesIndexed Asset.Sneaker assets)
+        (AssetStore.verticesIndexed Asset.SneakerXyz assets)
         (AssetStore.texture Asset.SneakerDiffuse assets)
         (AssetStore.texture Asset.SneakerNormal assets)
 

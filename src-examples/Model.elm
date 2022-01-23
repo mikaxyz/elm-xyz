@@ -50,6 +50,8 @@ type Msg
     | DragEnd Vec2
     | AssetLoaded Float AssetStore.Content
     | AssetLoadedWithTransform Mat4 Float AssetStore.Content
+    | AssetLoadedToDownload String Asset.Obj Float AssetStore.Content
+    | AssetLoadedToDownloadWithTransform String Asset.Obj Mat4 Float AssetStore.Content
       --
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
@@ -293,15 +295,17 @@ loadScene model =
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.Sneaker
+                            [ AssetStore.loadXyz Asset.SneakerXyz
                                 model_.assets
-                                (AssetLoadedWithTransform
-                                    (Mat4.makeRotate (-0.5 * pi) Vec3.i
-                                     -- TODO: Can we translate without messing with lighting (normals)?
-                                     --|> Mat4.translate3 0 -5 0
-                                    )
-                                    0.3
-                                )
+                                (AssetLoaded 1.0)
+
+                            --, AssetStore.loadObj Asset.Sneaker
+                            --    model_.assets
+                            --    (AssetLoadedToDownloadWithTransform "sneaker"
+                            --        Asset.Sneaker
+                            --        (Mat4.makeRotate (-0.5 * pi) Vec3.i)
+                            --        0.3
+                            --    )
                             , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets (AssetLoaded 1)
                             , AssetStore.loadTexture Asset.SneakerNormal model_.assets (AssetLoaded 1)
                             ]

@@ -65,7 +65,7 @@ parse options input =
                     )
     in
     { triangles = triangles
-    , indexedTriangles = generateTangents indexed
+    , indexedTriangles = indexed |> generateTangents
     }
 
 

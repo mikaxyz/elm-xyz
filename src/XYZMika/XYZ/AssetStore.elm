@@ -7,6 +7,7 @@ module XYZMika.XYZ.AssetStore exposing
     , init
     , loadObj
     , loadTexture
+    , loadXyz
     , mesh
     , texture
     , vertices
@@ -23,6 +24,7 @@ import WebGL.Texture
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Parser.Obj
+import XYZMika.XYZ.Parser.Serialize
 
 
 init : (obj -> String) -> (texture -> String) -> Store obj texture
@@ -50,6 +52,7 @@ type Store obj texture
 
 type Content
     = Obj String String
+    | Xyz String String
     | Tex String (Result WebGL.Texture.Error WebGL.Texture.Texture)
 
 
@@ -114,6 +117,17 @@ addToStoreWithTransform transform scale content (Store ({ assets } as store)) =
                         |> (\{ triangles, indexedTriangles } -> Mesh triangles indexedTriangles (WebGL.triangles triangles))
                     )
 
+                Xyz path_ x ->
+                    ( path_
+                    , case XYZMika.XYZ.Parser.Serialize.decode x of
+                        Ok { triangles, indexedTriangles } ->
+                            Mesh triangles indexedTriangles (WebGL.triangles triangles)
+
+                        Err error ->
+                            -- TODO: Handle error...
+                            Mesh [] ( [], [] ) (WebGL.triangles [])
+                    )
+
                 Tex path_ result ->
                     ( path_
                     , case result of
@@ -156,3 +170,18 @@ loadTexture texture_ (Store { texturePath }) msg =
                 |> msg
         )
         (WebGL.Texture.load (texturePath texture_))
+
+
+loadXyz : obj -> Store obj texture -> (Content -> msg) -> Cmd msg
+loadXyz obj (Store { objPath }) msg =
+    Http.get
+        { url = objPath obj
+        , expect =
+            Http.expectString
+                (\x ->
+                    x
+                        |> Result.withDefault ""
+                        |> Xyz (objPath obj)
+                        |> msg
+                )
+        }
