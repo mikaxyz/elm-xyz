@@ -140,7 +140,13 @@ update msg model =
             )
 
         Animate elapsed ->
-            ( { model | theta = model.theta + (elapsed / 10000) }, Cmd.none )
+            ( if model.paused then
+                model
+
+              else
+                { model | theta = model.theta + (elapsed / 10000) }
+            , Cmd.none
+            )
 
         DragStart target pos ->
             ( { model
@@ -238,6 +244,11 @@ update msg model =
                     6
             in
             case key of
+                Keyboard.Alpha 'P' ->
+                    ( { model | paused = not model.paused }
+                    , Cmd.none
+                    )
+
                 Keyboard.Alpha 'X' ->
                     ( { model
                         | scene =

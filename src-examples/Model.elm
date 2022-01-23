@@ -99,6 +99,7 @@ type HudMsg
 
 type alias Model =
     { theta : Float
+    , paused : Bool
     , viewPortElement : Maybe Browser.Dom.Element
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
@@ -140,6 +141,7 @@ getDrag model =
 init : ( Model, Cmd Msg )
 init =
     { theta = 0
+    , paused = False
     , dragger = Nothing
     , drag = vec2 0 0
     , lastDrag = vec2 0 0

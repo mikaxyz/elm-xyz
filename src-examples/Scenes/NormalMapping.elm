@@ -39,6 +39,7 @@ render cube =
         |> Object.withPosition (vec3 0 0.55 0)
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withNormalMap cube.normal
+        |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (2 * theta) Vec3.j)
         |> Object.withMaterialName Material.Textured
         |> Tree.singleton
     ]
