@@ -264,9 +264,13 @@ render defaultLights sceneOptions viewport drag theta options graphRenderOptions
         , sceneRotationMatrix = Mat4.identity
         }
         (GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
-            :: (Renderer.lights rendererOptions
-                    |> List.filterMap Light.position
-                    |> List.map PointLightNode
+            :: (if SceneOptions.showLightGizmos sceneOptions then
+                    Renderer.lights rendererOptions
+                        |> List.filterMap Light.position
+                        |> List.map PointLightNode
+
+                else
+                    []
                )
             |> withGridPlane (SceneOptions.showGridX sceneOptions) AxisX
             |> withGridPlane (SceneOptions.showGridY sceneOptions) AxisY

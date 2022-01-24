@@ -14,6 +14,8 @@ module XYZMika.XYZ.Scene.Options exposing
     , showGridYOption
     , showGridZ
     , showGridZOption
+    , showLightGizmos
+    , showLightGizmosOption
     , toggle
     )
 
@@ -22,6 +24,7 @@ type Option
     = ShowGeometry
     | ShowBoundingBoxes
     | ShowBoundingBoxesOverlay
+    | ShowLightGizmos
     | ShowGridX
     | ShowGridY
     | ShowGridZ
@@ -40,6 +43,11 @@ showBoundingBoxes (Options x) =
 showBoundingBoxesOverlay : Options -> Bool
 showBoundingBoxesOverlay (Options x) =
     x.showBoundingBoxesOverlay
+
+
+showLightGizmos : Options -> Bool
+showLightGizmos (Options x) =
+    x.showLightGizmos
 
 
 showGridX : Options -> Bool
@@ -72,6 +80,11 @@ showBoundingBoxesOverlayOption =
     ShowBoundingBoxesOverlay
 
 
+showLightGizmosOption : Option
+showLightGizmosOption =
+    ShowLightGizmos
+
+
 showGridXOption : Option
 showGridXOption =
     ShowGridX
@@ -92,6 +105,7 @@ type Options
         { showGeometry : Bool
         , showBoundingBoxes : Bool
         , showBoundingBoxesOverlay : Bool
+        , showLightGizmos : Bool
         , showGridX : Bool
         , showGridY : Bool
         , showGridZ : Bool
@@ -104,6 +118,7 @@ create =
         { showGeometry = True
         , showBoundingBoxes = False
         , showBoundingBoxesOverlay = False
+        , showLightGizmos = False
         , showGridX = False
         , showGridY = True
         , showGridZ = False
@@ -116,6 +131,7 @@ toggle option (Options options) =
         { showGeometry = toggle_ option ShowGeometry not options.showGeometry
         , showBoundingBoxes = toggle_ option ShowBoundingBoxes not options.showBoundingBoxes
         , showBoundingBoxesOverlay = toggle_ option ShowBoundingBoxesOverlay not options.showBoundingBoxesOverlay
+        , showLightGizmos = toggle_ option ShowLightGizmos not options.showLightGizmos
         , showGridX = toggle_ option ShowGridX not options.showGridX
         , showGridY = toggle_ option ShowGridY not options.showGridY
         , showGridZ = toggle_ option ShowGridZ not options.showGridZ

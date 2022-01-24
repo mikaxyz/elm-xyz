@@ -408,16 +408,21 @@ update msg model =
                     )
 
                 Keyboard.Digit 4 ->
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showLightGizmosOption)
+                    , Cmd.none
+                    )
+
+                Keyboard.Digit 7 ->
                     ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridXOption)
                     , Cmd.none
                     )
 
-                Keyboard.Digit 5 ->
+                Keyboard.Digit 8 ->
                     ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                     , Cmd.none
                     )
 
-                Keyboard.Digit 6 ->
+                Keyboard.Digit 9 ->
                     ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridZOption)
                     , Cmd.none
                     )
