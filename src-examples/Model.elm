@@ -332,7 +332,7 @@ loadScene model =
         Just Textures ->
             { model | scene = Just <| Scenes.Textures.init model.assets }
                 |> (\model_ ->
-                        ( model_
+                        ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
                             [ AssetStore.loadObj Asset.Ball model_.assets (AssetLoaded 0.1)
                             , AssetStore.loadTexture Asset.BallDiffuse model_.assets (AssetLoaded 0.1)

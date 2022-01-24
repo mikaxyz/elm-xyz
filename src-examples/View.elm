@@ -52,7 +52,15 @@ attributionView model =
         Just Model.NormalMapping ->
             div [ class "scene-info" ]
                 [ text <| "Model by "
-                , a [ href "https://sketchfab.com/spogna" ] [ text "Andrea Spognetta (Spogna)" ]
+                , a [ href "https://sketchfab.com/3d-models/used-new-balance-574-classic-free-f0aad4f64925479da3f607b186314eef" ]
+                    [ text "Andrea Spognetta (Spogna)" ]
+                ]
+
+        Just Model.Textures ->
+            div [ class "scene-info" ]
+                [ text <| "Model by "
+                , a [ href "https://sketchfab.com/3d-models/basketball-8d17cb0964334a6cbe4b0e293c238956" ]
+                    [ text "Lassi Kaukonen" ]
                 ]
 
         _ ->
