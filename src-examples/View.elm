@@ -26,10 +26,7 @@ import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 doc : Model -> Browser.Document Msg
 doc model =
     { title = "Elm Web GL Experiment"
-    , body =
-        AssetStore.texture Asset.Empty model.assets
-            |> Maybe.map (\defaultTexture -> view defaultTexture model |> List.singleton)
-            |> Maybe.withDefault []
+    , body = [ view model ]
     }
 
 
@@ -39,10 +36,10 @@ type alias Config =
     }
 
 
-view : Texture -> Model -> Html Msg
-view defaultTexture model =
+view : Model -> Html Msg
+view model =
     model.scene
-        |> Maybe.map (sceneView defaultTexture model.hud model)
+        |> Maybe.map (sceneView model.hud model)
         |> Maybe.withDefault (text "")
 
 
@@ -67,8 +64,8 @@ attributionView model =
             text ""
 
 
-sceneView : Texture -> Hud -> Model -> Scene Material.Name -> Html Msg
-sceneView defaultTexture (Hud hud) model scene =
+sceneView : Hud -> Model -> Scene Material.Name -> Html Msg
+sceneView (Hud hud) model scene =
     main_ [ class "app" ]
         [ div [ class "app__viewport" ]
             [ attributionView model
@@ -96,7 +93,7 @@ sceneView defaultTexture (Hud hud) model scene =
                             Nothing
                     )
                     scene
-                    (renderer defaultTexture)
+                    renderer
                 )
             ]
         , aside
@@ -125,16 +122,15 @@ sceneView defaultTexture (Hud hud) model scene =
 
 
 renderer :
-    Texture
-    -> Maybe Material.Name
+    Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
     -> Uniforms u
     -> Object Material.Name
     -> WebGL.Entity
-renderer fallbackTexture name =
+renderer name =
     case name of
         Just materialName ->
-            Material.renderer fallbackTexture materialName
+            Material.renderer materialName
 
         Nothing ->
             XYZMika.XYZ.Material.Simple.renderer

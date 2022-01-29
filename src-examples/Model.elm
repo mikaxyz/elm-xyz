@@ -161,7 +161,6 @@ init =
                 ( model
                 , Cmd.batch
                     [ cmd
-                    , AssetStore.loadTexture Asset.Empty model.assets (AssetLoaded 0.1)
                     , AssetStore.loadTexture Asset.Placeholder model.assets (AssetLoaded 0.1)
                     ]
                 )
