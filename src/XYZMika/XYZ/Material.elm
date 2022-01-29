@@ -4,13 +4,10 @@ module XYZMika.XYZ.Material exposing
     , Renderer
     , createOptions
     , directionalLights
-    , fragmentShader
     , lights
     , material
     , pointLightByIndex
     , toEntity
-    , uniforms
-    , vertexShader
     , withLights
     )
 
@@ -82,35 +79,20 @@ material u v f =
     Material u (VertexShader v) (FragmentShader f)
 
 
-vertexShader : Material uniforms v -> Shader Vertex uniforms v
-vertexShader (Material _ (VertexShader x) _) =
-    x
-
-
-fragmentShader : Material uniforms v -> Shader {} uniforms v
-fragmentShader (Material _ _ (FragmentShader x)) =
-    x
-
-
-uniforms : Material uniforms v -> uniforms
-uniforms (Material x _ _) =
-    x
-
-
 toEntity : Object materialId -> Material uniforms v -> Entity
-toEntity object mat =
+toEntity object (Material uniforms_ (VertexShader vShader) (FragmentShader fShader)) =
     case Object.glSetting object of
         Just glSetting ->
             WebGL.entityWith
                 [ glSetting ]
-                (vertexShader mat)
-                (fragmentShader mat)
+                vShader
+                fShader
                 (Object.mesh object)
-                (uniforms mat)
+                uniforms_
 
         Nothing ->
             WebGL.entity
-                (vertexShader mat)
-                (fragmentShader mat)
+                vShader
+                fShader
                 (Object.mesh object)
-                (uniforms mat)
+                uniforms_
