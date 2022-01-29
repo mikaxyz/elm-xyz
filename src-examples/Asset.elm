@@ -49,7 +49,8 @@ objPath texture =
 
 
 type Texture
-    = Placeholder
+    = MissingFile
+    | Placeholder
     | BallDiffuse
     | BallNormal
     | TreeDiffuse
@@ -63,6 +64,9 @@ type Texture
 texturePath : Texture -> String
 texturePath texture =
     case texture of
+        MissingFile ->
+            "img/missing.png"
+
         Placeholder ->
             "img/coords-1.png"
 

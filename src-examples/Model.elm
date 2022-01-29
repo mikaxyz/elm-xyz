@@ -25,9 +25,7 @@ import Asset
 import Browser.Dom
 import Keyboard
 import Material
-import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
-import Math.Vector3 as Vec3
 import Scenes.Animals
 import Scenes.BrickWall
 import Scenes.Landscape
@@ -49,10 +47,8 @@ type Msg
     | Drag Vec2
     | DragBy Vec2
     | DragEnd Vec2
-    | AssetLoaded Float AssetStore.Content
-    | AssetLoadedWithTransform Mat4 Float AssetStore.Content
-    | AssetLoadedToDownload String Asset.Obj Float AssetStore.Content
-    | AssetLoadedToDownloadWithTransform String Asset.Obj Mat4 Float AssetStore.Content
+    | AssetStoreLoadResult (Result AssetStore.Error AssetStore.Content)
+    | AssetStoreLoadResultDownloadXyz String Asset.Obj AssetStore.Content
       --
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
@@ -161,7 +157,8 @@ init =
                 ( model
                 , Cmd.batch
                     [ cmd
-                    , AssetStore.loadTexture Asset.Placeholder model.assets (AssetLoaded 0.1)
+                    , AssetStore.loadTexture Asset.MissingFile model.assets AssetStoreLoadResult
+                    , AssetStore.loadTexture Asset.Placeholder model.assets AssetStoreLoadResult
                     ]
                 )
            )
@@ -299,19 +296,15 @@ loadScene model =
                 |> (\model_ ->
                         ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
-                            [ AssetStore.loadXyz Asset.SneakerXyz
-                                model_.assets
-                                (AssetLoaded 1.0)
+                            [ AssetStore.loadXyz Asset.SneakerXyz model_.assets AssetStoreLoadResult
 
                             --, AssetStore.loadObj Asset.Sneaker
                             --    model_.assets
-                            --    (AssetLoadedToDownloadWithTransform "sneaker"
+                            --    (AssetStoreLoadResultDownloadXyz "sneaker"
                             --        Asset.Sneaker
-                            --        (Mat4.makeRotate (-0.5 * pi) Vec3.i)
-                            --        0.3
                             --    )
-                            , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets (AssetLoaded 1)
-                            , AssetStore.loadTexture Asset.SneakerNormal model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.SneakerNormal model_.assets AssetStoreLoadResult
                             ]
                         )
                    )
@@ -321,9 +314,9 @@ loadScene model =
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.Cube model_.assets (AssetLoaded 1)
-                            , AssetStore.loadTexture Asset.BrickWallDiffuse model_.assets (AssetLoaded 1)
-                            , AssetStore.loadTexture Asset.BrickWallNormal model_.assets (AssetLoaded 1)
+                            [ AssetStore.loadObj Asset.Cube model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.BrickWallDiffuse model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.BrickWallNormal model_.assets AssetStoreLoadResult
                             ]
                         )
                    )
@@ -333,11 +326,11 @@ loadScene model =
                 |> (\model_ ->
                         ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.Ball model_.assets (AssetLoaded 0.1)
-                            , AssetStore.loadTexture Asset.BallDiffuse model_.assets (AssetLoaded 0.1)
-                            , AssetStore.loadTexture Asset.BallNormal model_.assets (AssetLoaded 0.1)
-                            , AssetStore.loadObj Asset.Tree model_.assets (AssetLoaded 0.1)
-                            , AssetStore.loadTexture Asset.TreeDiffuse model_.assets (AssetLoaded 0.1)
+                            [ AssetStore.loadObjWithScale 0.1 Asset.Ball model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.BallDiffuse model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.BallNormal model_.assets AssetStoreLoadResult
+                            , AssetStore.loadObjWithScale 0.1 Asset.Tree model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.TreeDiffuse model_.assets AssetStoreLoadResult
                             ]
                         )
                    )
@@ -352,9 +345,9 @@ loadScene model =
                 |> (\model_ ->
                         ( model_
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.Deer model_.assets (AssetLoaded 0.001)
-                            , AssetStore.loadObj Asset.Wolf model_.assets (AssetLoaded 0.001)
-                            , AssetStore.loadObj Asset.Cat model_.assets (AssetLoaded 0.001)
+                            [ AssetStore.loadObjWithScale 0.001 Asset.Deer model_.assets AssetStoreLoadResult
+                            , AssetStore.loadObjWithScale 0.001 Asset.Wolf model_.assets AssetStoreLoadResult
+                            , AssetStore.loadObjWithScale 0.001 Asset.Cat model_.assets AssetStoreLoadResult
 
                             --, AssetStore.loadObj Asset.Monkey model_.assets (AssetLoaded 0.1)
                             ]

@@ -3,7 +3,6 @@ module Update exposing (update)
 import Browser.Dom
 import File.Download
 import Keyboard
-import Math.Matrix4 as Mat4
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
@@ -11,7 +10,6 @@ import Task
 import Tree exposing (Tree)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore
-import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Parser.Serialize
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
@@ -436,27 +434,28 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        AssetLoaded scale asset ->
-            onResize
-                ( model
-                    |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
-                , Cmd.none
-                )
+        AssetStoreLoadResult result ->
+            case result of
+                Ok asset ->
+                    onResize
+                        ( model
+                            |> Model.updateAssetStore (AssetStore.addToStore asset model.assets)
+                        , Cmd.none
+                        )
 
-        AssetLoadedWithTransform transform scale asset ->
-            onResize
-                ( model
-                    |> Model.updateAssetStore (AssetStore.addToStoreWithTransform transform scale asset model.assets)
-                , Cmd.none
-                )
+                Err error ->
+                    let
+                        _ =
+                            Dbug.log "error" error
+                    in
+                    ( model
+                    , Cmd.none
+                    )
 
-        AssetLoadedToDownload name assetId scale asset ->
-            update (AssetLoadedToDownloadWithTransform name assetId Mat4.identity scale asset) model
-
-        AssetLoadedToDownloadWithTransform name assetId transform scale asset ->
+        AssetStoreLoadResultDownloadXyz name assetId asset ->
             let
                 modelUpdated =
-                    Model.updateAssetStore (AssetStore.addToStoreWithTransform transform scale asset model.assets) model
+                    Model.updateAssetStore (AssetStore.addToStore asset model.assets) model
 
                 download =
                     Maybe.map2

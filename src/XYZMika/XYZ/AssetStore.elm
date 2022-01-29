@@ -1,11 +1,11 @@
 module XYZMika.XYZ.AssetStore exposing
     ( Content
+    , Error(..)
     , Store
-    , addMeshToStore
     , addToStore
-    , addToStoreWithTransform
     , init
     , loadObj
+    , loadObjWithScale
     , loadTexture
     , loadXyz
     , mesh
@@ -16,12 +16,12 @@ module XYZMika.XYZ.AssetStore exposing
 
 import Dict exposing (Dict)
 import Http
+import Json.Decode
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
 import WebGL.Texture
-import XYZMika.Debug as Dbug
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Parser.Obj
 import XYZMika.XYZ.Parser.Serialize
@@ -39,7 +39,6 @@ init objPath texturePath =
 type Asset
     = Mesh (List ( Vertex, Vertex, Vertex )) ( List Vertex, List ( Int, Int, Int ) ) (WebGL.Mesh Vertex)
     | Texture WebGL.Texture.Texture
-    | TextureError WebGL.Texture.Error
 
 
 type Store obj texture
@@ -50,10 +49,21 @@ type Store obj texture
         }
 
 
+type Error
+    = HttpError Http.Error
+    | XyzSerializeError Json.Decode.Error
+    | TextureLoadError WebGL.Texture.Error
+
+
+type alias Triangles =
+    { triangles : List ( Vertex, Vertex, Vertex )
+    , indexedTriangles : ( List Vertex, List ( Int, Int, Int ) )
+    }
+
+
 type Content
-    = Obj String String
-    | Xyz String String
-    | Tex String (Result WebGL.Texture.Error WebGL.Texture.Texture)
+    = Obj String Triangles
+    | Tex String WebGL.Texture.Texture
 
 
 texture : texture -> Store obj texture -> Maybe WebGL.Texture.Texture
@@ -69,7 +79,7 @@ texture texture_ (Store { texturePath, assets }) =
 mesh : obj -> Store obj texture -> Maybe (WebGL.Mesh Vertex)
 mesh obj (Store { objPath, assets }) =
     case assets |> Dict.get (objPath obj) of
-        Just (Mesh v iv x) ->
+        Just (Mesh _ _ x) ->
             Just x
 
         _ ->
@@ -79,7 +89,7 @@ mesh obj (Store { objPath, assets }) =
 vertices : obj -> Store obj texture -> Maybe (List ( Vertex, Vertex, Vertex ))
 vertices obj (Store { objPath, assets }) =
     case assets |> Dict.get (objPath obj) of
-        Just (Mesh v iv x) ->
+        Just (Mesh v _ _) ->
             Just v
 
         _ ->
@@ -96,92 +106,93 @@ verticesIndexed obj (Store { objPath, assets }) =
             Nothing
 
 
-addToStore : Float -> Content -> Store obj texture -> Store obj texture
-addToStore =
-    addToStoreWithTransform Mat4.identity
-
-
-addToStoreWithTransform : Mat4 -> Float -> Content -> Store obj texture -> Store obj texture
-addToStoreWithTransform transform scale content (Store ({ assets } as store)) =
+addToStore : Content -> Store obj texture -> Store obj texture
+addToStore content (Store ({ assets } as store)) =
     let
         ( path, asset ) =
             case content of
-                Obj path_ x ->
+                Obj path_ { triangles, indexedTriangles } ->
                     ( path_
-                    , XYZMika.XYZ.Parser.Obj.parse
-                        { transform = transform
-                        , scale = scale
-                        , color = vec3 1 1 1
-                        }
-                        x
-                        |> (\{ triangles, indexedTriangles } -> Mesh triangles indexedTriangles (WebGL.triangles triangles))
+                    , Mesh triangles indexedTriangles (WebGL.triangles triangles)
                     )
 
-                Xyz path_ x ->
+                Tex path_ texture_ ->
                     ( path_
-                    , case XYZMika.XYZ.Parser.Serialize.decode x of
-                        Ok { triangles, indexedTriangles } ->
-                            Mesh triangles indexedTriangles (WebGL.triangles triangles)
-
-                        Err error ->
-                            -- TODO: Handle error...
-                            Mesh [] ( [], [] ) (WebGL.triangles [])
-                    )
-
-                Tex path_ result ->
-                    ( path_
-                    , case result of
-                        Ok x ->
-                            Texture x
-
-                        Err error ->
-                            -- TODO: Dont "swallow" these
-                            TextureError (Dbug.todo "error" error)
+                    , Texture texture_
                     )
     in
     Store { store | assets = assets |> Dict.insert path asset }
 
 
-addMeshToStore : obj -> WebGL.Mesh Vertex -> Store obj texture -> Store obj texture
-addMeshToStore obj mesh_ (Store ({ objPath, assets } as store)) =
-    Store { store | assets = assets |> Dict.insert (objPath obj) (Mesh [] ( [], [] ) mesh_) }
+loadObj : obj -> Store obj texture -> (Result Error Content -> msg) -> Cmd msg
+loadObj =
+    loadObjWithConfig { scale = 1, transform = Mat4.identity }
 
 
-loadObj : obj -> Store obj texture -> (Content -> msg) -> Cmd msg
-loadObj obj (Store { objPath }) msg =
+loadObjWithScale : Float -> obj -> Store obj texture -> (Result Error Content -> msg) -> Cmd msg
+loadObjWithScale scale =
+    loadObjWithConfig { scale = scale, transform = Mat4.identity }
+
+
+loadObjWithConfig :
+    { scale : Float
+    , transform : Mat4
+    }
+    -> obj
+    -> Store obj texture
+    -> (Result Error Content -> msg)
+    -> Cmd msg
+loadObjWithConfig config obj (Store { objPath }) msg =
     Http.get
         { url = objPath obj
         , expect =
             Http.expectString
-                (\x ->
-                    x
-                        |> Result.withDefault ""
-                        |> Obj (objPath obj)
+                (\result ->
+                    result
+                        |> Result.mapError HttpError
+                        |> Result.andThen
+                            (\objFile ->
+                                XYZMika.XYZ.Parser.Obj.parse
+                                    { transform = config.transform
+                                    , scale = config.scale
+                                    , color = vec3 1 1 1
+                                    }
+                                    objFile
+                                    |> Obj (objPath obj)
+                                    |> Ok
+                            )
                         |> msg
                 )
         }
 
 
-loadTexture : texture -> Store obj texture -> (Content -> msg) -> Cmd msg
-loadTexture texture_ (Store { texturePath }) msg =
-    Task.attempt
-        (\result ->
-            Tex (texturePath texture_) result
-                |> msg
-        )
-        (WebGL.Texture.load (texturePath texture_))
-
-
-loadXyz : obj -> Store obj texture -> (Content -> msg) -> Cmd msg
+loadXyz : obj -> Store obj texture -> (Result Error Content -> msg) -> Cmd msg
 loadXyz obj (Store { objPath }) msg =
     Http.get
         { url = objPath obj
         , expect =
             Http.expectString
-                (\x ->
-                    x
-                        |> Result.withDefault ""
-                        |> Xyz (objPath obj)
+                (\result ->
+                    result
+                        |> Result.mapError HttpError
+                        |> Result.andThen
+                            (\json ->
+                                XYZMika.XYZ.Parser.Serialize.decode json
+                                    |> Result.map (Obj (objPath obj))
+                                    |> Result.mapError XyzSerializeError
+                            )
                         |> msg
                 )
         }
+
+
+loadTexture : texture -> Store obj texture -> (Result Error Content -> msg) -> Cmd msg
+loadTexture texture_ (Store { texturePath }) msg =
+    Task.attempt
+        (\result ->
+            result
+                |> Result.map (Tex (texturePath texture_))
+                |> Result.mapError TextureLoadError
+                |> msg
+        )
+        (WebGL.Texture.load (texturePath texture_))
