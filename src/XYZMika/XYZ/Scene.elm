@@ -12,6 +12,7 @@ module XYZMika.XYZ.Scene exposing
     , withCamera
     , withCameraMap
     , withCameraPosition
+    , withCameraTarget
     , withLights
     , withLightsInGraph
     )
@@ -71,6 +72,11 @@ withCamera { position, target } (Scene scene) =
 withCameraPosition : Vec3 -> Scene materialId -> Scene materialId
 withCameraPosition position (Scene scene) =
     Scene { scene | camera = scene.camera |> Camera.withPosition position }
+
+
+withCameraTarget : Vec3 -> Scene materialId -> Scene materialId
+withCameraTarget target (Scene scene) =
+    Scene { scene | camera = scene.camera |> Camera.withTarget target }
 
 
 withCameraMap : (Camera -> Camera) -> Scene materialId -> Scene materialId
@@ -258,9 +264,13 @@ render defaultLights sceneOptions viewport drag theta options graphRenderOptions
         , sceneRotationMatrix = Mat4.identity
         }
         (GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
-            :: (Renderer.lights rendererOptions
-                    |> List.filterMap Light.position
-                    |> List.map PointLightNode
+            :: (if SceneOptions.showLightGizmos sceneOptions then
+                    Renderer.lights rendererOptions
+                        |> List.filterMap Light.position
+                        |> List.map PointLightNode
+
+                else
+                    []
                )
             |> withGridPlane (SceneOptions.showGridX sceneOptions) AxisX
             |> withGridPlane (SceneOptions.showGridY sceneOptions) AxisY

@@ -1,7 +1,9 @@
 module Update exposing (update)
 
 import Browser.Dom
+import File.Download
 import Keyboard
+import Math.Matrix4 as Mat4
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
@@ -9,6 +11,8 @@ import Task
 import Tree exposing (Tree)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore
+import XYZMika.XYZ.Parser.Obj
+import XYZMika.XYZ.Parser.Serialize
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
 import XYZMika.XYZ.Scene.Light as Light
@@ -136,7 +140,13 @@ update msg model =
             )
 
         Animate elapsed ->
-            ( { model | theta = model.theta + (elapsed / 10000) }, Cmd.none )
+            ( if model.paused then
+                model
+
+              else
+                { model | theta = model.theta + (elapsed / 10000) }
+            , Cmd.none
+            )
 
         DragStart target pos ->
             ( { model
@@ -234,6 +244,11 @@ update msg model =
                     6
             in
             case key of
+                Keyboard.Alpha 'P' ->
+                    ( { model | paused = not model.paused }
+                    , Cmd.none
+                    )
+
                 Keyboard.Alpha 'X' ->
                     ( { model
                         | scene =
@@ -393,16 +408,21 @@ update msg model =
                     )
 
                 Keyboard.Digit 4 ->
+                    ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showLightGizmosOption)
+                    , Cmd.none
+                    )
+
+                Keyboard.Digit 7 ->
                     ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridXOption)
                     , Cmd.none
                     )
 
-                Keyboard.Digit 5 ->
+                Keyboard.Digit 8 ->
                     ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                     , Cmd.none
                     )
 
-                Keyboard.Digit 6 ->
+                Keyboard.Digit 9 ->
                     ( model |> Model.mapSceneOptions (SceneOptions.toggle SceneOptions.showGridZOption)
                     , Cmd.none
                     )
@@ -421,4 +441,37 @@ update msg model =
                 ( model
                     |> Model.updateAssetStore (AssetStore.addToStore scale asset model.assets)
                 , Cmd.none
+                )
+
+        AssetLoadedWithTransform transform scale asset ->
+            onResize
+                ( model
+                    |> Model.updateAssetStore (AssetStore.addToStoreWithTransform transform scale asset model.assets)
+                , Cmd.none
+                )
+
+        AssetLoadedToDownload name assetId scale asset ->
+            update (AssetLoadedToDownloadWithTransform name assetId Mat4.identity scale asset) model
+
+        AssetLoadedToDownloadWithTransform name assetId transform scale asset ->
+            let
+                modelUpdated =
+                    Model.updateAssetStore (AssetStore.addToStoreWithTransform transform scale asset model.assets) model
+
+                download =
+                    Maybe.map2
+                        (\a b ->
+                            { triangles = a
+                            , indexedTriangles = b
+                            }
+                                |> XYZMika.XYZ.Parser.Serialize.toJsonString
+                                |> File.Download.string (name ++ ".xyz") "text/json"
+                        )
+                        (AssetStore.vertices assetId modelUpdated.assets)
+                        (AssetStore.verticesIndexed assetId modelUpdated.assets)
+                        |> Maybe.withDefault Cmd.none
+            in
+            onResize
+                ( modelUpdated
+                , download
                 )

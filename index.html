@@ -40,13 +40,26 @@
 			align-items: center;
 			justify-content: center;
 			flex-grow: 1;
+			flex-direction: column;
+		}
+
+		.scene-info {
+			position: fixed;
+			top: 0;
+			padding: 0.5em 1em;
+			color: lightblue;
+			font-size: 1.5em;
+			background-color: rgba(250, 250, 250, 0.05);
+		}
+		.scene-info a {
+			color: lightblue;
 		}
 
 
 
 		canvas {
 			background-color: #16161D;
-			object-fit: contain;
+			object-fit: cover;
 			max-height: 100%;
 			max-width: 100%;
 			flex-grow: 1;

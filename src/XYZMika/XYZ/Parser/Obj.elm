@@ -2,6 +2,7 @@ module XYZMika.XYZ.Parser.Obj exposing (parse)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import XYZMika.Debug as Dbug
@@ -11,6 +12,7 @@ import XYZMika.XYZ.Data.Vertex as Vertex
 type alias Options =
     { scale : Float
     , color : Vec3
+    , transform : Mat4
     }
 
 
@@ -42,7 +44,7 @@ parse options input =
         indexed : ( List Vertex.Vertex, List ( Int, Int, Int ) )
         indexed =
             String.lines input
-                |> List.map parseLine
+                |> List.map (parseLine options.transform)
                 |> indexedVertices options
 
         vertices_ : Array Vertex.Vertex
@@ -394,8 +396,8 @@ mapNormal x =
             Nothing
 
 
-parseLine : String -> ObjData
-parseLine line =
+parseLine : Mat4 -> String -> ObjData
+parseLine transform line =
     let
         parseVector : String -> Vec3
         parseVector str =
@@ -412,6 +414,7 @@ parseLine line =
                             _ ->
                                 vec3 0 0 0
                    )
+                |> Mat4.transform transform
 
         parseVector2 : String -> Vec2
         parseVector2 str =

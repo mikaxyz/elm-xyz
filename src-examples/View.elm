@@ -1,5 +1,6 @@
 module View exposing (doc, view)
 
+import Array
 import Asset
 import Browser
 import Html exposing (..)
@@ -45,11 +46,33 @@ view defaultTexture model =
         |> Maybe.withDefault (text "")
 
 
+attributionView : Model -> Html msg
+attributionView model =
+    case Array.get model.currentSceneIndex model.scenes of
+        Just Model.NormalMapping ->
+            div [ class "scene-info" ]
+                [ text <| "Model by "
+                , a [ href "https://sketchfab.com/3d-models/used-new-balance-574-classic-free-f0aad4f64925479da3f607b186314eef" ]
+                    [ text "Andrea Spognetta (Spogna)" ]
+                ]
+
+        Just Model.Textures ->
+            div [ class "scene-info" ]
+                [ text <| "Model by "
+                , a [ href "https://sketchfab.com/3d-models/basketball-8d17cb0964334a6cbe4b0e293c238956" ]
+                    [ text "Lassi Kaukonen" ]
+                ]
+
+        _ ->
+            text ""
+
+
 sceneView : Texture -> Hud -> Model -> Scene Material.Name -> Html Msg
 sceneView defaultTexture (Hud hud) model scene =
     main_ [ class "app" ]
         [ div [ class "app__viewport" ]
-            [ WebGL.toHtml
+            [ attributionView model
+            , WebGL.toHtml
                 [ width Model.viewport.width
                 , height Model.viewport.height
                 , id "viewport"

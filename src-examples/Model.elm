@@ -1,5 +1,6 @@
 module Model exposing
-    ( DragTarget(..)
+    ( ActiveScene(..)
+    , DragTarget(..)
     , Hud(..)
     , HudMsg(..)
     , HudObject(..)
@@ -24,7 +25,9 @@ import Asset
 import Browser.Dom
 import Keyboard
 import Material
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
+import Math.Vector3 as Vec3
 import Scenes.Animals
 import Scenes.BrickWall
 import Scenes.Landscape
@@ -47,6 +50,9 @@ type Msg
     | DragBy Vec2
     | DragEnd Vec2
     | AssetLoaded Float AssetStore.Content
+    | AssetLoadedWithTransform Mat4 Float AssetStore.Content
+    | AssetLoadedToDownload String Asset.Obj Float AssetStore.Content
+    | AssetLoadedToDownloadWithTransform String Asset.Obj Mat4 Float AssetStore.Content
       --
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
@@ -93,6 +99,7 @@ type HudMsg
 
 type alias Model =
     { theta : Float
+    , paused : Bool
     , viewPortElement : Maybe Browser.Dom.Element
     , dragger : Maybe { from : Vec2, to : Vec2 }
     , drag : Vec2
@@ -134,6 +141,7 @@ getDrag model =
 init : ( Model, Cmd Msg )
 init =
     { theta = 0
+    , paused = False
     , dragger = Nothing
     , drag = vec2 0 0
     , lastDrag = vec2 0 0
@@ -141,7 +149,7 @@ init =
     , scene = Nothing
     , sceneOptions = SceneOptions.create
     , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
-    , currentSceneIndex = 0
+    , currentSceneIndex = 3
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
@@ -169,6 +177,7 @@ nextScene : Model -> ( Model, Cmd Msg )
 nextScene model =
     { model
         | currentSceneIndex = model.currentSceneIndex + 1 |> modBy (Array.length model.scenes)
+        , sceneOptions = SceneOptions.create
     }
         |> loadScene
 
@@ -177,6 +186,7 @@ prevScene : Model -> ( Model, Cmd Msg )
 prevScene model =
     { model
         | currentSceneIndex = model.currentSceneIndex - 1 |> modBy (Array.length model.scenes)
+        , sceneOptions = SceneOptions.create
     }
         |> loadScene
 
@@ -288,10 +298,21 @@ loadScene model =
         Just NormalMapping ->
             { model | scene = Just <| Scenes.NormalMapping.init model.assets }
                 |> (\model_ ->
-                        ( model_
+                        ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
-                            [ AssetStore.loadObj Asset.UvCube model_.assets (AssetLoaded 1)
-                            , AssetStore.loadTexture Asset.UvCubeDiffuse model_.assets (AssetLoaded 1)
+                            [ AssetStore.loadXyz Asset.SneakerXyz
+                                model_.assets
+                                (AssetLoaded 1.0)
+
+                            --, AssetStore.loadObj Asset.Sneaker
+                            --    model_.assets
+                            --    (AssetLoadedToDownloadWithTransform "sneaker"
+                            --        Asset.Sneaker
+                            --        (Mat4.makeRotate (-0.5 * pi) Vec3.i)
+                            --        0.3
+                            --    )
+                            , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets (AssetLoaded 1)
+                            , AssetStore.loadTexture Asset.SneakerNormal model_.assets (AssetLoaded 1)
                             ]
                         )
                    )
@@ -311,7 +332,7 @@ loadScene model =
         Just Textures ->
             { model | scene = Just <| Scenes.Textures.init model.assets }
                 |> (\model_ ->
-                        ( model_
+                        ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
                             [ AssetStore.loadObj Asset.Ball model_.assets (AssetLoaded 0.1)
                             , AssetStore.loadTexture Asset.BallDiffuse model_.assets (AssetLoaded 0.1)
