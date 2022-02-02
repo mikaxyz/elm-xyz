@@ -185,7 +185,9 @@ initModel =
         , direction = vec2 0 1
         , movement = vec2 0 0
         , verb = Idle
-        , mesh = XYZMika.XYZ.Mesh.Cube.gray (playerHeight / 1) playerHeight (playerHeight / 1)
+        , mesh =
+            XYZMika.XYZ.Mesh.Cube.gray (playerHeight / 1) playerHeight (playerHeight / 1)
+                |> WebGL.triangles
         }
     , terrain = Dict.empty
     , gridWorld =
@@ -231,7 +233,7 @@ type Msg
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
     | OnPointerMove { x : Int, y : Int }
-    | AssetLoaded Float AssetStore.Content
+    | AssetLoaded (Result AssetStore.Error AssetStore.Content)
 
 
 main : Program () Model Msg
@@ -241,11 +243,11 @@ main =
             always
                 ( initModel
                 , Cmd.batch
-                    [ AssetStore.loadObj Ball initModel.assets (AssetLoaded 0.1)
-                    , AssetStore.loadTexture BallDiffuse initModel.assets (AssetLoaded 0.1)
-                    , AssetStore.loadTexture BrickWall initModel.assets (AssetLoaded 0.1)
-                    , AssetStore.loadObj Tree initModel.assets (AssetLoaded 0.1)
-                    , AssetStore.loadTexture TreeDiffuse initModel.assets (AssetLoaded 0.1)
+                    [ AssetStore.loadObjWithScale 0.1 Ball initModel.assets AssetLoaded
+                    , AssetStore.loadTexture BallDiffuse initModel.assets AssetLoaded
+                    , AssetStore.loadTexture BrickWall initModel.assets AssetLoaded
+                    , AssetStore.loadObjWithScale 0.1 Tree initModel.assets AssetLoaded
+                    , AssetStore.loadTexture TreeDiffuse initModel.assets AssetLoaded
                     ]
                 )
         , view = doc
@@ -500,8 +502,15 @@ update msg model =
             , Cmd.none
             )
 
-        AssetLoaded scale asset ->
-            ( { model | assets = model.assets |> AssetStore.addToStore scale asset }, Cmd.none )
+        AssetLoaded (Ok asset) ->
+            ( { model | assets = model.assets |> AssetStore.addToStore asset }, Cmd.none )
+
+        AssetLoaded (Err error) ->
+            let
+                _ =
+                    Debug.log "AssetLoaded" error
+            in
+            ( model, Cmd.none )
 
         OnPointerMove { x, y } ->
             ( model
