@@ -19,13 +19,11 @@
 <script src="dist/sandbox.js"></script>
 <script>
 	const urlParams = new URLSearchParams(window.location.search);
-	var appp = urlParams.get('app');
-	console.log("appp", appp);
-
+	var example = urlParams.get('app');
 	var app;
 
-	if (urlParams.get('app') === "mouse-select") {
-		app = Elm.MouseSelect.init();
+	if (example) {
+		app = Elm[example].init();
 	} else {
 		app = Elm.Sandbox.init();
 		document.addEventListener('pointerlockchange', pointerLockChange, false);
