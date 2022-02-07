@@ -6,6 +6,7 @@ import Html.Attributes exposing (height, width)
 import Math.Vector2 exposing (vec2)
 import Math.Vector3 exposing (vec3)
 import ShadowMapping.Model exposing (Model, Msg(..))
+import ShadowMapping.Renderer
 import WebGL
 import XYZMika.Dragon as Dragon
 import XYZMika.XYZ.Material.Color
@@ -46,6 +47,6 @@ view model =
             (\_ -> Nothing)
             model.scene
             (Maybe.map XYZMika.XYZ.Material.Renderer.renderer
-                >> Maybe.withDefault XYZMika.XYZ.Material.Color.renderer
+                >> Maybe.withDefault ShadowMapping.Renderer.renderer
             )
         )

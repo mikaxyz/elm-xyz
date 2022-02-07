@@ -21,9 +21,7 @@ graph =
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.11 0)
-            |> Object.withMaterialName Material.Advanced
         , XYZMika.XYZ.Mesh.Cube.gray 1 1 1
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 0.5 0)
-            |> Object.withMaterialName Material.Advanced
         ]
