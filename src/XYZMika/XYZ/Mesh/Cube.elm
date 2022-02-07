@@ -1,5 +1,6 @@
 module XYZMika.XYZ.Mesh.Cube exposing
-    ( colorful
+    ( colored
+    , colorful
     , cube
     , gray
     , pairsColorfulWithBounds
@@ -74,6 +75,11 @@ gray =
             Color.grey50
             Color.grey50
         )
+
+
+colored : Color -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
+colored color =
+    cube (Colors color color color color color color)
 
 
 cube : Colors -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
