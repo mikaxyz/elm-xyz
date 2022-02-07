@@ -4,6 +4,7 @@ import WebGL exposing (Entity)
 import XYZMika.XYZ.Material as Material
 import XYZMika.XYZ.Material.Advanced
 import XYZMika.XYZ.Material.Color
+import XYZMika.XYZ.Material.DepthMap
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -13,6 +14,7 @@ type Name
     = Simple
     | Color
     | Advanced
+    | DepthMap
 
 
 renderer :
@@ -31,3 +33,6 @@ renderer name =
 
         Advanced ->
             XYZMika.XYZ.Material.Advanced.renderer
+
+        DepthMap ->
+            XYZMika.XYZ.Material.DepthMap.renderer

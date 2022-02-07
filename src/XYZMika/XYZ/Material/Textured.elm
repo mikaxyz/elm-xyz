@@ -51,6 +51,7 @@ type alias Varyings =
     , v_uv : Vec2
     , v_fragPos : Vec3
 
+    --, v_pos : Vec4
     --
     , v_t : Vec3
     , v_b : Vec3
@@ -143,6 +144,7 @@ vertexShader =
         varying vec3 v_tangent;
         varying vec2 v_uv;
         varying vec3 v_fragPos;
+//        varying vec4 v_pos;
 
         varying vec3 v_t;
         varying vec3 v_b;
@@ -150,6 +152,7 @@ vertexShader =
 
         void main () {
             gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
+//            v_pos = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
             v_fragPos = vec3(sceneMatrix * vec4(position, 1.0));
             v_color = color * objectColor;
             v_uv = uv;
@@ -193,6 +196,7 @@ fragmentShader =
         varying vec3 v_tangent;
         varying vec2 v_uv;
         varying vec3 v_fragPos;
+//        varying vec4 v_pos;
 
         varying vec3 v_t;
         varying vec3 v_b;
@@ -247,6 +251,12 @@ fragmentShader =
         void main () {
             vec3 diffuse;
             if(hasDiffuseMap) {
+            
+//            vec3 texPos = (v_pos.xyz / v_pos.w) * 0.5 + 0.5;
+////            texPos.xyz = (gl_Position.xyz / gl_Position.w) * 0.5 + 0.5;
+//            float depthFromZBuffer = texture2D(diffuseMap, v_uv).x;
+//            diffuse = vec3(1,1,1) * depthFromZBuffer;
+            
                 diffuse = texture2D(diffuseMap, v_uv).rgb;
             } else {
                 diffuse = v_color;
@@ -298,5 +308,6 @@ fragmentShader =
 ////            lighting *= f_pointLight_PassThrough(normal);
 
             gl_FragColor =  vec4(lighting * diffuse, 1.0);
+//            gl_FragColor =  vec4(diffuse, 1.0);
         }
     |]

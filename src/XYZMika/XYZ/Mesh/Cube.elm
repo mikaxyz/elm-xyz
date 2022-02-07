@@ -186,26 +186,26 @@ withBoundsAndColors colors ( v1, v2 ) =
         front =
             quadWithNormal colors.front c.frontTopRight c.frontTopLeft c.frontBottomLeft c.frontBottomRight (vec3 0 0 1)
 
+        top =
+            quadWithNormal colors.top c.frontTopRight c.backTopRight c.backTopLeft c.frontTopLeft (vec3 0 1 0)
+
         back =
             quadWithNormal colors.back c.backTopLeft c.backTopRight c.backBottomRight c.backBottomLeft (vec3 0 0 -1)
 
-        left =
-            quadWithNormal colors.left c.frontTopLeft c.frontBottomLeft c.backBottomLeft c.backTopLeft (vec3 -1 0 0)
-
         right =
-            quadWithNormal colors.right c.frontBottomRight c.frontTopRight c.backTopRight c.backBottomRight (vec3 1 0 0)
+            quadWithNormal colors.right c.backBottomRight c.backTopRight c.frontTopRight c.frontBottomRight (vec3 1 0 0)
 
-        top =
-            quadWithNormal colors.top c.frontTopRight c.frontTopLeft c.backTopLeft c.backTopRight (vec3 0 1 0)
+        left =
+            quadWithNormal colors.left c.backTopLeft c.backBottomLeft c.frontBottomLeft c.frontTopLeft (vec3 -1 0 0)
 
         bottom =
             quadWithNormal colors.bottom c.frontBottomRight c.frontBottomLeft c.backBottomLeft c.backBottomRight (vec3 0 -1 0)
     in
     [ front
-    , back
-    , left
-    , right
-    , top
     , bottom
+    , top
+    , back
+    , right
+    , left
     ]
         |> List.concat

@@ -34,5 +34,5 @@ init =
     , keyboard = Keyboard.init
     , dragon = Dragon.init
     , assets = AssetStore.init Assets.objPath Assets.texturePath
-    , scene = Scene.graph |> XYZMika.XYZ.Scene.init
+    , scene = Scene.graph Nothing |> XYZMika.XYZ.Scene.init
     }

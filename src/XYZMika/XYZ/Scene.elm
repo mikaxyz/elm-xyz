@@ -9,6 +9,7 @@ module XYZMika.XYZ.Scene exposing
     , init
     , map
     , render
+    , renderSimple
     , withCamera
     , withCameraMap
     , withCameraPosition
@@ -210,10 +211,28 @@ type alias GraphRenderOptions =
     }
 
 
+renderSimple :
+    { width : Int, height : Int }
+    -> Scene materialId
+    -> Renderer materialId (Uniforms {})
+    -> List Entity
+renderSimple viewport scene renderer =
+    render
+        []
+        SceneOptions.create
+        viewport
+        (Math.Vector2.vec2 0 0)
+        0.0
+        Nothing
+        (\_ -> Nothing)
+        scene
+        renderer
+
+
 render :
     List Light
     -> SceneOptions.Options
-    -> { a | width : Int, height : Int }
+    -> { width : Int, height : Int }
     -> Vec2
     -> Float
     -> Maybe Options
@@ -422,12 +441,14 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                     |> Tree.map (\x -> ( x.index, x.object ))
                                     |> graphRenderOptionsFn
 
+                            sceneRotationMatrix : Mat4
                             sceneRotationMatrix =
-                                object
-                                    |> Object.rotationWithDrag drag
-                                    |> Object.rotationInTime theta
-                                    |> Object.rotation
-                                    |> Mat4.mul uniforms.sceneRotationMatrix
+                                --object
+                                --    |> Object.rotationWithDrag drag
+                                --    |> Object.rotationInTime theta
+                                --    |> Object.rotation
+                                --    |> Mat4.mul uniforms.sceneRotationMatrix
+                                Mat4.identity
 
                             entity : Uniforms u -> Entity
                             entity uniforms_ =

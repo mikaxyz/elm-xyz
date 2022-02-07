@@ -8,10 +8,12 @@ module XYZMika.XYZ.Material exposing
     , material
     , pointLightByIndex
     , toEntity
+    , toEntityWithSettings
     , withLights
     )
 
 import WebGL exposing (Entity, Shader)
+import WebGL.Settings
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 import XYZMika.XYZ.Scene.Light.DirectionalLight exposing (DirectionalLight)
@@ -96,3 +98,13 @@ toEntity object (Material uniforms_ (VertexShader vShader) (FragmentShader fShad
                 fShader
                 (Object.mesh object)
                 uniforms_
+
+
+toEntityWithSettings : List WebGL.Settings.Setting -> Object materialId -> Material uniforms v -> Entity
+toEntityWithSettings settings object (Material uniforms_ (VertexShader vShader) (FragmentShader fShader)) =
+    WebGL.entityWith
+        settings
+        vShader
+        fShader
+        (Object.mesh object)
+        uniforms_
