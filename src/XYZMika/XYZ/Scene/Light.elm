@@ -7,11 +7,14 @@ module XYZMika.XYZ.Scene.Light exposing
     , position
     , toHumanReadable
     , withColor
+    , withColorVec
     , withIntensity
     , withPosition
     )
 
+import Color exposing (Color)
 import Math.Vector3 exposing (Vec3)
+import XYZMika.Color as Color
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight exposing (DirectionalLight)
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight exposing (PointLight)
 
@@ -51,8 +54,13 @@ withIntensity x light =
             PointLight (light_ |> PointLight.withIntensity x)
 
 
-withColor : Vec3 -> Light -> Light
-withColor x light =
+withColor : Color -> Light -> Light
+withColor color light =
+    withColorVec (Color.toVec3 color) light
+
+
+withColorVec : Vec3 -> Light -> Light
+withColorVec x light =
     case light of
         DirectionalLight light_ ->
             DirectionalLight light_

@@ -1,6 +1,7 @@
 module Update exposing (update)
 
 import Browser.Dom
+import Color
 import File.Download
 import Keyboard
 import Math.Vector2 as Vec2 exposing (Vec2)
@@ -254,7 +255,7 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 0 -lightDistance 0)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 1
                                         ]
                                     )
@@ -269,7 +270,7 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 0 lightDistance 0)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 1
                                         ]
                                     )
@@ -284,7 +285,7 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 lightDistance 0 0)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 1
                                         ]
                                     )
@@ -299,7 +300,7 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 -lightDistance 0 0)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 1
                                         ]
                                     )
@@ -314,7 +315,7 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 0 0 -lightDistance)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 1
                                         ]
                                     )
@@ -329,7 +330,7 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 0 0 lightDistance)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 1
                                         ]
                                     )
@@ -344,13 +345,13 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 -4 2 4)
-                                            |> Light.withColor (vec3 1 0 0)
+                                            |> Light.withColor Color.red
                                             |> Light.withIntensity 0.5
                                         , Light.pointLight (vec3 4 2 4)
-                                            |> Light.withColor (vec3 0 1 0)
+                                            |> Light.withColor Color.green
                                             |> Light.withIntensity 0.5
                                         , Light.pointLight (vec3 0 2 -4)
-                                            |> Light.withColor (vec3 0 0 1)
+                                            |> Light.withColor Color.blue
                                             |> Light.withIntensity 0.5
                                         ]
                                     )
@@ -365,19 +366,19 @@ update msg model =
                                 |> Maybe.map
                                     (Scene.withLights
                                         [ Light.pointLight (vec3 -4 2 2)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 0.2
                                         , Light.pointLight (vec3 -2 4 0.5)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 0.2
                                         , Light.pointLight (vec3 0 5 0)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 0.2
                                         , Light.pointLight (vec3 2 4 0.5)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 0.2
                                         , Light.pointLight (vec3 4 2 2)
-                                            |> Light.withColor (vec3 1 1 1)
+                                            |> Light.withColor Color.white
                                             |> Light.withIntensity 0.2
                                         ]
                                     )

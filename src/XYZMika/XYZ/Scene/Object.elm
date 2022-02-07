@@ -1,5 +1,5 @@
 module XYZMika.XYZ.Scene.Object exposing
-    ( Object, initWithTriangles, initWithLines, initWithIndexedTriangles, light, pointLight
+    ( Object, initWithTriangles, initWithLines, initWithIndexedTriangles, light
     , withPosition, withRotation, withColor, withMaterialName, withGlSetting
     , withDiffuseMap, withNormalMap
     , mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
@@ -124,15 +124,6 @@ enable object =
 
         Group name data ->
             Group name data
-
-
-pointLight : Float -> Vec3 -> Vec3 -> Object materialId
-pointLight intensity position_ color_ =
-    light position_
-        (Light.pointLight (Vec3.vec3 0 0 0)
-            |> Light.withIntensity intensity
-            |> Light.withColor color_
-        )
 
 
 group : String -> Object materialId

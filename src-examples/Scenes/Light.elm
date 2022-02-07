@@ -7,6 +7,7 @@ import Math.Vector3 exposing (Vec3, vec3)
 import Tree
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 
 
@@ -23,7 +24,12 @@ init =
             --|> Object.withPosition (vec3 0 -0.5 0)
             |> Object.withOptionDragToRotateY
         )
-        [ Object.pointLight 1.0 (vec3 0 3 -3) (vec3 1 1 1) |> Tree.singleton
+        [ Object.light (vec3 0 3 -3)
+            (Light.pointLight (vec3 0 0 0)
+                |> Light.withIntensity 1.0
+                |> Light.withColor Color.white
+            )
+            |> Tree.singleton
         , Tree.tree
             (XYZMika.XYZ.Mesh.Cube.withBoundsAndColor Color.lightPurple ( vec3 -0.5 -0.5 -0.5, vec3 0.5 0.5 0.5 )
                 |> Object.initWithTriangles

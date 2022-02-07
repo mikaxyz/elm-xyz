@@ -51,7 +51,7 @@ pointLight intensity position color =
     Object.light position
         (Light.pointLight (Vec3.vec3 0 0 0)
             |> Light.withIntensity intensity
-            |> Light.withColor color
+            |> Light.withColorVec color
         )
         |> Tree.singleton
 
