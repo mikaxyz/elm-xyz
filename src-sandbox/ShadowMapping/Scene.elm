@@ -16,10 +16,7 @@ pointLightPosition theta =
     -- Initial camera position
     --vec3 0 3 4
     vec3 -2 2 0
-
-
-
---|> Mat4.transform (Mat4.makeRotate (60 * theta) (vec3 0 1 0))
+        |> Mat4.transform (Mat4.makeRotate (10 * theta) (vec3 0 1 0))
 
 
 graph : Maybe Texture -> Scene.Graph (Object.Object Material.Name)

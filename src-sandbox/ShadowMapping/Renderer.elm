@@ -424,5 +424,41 @@ fragmentShader =
             i = shadowmap_distance;
             
             gl_FragColor = vec4(vec3(shadowmap_distance), 1.0);
+            
+            
+            
+            
+            
+            
+            
+//            float unpackDepth(const in vec4 rgbaDepth) {
+//              const vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
+//              float depth = dot(rgbaDepth, bitShift);
+//              return depth;
+//            }
+
+              vec3 shadowCoord = (v_Vertex_relative_to_light.xyz/v_Vertex_relative_to_light.w)/2.0 + 0.5;
+              vec4 rgbaDepth = texture2D(shadowMap, shadowCoord.xy);
+              
+              
+              const vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
+              float depth = dot(rgbaDepth, bitShift);
+              
+              
+//              float depth = unpackDepth(rgbaDepth);
+              float visibility = (shadowCoord.z > depth + 0.0001) ? 0.3 : 1.0;
+              
+              // TODO: Reset if outside shadowMap...
+//              if (shadowCoord.z < 0.9) {
+//                visibility = 1.0;
+//              }
+              
+//              gl_FragColor = vec4(v_Color.rgb * visibility, v_Color.a);
+            
+            gl_FragColor =  vec4(visibility * lighting * diffuse, 1.0);
+            
+
+            
+            
         }
     |]
