@@ -2,9 +2,8 @@ module ShadowMapping.Assets exposing (..)
 
 
 type TextureId
-    = BallDiffuse
-    | BrickWall
-    | TreeDiffuse
+    = SneakerDiffuse
+    | SneakerNormal
 
 
 type ObjId
@@ -21,11 +20,8 @@ objPath obj =
 texturePath : TextureId -> String
 texturePath texture =
     case texture of
-        BallDiffuse ->
-            "obj/Basketball_size6_SF/Basketball_size6.jpg"
+        SneakerDiffuse ->
+            "obj/used-new-balance-574-classic-free/textures/nb574.jpg"
 
-        BrickWall ->
-            "img/brickwall-1.jpg"
-
-        TreeDiffuse ->
-            "obj/fat_bottomed_tree/fat_bottomed_tree.png"
+        SneakerNormal ->
+            "obj/used-new-balance-574-classic-free/textures/normals.jpg"

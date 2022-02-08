@@ -1,10 +1,11 @@
-module ShadowMapping.Renderer exposing (renderer)
+module ShadowMapping.Material.Textured exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
+import WebGL.Settings
 import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
@@ -22,6 +23,12 @@ type alias Uniforms =
     , sceneRotationMatrix : Mat4
     , objectColor : Vec3
     , directionalLight : Vec4
+
+    --
+    , diffuseMap : Texture
+    , hasDiffuseMap : Bool
+    , normalMap : Texture
+    , hasNormalMap : Bool
 
     --
     , pointLight1 : Vec4
@@ -64,8 +71,8 @@ type alias ShadowMap =
     }
 
 
-renderer : ShadowMap -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer shadowMap options uniforms object =
+renderer : ShadowMap -> Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer shadowMap fallbackTexture options uniforms object =
     let
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
@@ -98,6 +105,10 @@ renderer shadowMap options uniforms object =
         --
         , objectColor = Object.colorVec3 object
         , directionalLight = directionalLight
+        , diffuseMap = object |> Object.diffuseMapWithDefault fallbackTexture
+        , hasDiffuseMap = Object.diffuseMap object /= Nothing
+        , hasNormalMap = Object.normalMap object /= Nothing
+        , normalMap = object |> Object.normalMapWithDefault fallbackTexture
 
         --
         , pointLight1 = pointLight 1 |> .light
@@ -110,6 +121,8 @@ renderer shadowMap options uniforms object =
         , pointLight4Color = pointLight 4 |> .color
         , pointLight5 = pointLight 5 |> .light
         , pointLight5Color = pointLight 5 |> .color
+
+        --
         , shadowMap = shadowMap.texture
         , shadowMapCameraMatrix = shadowMap.cameraMatrix
         , shadowMapPerspectiveMatrix = shadowMap.perspectiveMatrix
@@ -117,6 +130,8 @@ renderer shadowMap options uniforms object =
         }
         |> Material.toEntityWithSettings
             [ WebGL.Settings.DepthTest.default
+
+            --, WebGL.Settings.cullFace WebGL.Settings.back
             ]
             object
 
@@ -175,7 +190,7 @@ vertexShader =
 
             vec4 pos = vec4(v_fragPos, 1.0);
             pos = sceneMatrix * vec4(position, 1.0);
-            v_Vertex_relative_to_light = shadowMapPerspectiveMatrix * shadowMapCameraMatrix  * pos;
+            v_Vertex_relative_to_light = shadowMapPerspectiveMatrix * shadowMapCameraMatrix * pos;
         }
     |]
 
@@ -191,6 +206,10 @@ fragmentShader =
         uniform mat4 sceneRotationMatrix;
 
         uniform vec4 directionalLight;
+        uniform sampler2D diffuseMap;
+        uniform bool hasDiffuseMap;
+        uniform sampler2D normalMap;
+        uniform bool hasNormalMap;
 
         uniform vec4 pointLight1;
         uniform vec3 pointLight1Color;
@@ -289,8 +308,22 @@ fragmentShader =
         }
 
         void main () {
-            vec3 diffuse = v_color;
-            vec3 normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
+            vec3 diffuse;
+            if(hasDiffuseMap) {
+                diffuse = texture2D(diffuseMap, v_uv).rgb;
+            } else {
+                diffuse = v_color;
+            }
+
+            highp mat3 TBN = mat3(v_t, v_b, v_n);
+            vec3 normal;
+            if(hasNormalMap) {
+                normal = texture2D(normalMap, v_uv).xyz;
+                normal = normal * 2.0 - 1.0;
+                normal = normalize(TBN * normal);
+            } else {
+                normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
+            }
 
             vec3 lighting = vec3(0,0,0);
             if (pointLight1.w > 0.0) {

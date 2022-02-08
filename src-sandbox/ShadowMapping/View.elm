@@ -5,18 +5,15 @@ import Html exposing (Html, text)
 import Html.Attributes exposing (height, width)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import ShadowMapping.Assets as Asset
+import ShadowMapping.Material.Advanced
 import ShadowMapping.Model exposing (Model, Msg(..))
-import ShadowMapping.Renderer
 import ShadowMapping.Scene as Scene
 import WebGL
 import XYZMika.Dragon as Dragon
 import XYZMika.XYZ.AssetStore as AssetStore
-import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material.Advanced
-import XYZMika.XYZ.Material.Color
 import XYZMika.XYZ.Material.DepthMap
 import XYZMika.XYZ.Material.Renderer
-import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene
 import XYZMika.XYZ.Scene.Camera
 
@@ -39,21 +36,21 @@ doc model =
 
 view : Model -> Html Msg
 view model =
-    case AssetStore.verticesIndexed Asset.SneakerXyz model.assets of
-        Just sneakers ->
-            model.scene
-                |> XYZMika.XYZ.Scene.map
-                    (\_ ->
-                        Scene.graph model.theta Nothing { sneakers = sneakers }
-                    )
-                |> view_ model
-
-        Nothing ->
-            text "Loading..."
-
-
-
---view : Scene -> Model -> Html Msg
+    Maybe.map3
+        (\mesh diffuse normal -> { mesh = mesh, diffuse = diffuse, normal = normal })
+        (AssetStore.verticesIndexed Asset.SneakerXyz model.assets)
+        (AssetStore.texture Asset.SneakerDiffuse model.assets)
+        (AssetStore.texture Asset.SneakerNormal model.assets)
+        |> Maybe.map
+            (\assets ->
+                model.scene
+                    |> XYZMika.XYZ.Scene.map
+                        (\_ ->
+                            Scene.graph model.theta Nothing assets
+                        )
+                    |> view_ model
+            )
+        |> Maybe.withDefault (text "Loading...")
 
 
 view_ model scene =
@@ -85,7 +82,7 @@ view_ model scene =
                             material
                                 |> Maybe.map XYZMika.XYZ.Material.Renderer.renderer
                                 |> Maybe.withDefault
-                                    (ShadowMapping.Renderer.renderer
+                                    (ShadowMapping.Material.Advanced.renderer
                                         { texture = texture
                                         , perspectiveMatrix = shadowMapTransforms.perspectiveMatrix
                                         , cameraMatrix = shadowMapTransforms.cameraMatrix

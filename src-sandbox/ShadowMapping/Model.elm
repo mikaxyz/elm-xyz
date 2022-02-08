@@ -2,6 +2,7 @@ module ShadowMapping.Model exposing (Model, Msg(..), init)
 
 import Keyboard
 import Math.Vector2 exposing (Vec2)
+import Math.Vector3 exposing (vec3)
 import ShadowMapping.Assets as Assets exposing (ObjId, TextureId)
 import ShadowMapping.Scene as Scene
 import Tree
@@ -36,5 +37,7 @@ init =
     , keyboard = Keyboard.init
     , dragon = Dragon.init
     , assets = AssetStore.init Assets.objPath Assets.texturePath
-    , scene = XYZMika.XYZ.Scene.init (Tree.singleton (Object.group "LAODING"))
+    , scene =
+        XYZMika.XYZ.Scene.init (Tree.singleton (Object.group "LAODING"))
+            |> XYZMika.XYZ.Scene.withCameraTarget (vec3 0 0.5 0)
     }

@@ -1,14 +1,15 @@
-module XYZMika.XYZ.Material.Advanced exposing (renderer)
+module ShadowMapping.Material.Advanced exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
+import ShadowMapping.Material.Textured
 import WebGL exposing (Entity, Shader)
+import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material)
-import XYZMika.XYZ.Material.Textured
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
@@ -34,6 +35,10 @@ type alias Uniforms =
     , pointLight4Color : Vec3
     , pointLight5 : Vec4
     , pointLight5Color : Vec3
+    , shadowMap : Texture
+    , shadowMapCameraMatrix : Mat4
+    , shadowMapPerspectiveMatrix : Mat4
+    , shadowMapModelMatrix : Mat4
     }
 
 
@@ -43,11 +48,20 @@ type alias Varyings =
     , v_tangent : Vec3
     , v_uv : Vec2
     , v_fragPos : Vec3
+    , v_Vertex_relative_to_light : Vec4
 
     --
     , v_t : Vec3
     , v_b : Vec3
     , v_n : Vec3
+    }
+
+
+type alias ShadowMap =
+    { texture : Texture
+    , perspectiveMatrix : Mat4
+    , cameraMatrix : Mat4
+    , modelMatrix : Mat4
     }
 
 
@@ -60,8 +74,8 @@ objectTextureMaps object =
         |> List.head
 
 
-renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer options uniforms object =
+renderer : ShadowMap -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer shadowMap options uniforms object =
     let
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
@@ -87,7 +101,8 @@ renderer options uniforms object =
     in
     case objectTextureMaps object of
         Just fallbackTexture ->
-            XYZMika.XYZ.Material.Textured.renderer
+            ShadowMapping.Material.Textured.renderer
+                shadowMap
                 fallbackTexture
                 options
                 uniforms
@@ -115,8 +130,17 @@ renderer options uniforms object =
                 , pointLight4Color = pointLight 4 |> .color
                 , pointLight5 = pointLight 5 |> .light
                 , pointLight5Color = pointLight 5 |> .color
+
+                --
+                , shadowMap = shadowMap.texture
+                , shadowMapCameraMatrix = shadowMap.cameraMatrix
+                , shadowMapPerspectiveMatrix = shadowMap.perspectiveMatrix
+                , shadowMapModelMatrix = shadowMap.modelMatrix
                 }
-                |> Material.toEntity object
+                |> Material.toEntityWithSettings
+                    [ WebGL.Settings.DepthTest.default
+                    ]
+                    object
 
 
 material : Uniforms -> Material Uniforms Varyings
@@ -145,6 +169,10 @@ vertexShader =
 
         uniform vec3 objectColor;
 
+        uniform mat4 shadowMapCameraMatrix;
+        uniform mat4 shadowMapPerspectiveMatrix;
+        uniform mat4 shadowMapModelMatrix;
+
         varying vec3 v_color;
         varying vec3 v_normal;
         varying vec3 v_tangent;
@@ -155,6 +183,8 @@ vertexShader =
         varying vec3 v_b;
         varying vec3 v_n;
 
+        varying vec4 v_Vertex_relative_to_light;
+
         void main () {
             gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
             v_fragPos = vec3(sceneMatrix * vec4(position, 1.0));
@@ -164,6 +194,10 @@ vertexShader =
             v_t = normalize(vec3(sceneRotationMatrix * vec4(tangent, 1.0)));
             v_n = normalize(vec3(sceneRotationMatrix * vec4(normal, 1.0)));
             v_b = cross(v_n, v_t);
+
+            vec4 pos = vec4(v_fragPos, 1.0);
+            pos = sceneMatrix * vec4(position, 1.0);
+            v_Vertex_relative_to_light = shadowMapPerspectiveMatrix * shadowMapCameraMatrix  * pos;
         }
     |]
 
@@ -191,6 +225,8 @@ fragmentShader =
         uniform vec4 pointLight5;
         uniform vec3 pointLight5Color;
 
+        uniform sampler2D shadowMap;
+
         varying vec3 v_color;
         varying vec3 v_normal;
         varying vec3 v_tangent;
@@ -201,6 +237,7 @@ fragmentShader =
         varying vec3 v_b;
         varying vec3 v_n;
 
+        varying vec4 v_Vertex_relative_to_light;
 
         highp mat4 transpose(in highp mat4 inMatrix) {
             highp vec4 i0 = inMatrix[0];
@@ -245,6 +282,34 @@ fragmentShader =
             return color * intensity * directionalLight.w;
         }
 
+        // Shadow mapping
+        highp float getDepth(sampler2D shadowMapTexture, vec2 shadowMapCoords) {
+            vec4 rgbaDepth = texture2D(shadowMapTexture, shadowMapCoords);
+            vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
+            return dot(rgbaDepth, bitShift);
+        }
+
+        highp float getVisibility(sampler2D shadowMapTexture, vec2 shadowMapCoords, float realDepth, float acneBias) {
+            float depth = getDepth(shadowMapTexture, shadowMapCoords.xy);
+            float visibility = (realDepth > depth + acneBias) ? 0.0 : 1.0;
+            return visibility;
+        }
+
+        highp float getAverageVisibility(sampler2D shadowMapTexture, vec3 shadowMapCoords, vec2 texelSize, float acneBias) {
+            vec3 coords;
+            highp float depth;
+            const int sampleSize = 2; // TODO:How to pass in this as uniform? Needs a constant...
+            highp float visibility = 0.0;
+
+            for (int x = -sampleSize; x <= sampleSize; x++) {
+                for (int y = -sampleSize; y <= sampleSize; y++) {
+                    vec2 samplePoint = shadowMapCoords.xy + (vec2(x, y) * texelSize);
+                    visibility += getVisibility(shadowMapTexture, samplePoint, shadowMapCoords.z, acneBias);
+                }
+            }
+            return visibility / float((sampleSize * 2 + 1) * (sampleSize * 2 + 1));
+        }
+
         void main () {
             vec3 diffuse = v_color;
             vec3 normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
@@ -271,6 +336,32 @@ fragmentShader =
                 lighting += f_directionalLight(normal);
             }
 
-            gl_FragColor =  vec4(lighting * diffuse, 1.0);
+            // Shadows
+            float visibility = 1.0;
+            const bool SHADOWS = true;
+            const bool SOFT_SHADOWS = true;
+            const float TEXEL_SIZE_MULTIPLIER = 1.0;
+
+            if (SHADOWS == true) {
+                vec3 shadowMapCoords = (v_Vertex_relative_to_light.xyz/v_Vertex_relative_to_light.w)/2.0 + 0.5;
+                float shadowMapWidth = 800.0;
+                float shadowMapHeight = 600.0;
+                float bias = 0.0001;
+                bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
+
+                if (within && SOFT_SHADOWS == true) {
+                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
+                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
+                    visibility = getAverageVisibility(shadowMap, shadowMapCoords, texelSize, bias);
+                } else if (within) {
+                    visibility = getVisibility(shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
+                }
+            }
+
+            // Clamp some...
+            visibility = 0.6 + (visibility * 0.4);
+            lighting = 0.2 + (lighting * 0.8);
+
+            gl_FragColor =  vec4(visibility * lighting * diffuse, 1.0);
         }
     |]

@@ -12,16 +12,26 @@ import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 
 
+type alias Assets =
+    { mesh : ( List Vertex, List ( Int, Int, Int ) )
+    , diffuse : Texture
+    , normal : Texture
+    }
+
+
 pointLightPosition : Float -> Vec3
 pointLightPosition theta =
     -- Initial camera position
     --vec3 0 3 4
-    vec3 -3 3 0
-        |> Mat4.transform (Mat4.makeRotate (5 * theta) (vec3 0 1 0))
+    vec3 -3 4 2
 
 
-graph : Float -> Maybe Texture -> { sneakers : ( List Vertex, List ( Int, Int, Int ) ) } -> Scene.Graph (Object.Object Material.Name)
-graph theta lightMap { sneakers } =
+
+--|> Mat4.transform (Mat4.makeRotate (5 * theta) (vec3 0 1 0))
+
+
+graph : Float -> Maybe Texture -> Assets -> Scene.Graph (Object.Object Material.Name)
+graph theta lightMap assets =
     Scene.graph
         (Object.group "ROOT")
         [ Object.light (pointLightPosition theta)
@@ -48,21 +58,31 @@ graph theta lightMap { sneakers } =
         , XYZMika.XYZ.Mesh.Cube.colored Color.white 0.05 0.05 0.05
             |> Object.initWithTriangles
             |> Object.withMaterialName Material.Color
-            |> Object.withPosition (pointLightPosition theta |> Vec3.add (vec3 0 -0.5 0))
+            |> Object.withPosition (pointLightPosition theta |> Vec3.add (vec3 0 0.5 0))
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.1 0)
-
-        --, XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 1 1 1
-        --    |> Object.initWithTriangles
-        --    |> Object.withPosition (vec3 0 0 0)
-        , sneakers
+        , assets.mesh
             |> Object.initWithIndexedTriangles
             |> Object.withPosition (vec3 0 0.55 0)
+            |> Object.withDiffuseMap assets.diffuse
+            |> Object.withNormalMap assets.normal
+            |> Object.withRotation (Mat4.makeRotate (10 * theta) (vec3 0 1 0))
 
-        --|> Object.withDiffuseMap sneakers.diffuse
-        --|> Object.withNormalMap sneakers.normal
-        --|> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (2 * theta) Vec3.j)
-        --|> Object.withMaterialName Material.Advanced
-        --|> Tree.singleton
+        -- Blocks
+        , XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 0.5 1 0.5
+            |> Object.initWithTriangles
+            |> Object.withPosition (vec3 -2 0.5 -1)
+        , XYZMika.XYZ.Mesh.Cube.colored Color.darkBlue 1 0.5 0.5
+            |> Object.initWithTriangles
+            |> Object.withPosition (vec3 1.6 0.25 -1.5)
+            |> Object.withRotation (Mat4.makeRotate (0.3 * pi) (vec3 0 1 0))
+        , XYZMika.XYZ.Mesh.Cube.colored Color.darkYellow 1 0.5 0.5
+            |> Object.initWithTriangles
+            |> Object.withPosition (vec3 2.5 0.25 -1.2)
+            |> Object.withRotation (Mat4.makeRotate (0.8 * pi) (vec3 0 1 0))
+        , XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 1 0.5 0.5
+            |> Object.initWithTriangles
+            |> Object.withPosition (vec3 2.1 0.75 -1.3)
+            |> Object.withRotation (Mat4.makeRotate (1.5 * pi) (vec3 0 1 0))
         ]

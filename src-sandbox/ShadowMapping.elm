@@ -17,12 +17,17 @@ main : Program () Model Msg
 main =
     Browser.document
         { init =
-            always
-                ( Model.init
-                , AssetStore.loadXyz Assets.SneakerXyz
-                    (AssetStore.init Assets.objPath Assets.texturePath)
-                    AssetLoaded
-                )
+            Model.init
+                |> (\model ->
+                        ( model
+                        , Cmd.batch
+                            [ AssetStore.loadXyz Assets.SneakerXyz model.assets AssetLoaded
+                            , AssetStore.loadTexture Assets.SneakerNormal model.assets AssetLoaded
+                            , AssetStore.loadTexture Assets.SneakerDiffuse model.assets AssetLoaded
+                            ]
+                        )
+                   )
+                |> always
         , view = View.doc
         , update = update
         , subscriptions = subscriptions
