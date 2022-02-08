@@ -53,10 +53,6 @@ fragmentShader =
         varying vec3 v_fragPos;
         
         void main () {
-//            gl_FragColor =  vec4(gl_FragCoord.z, 1.0);
-//            gl_FragColor = gl_FragCoord;
-//            gl_FragColor = vec4(v_fragPos, 1.0);
-            gl_FragColor = vec4(gl_FragCoord.w, gl_FragCoord.w, gl_FragCoord.w, 1.0);
-            
+            gl_FragColor = vec4(gl_FragCoord.w, gl_FragCoord.w, gl_FragCoord.w, 1.0);                
         }
     |]

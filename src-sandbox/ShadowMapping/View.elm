@@ -35,7 +35,7 @@ doc model =
 view : Model -> Html Msg
 view model =
     let
-        ( frameBuffer, shadowMapTransform ) =
+        ( frameBuffer, shadowMapTransforms ) =
             lightMap model.theta model.scene
     in
     WebGL.toHtmlWithFrameBuffers
@@ -61,7 +61,14 @@ view model =
                         Just texture ->
                             material
                                 |> Maybe.map XYZMika.XYZ.Material.Renderer.renderer
-                                |> Maybe.withDefault (ShadowMapping.Renderer.renderer texture shadowMapTransform)
+                                |> Maybe.withDefault
+                                    (ShadowMapping.Renderer.renderer
+                                        { texture = texture
+                                        , perspectiveMatrix = shadowMapTransforms.perspectiveMatrix
+                                        , cameraMatrix = shadowMapTransforms.cameraMatrix
+                                        , modelMatrix = shadowMapTransforms.modelMatrix
+                                        }
+                                    )
 
                         Nothing ->
                             XYZMika.XYZ.Material.Advanced.renderer
@@ -72,7 +79,13 @@ view model =
 lightMap :
     Float
     -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name
-    -> ( WebGL.FrameBuffer, Mat4 )
+    ->
+        ( WebGL.FrameBuffer
+        , { perspectiveMatrix : Mat4
+          , cameraMatrix : Mat4
+          , modelMatrix : Mat4
+          }
+        )
 lightMap theta scene_ =
     let
         lightPosition =
@@ -94,7 +107,7 @@ lightMap theta scene_ =
             --Mat4.makeOrtho -1 1 1 -1 0.1 10
             -- TODO: Why does fovy need to be same as for
             -- Normal camera???
-            Mat4.makePerspective 45 aspectRatio 0.1 100
+            Mat4.makePerspective 45 aspectRatio 0.01 100
 
         p =
             Mat4.makeTranslate lightPosition
@@ -103,15 +116,11 @@ lightMap theta scene_ =
         (XYZMika.XYZ.Scene.renderSimple
             viewport
             scene
-            --(always XYZMika.XYZ.Material.DepthMap.renderer)
-            (always XYZMika.XYZ.Material.Color.renderer)
+            (always XYZMika.XYZ.Material.DepthMap.renderer)
+         --(always XYZMika.XYZ.Material.Color.renderer)
         )
-      --, perspective
-      --    |> Mat4.mul camera
-      --    |> Mat4.mul (Mat4.makeTranslate ShadowMapping.Scene.pointLightPosition)
-      --, Mat4.mul (Mat4.mul perspective camera) p
-      --, Mat4.mul perspective (Mat4.mul camera p)
-      --|> Mat4.mul (Mat4.makeTranslate ShadowMapping.Scene.pointLightPosition)
-    , Mat4.mul perspective camera
-      --, Mat4.mul (Mat4.mul perspective camera) p
+    , { perspectiveMatrix = perspective
+      , cameraMatrix = camera
+      , modelMatrix = p
+      }
     )

@@ -36,7 +36,9 @@ type alias Uniforms =
     , pointLight5 : Vec4
     , pointLight5Color : Vec3
     , shadowMap : Texture
-    , shadowMapTransform : Mat4
+    , shadowMapCameraMatrix : Mat4
+    , shadowMapPerspectiveMatrix : Mat4
+    , shadowMapModelMatrix : Mat4
     }
 
 
@@ -55,8 +57,16 @@ type alias Varyings =
     }
 
 
-renderer : Texture -> Mat4 -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer shadowMap shadowMapTransform options uniforms object =
+type alias ShadowMap =
+    { texture : Texture
+    , perspectiveMatrix : Mat4
+    , cameraMatrix : Mat4
+    , modelMatrix : Mat4
+    }
+
+
+renderer : ShadowMap -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer shadowMap options uniforms object =
     let
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
@@ -101,13 +111,15 @@ renderer shadowMap shadowMapTransform options uniforms object =
         , pointLight4Color = pointLight 4 |> .color
         , pointLight5 = pointLight 5 |> .light
         , pointLight5Color = pointLight 5 |> .color
-        , shadowMap = shadowMap
-        , shadowMapTransform = shadowMapTransform
+        , shadowMap = shadowMap.texture
+        , shadowMapCameraMatrix = shadowMap.cameraMatrix
+        , shadowMapPerspectiveMatrix = shadowMap.perspectiveMatrix
+        , shadowMapModelMatrix = shadowMap.modelMatrix
         }
         |> Material.toEntityWithSettings
             [ WebGL.Settings.DepthTest.default
-            , WebGL.Settings.cullFace WebGL.Settings.back
 
+            --, WebGL.Settings.cullFace WebGL.Settings.back
             --, WebGL.Settings.DepthTest.default
             ]
             object
@@ -138,8 +150,10 @@ vertexShader =
         uniform mat4 sceneRotationMatrix;
         
         uniform vec3 objectColor;
-        
-        uniform mat4 shadowMapTransform;
+       
+        uniform mat4 shadowMapCameraMatrix;
+        uniform mat4 shadowMapPerspectiveMatrix;
+        uniform mat4 shadowMapModelMatrix;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -167,8 +181,8 @@ vertexShader =
             
             
             vec4 pos = vec4(v_fragPos, 1.0);
-//            v_Vertex_relative_to_light = texUnitConverter * shadowMapTransform * pos;
-            v_Vertex_relative_to_light = shadowMapTransform * pos;
+            pos = sceneMatrix * vec4(position, 1.0);
+            v_Vertex_relative_to_light = shadowMapPerspectiveMatrix * shadowMapCameraMatrix  * pos;
         }
     |]
 
@@ -197,7 +211,6 @@ fragmentShader =
         uniform vec3 pointLight5Color;
         
         uniform sampler2D shadowMap;
-        uniform mat4 shadowMapTransform;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -394,7 +407,6 @@ fragmentShader =
             // distance to the light source was saved in the shadowmap, some
             // precision was lost. Therefore we need a small tolerance factor to
             // compensate for the lost precision.
-            float tolerance = 0.882;
             //          if ( vertex_relative_to_light.z <= shadowmap_distance + tolerance ) {
             //            // This surface receives full light because it is the closest surface
             //            // to the light.
@@ -410,14 +422,7 @@ fragmentShader =
             //          gl_FragColor = shadowmap_color;
             float i = 0.0;
             i = shadowmap_distance;
-            gl_FragColor = vec4(i, i, i, 1.0);
             
-//            float f = 1000.0; //far plane
-//            float n = 1.0; //near plane
-//            float z = (2.0 * n) / (f + n - texture2D( diffuse, texCoord ).x * (f - n));
-//            
-//            gl_FragColor = vec4(z,z,z, 255)
-          
-
+            gl_FragColor = vec4(vec3(shadowmap_distance), 1.0);
         }
     |]

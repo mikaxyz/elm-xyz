@@ -13,11 +13,13 @@ import XYZMika.XYZ.Scene.Object as Object
 
 pointLightPosition : Float -> Math.Vector3.Vec3
 pointLightPosition theta =
-    vec3 0 2 -3
+    -- Initial camera position
+    --vec3 0 3 4
+    vec3 -2 2 0
 
 
 
---|> Mat4.transform (Mat4.makeRotate (0.8 * theta) (vec3 0 1 0))
+--|> Mat4.transform (Mat4.makeRotate (60 * theta) (vec3 0 1 0))
 
 
 graph : Maybe Texture -> Scene.Graph (Object.Object Material.Name)
@@ -30,10 +32,11 @@ graph lightMap =
                 --|> Light.withColor (Color.rgb 0.8 0.8 0.6)
                 |> Light.withColor Color.white
             )
-            |> Object.withOptionRotationInTime
-                (\theta ->
-                    Mat4.makeRotate (0.1 * theta) (vec3 0 1 0)
-                )
+
+        --|> Object.withOptionRotationInTime
+        --    (\theta ->
+        --        Mat4.makeRotate (0.1 * theta) (vec3 0 1 0)
+        --    )
         , case lightMap of
             Just texture ->
                 XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 4 4 0.2
@@ -46,25 +49,13 @@ graph lightMap =
                 Object.group "MIRROR"
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
             |> Object.initWithTriangles
-            |> Object.withPosition (vec3 0 -0.11 0)
+            |> Object.withPosition (vec3 0 -0.6 0)
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 1 1 1
             |> Object.initWithTriangles
-            |> Object.withPosition (vec3 0 0.5 0)
+            |> Object.withPosition (vec3 0 0 0)
         ]
 
 
 graphForShadowMap : Scene.Graph (Object.Object Material.Name)
 graphForShadowMap =
-    Scene.graph
-        (Object.group "ROOT")
-        [ XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
-            |> Object.initWithTriangles
-            |> Object.withPosition (vec3 0 -0.11 0)
-
-        --|> Object.withMaterialName Material.DepthMap
-        , XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 1 1 1
-            |> Object.initWithTriangles
-            |> Object.withPosition (vec3 0 0.5 0)
-
-        --|> Object.withMaterialName Material.DepthMap
-        ]
+    graph Nothing
