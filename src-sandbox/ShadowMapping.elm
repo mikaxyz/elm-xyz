@@ -4,6 +4,7 @@ import Browser
 import Browser.Events
 import Keyboard
 import Math.Vector3 as Vec3
+import ShadowMapping.Assets as Assets
 import ShadowMapping.Model as Model exposing (Model, Msg(..))
 import ShadowMapping.View as View
 import XYZMika.Dragon as Dragon
@@ -18,7 +19,9 @@ main =
         { init =
             always
                 ( Model.init
-                , Cmd.none
+                , AssetStore.loadXyz Assets.SneakerXyz
+                    (AssetStore.init Assets.objPath Assets.texturePath)
+                    AssetLoaded
                 )
         , view = View.doc
         , update = update

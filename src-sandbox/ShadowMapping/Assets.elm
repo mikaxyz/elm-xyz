@@ -8,18 +8,14 @@ type TextureId
 
 
 type ObjId
-    = Ball
-    | Tree
+    = SneakerXyz
 
 
 objPath : ObjId -> String
-objPath texture =
-    case texture of
-        Ball ->
-            "obj/Basketball_size6_SF/Basketball_size6_SF.obj"
-
-        Tree ->
-            "obj/fat_bottomed_tree/fat_bottomed_tree.obj"
+objPath obj =
+    case obj of
+        SneakerXyz ->
+            "obj/sneaker.xyz"
 
 
 texturePath : TextureId -> String
