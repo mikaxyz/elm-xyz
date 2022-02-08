@@ -5,7 +5,6 @@ import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
-import WebGL.Settings
 import WebGL.Settings.DepthTest
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
@@ -118,9 +117,6 @@ renderer shadowMap options uniforms object =
         }
         |> Material.toEntityWithSettings
             [ WebGL.Settings.DepthTest.default
-
-            --, WebGL.Settings.cullFace WebGL.Settings.back
-            --, WebGL.Settings.DepthTest.default
             ]
             object
 
@@ -148,9 +144,9 @@ vertexShader =
         uniform mat4 scenePerspective;
         uniform mat4 sceneMatrix;
         uniform mat4 sceneRotationMatrix;
-        
+
         uniform vec3 objectColor;
-       
+
         uniform mat4 shadowMapCameraMatrix;
         uniform mat4 shadowMapPerspectiveMatrix;
         uniform mat4 shadowMapModelMatrix;
@@ -164,10 +160,8 @@ vertexShader =
         varying vec3 v_t;
         varying vec3 v_b;
         varying vec3 v_n;
-        
+
         varying vec4 v_Vertex_relative_to_light;
-        
-        const mat4 texUnitConverter = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);
 
         void main () {
             gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
@@ -178,8 +172,7 @@ vertexShader =
             v_t = normalize(vec3(sceneRotationMatrix * vec4(tangent, 1.0)));
             v_n = normalize(vec3(sceneRotationMatrix * vec4(normal, 1.0)));
             v_b = cross(v_n, v_t);
-            
-            
+
             vec4 pos = vec4(v_fragPos, 1.0);
             pos = sceneMatrix * vec4(position, 1.0);
             v_Vertex_relative_to_light = shadowMapPerspectiveMatrix * shadowMapCameraMatrix  * pos;
@@ -209,7 +202,7 @@ fragmentShader =
         uniform vec3 pointLight4Color;
         uniform vec4 pointLight5;
         uniform vec3 pointLight5Color;
-        
+
         uniform sampler2D shadowMap;
 
         varying vec3 v_color;
@@ -221,9 +214,8 @@ fragmentShader =
         varying vec3 v_t;
         varying vec3 v_b;
         varying vec3 v_n;
-        
-        varying vec4 v_Vertex_relative_to_light;
 
+        varying vec4 v_Vertex_relative_to_light;
 
         highp mat4 transpose(in highp mat4 inMatrix) {
             highp vec4 i0 = inMatrix[0];
@@ -267,63 +259,6 @@ fragmentShader =
             highp float intensity = max(dot(normal, directionalVector), 0.0);
             return color * intensity * directionalLight.w;
         }
-        
-        float shadowCalculation(vec4 fragPosLightSpace, sampler2D u_shadowMap, float bias) {
-           // perform perspective divide and map to [0,1] range
-           vec3 projCoords = fragPosLightSpace.xyz/fragPosLightSpace.w;
-           projCoords = projCoords * 0.5 + 0.5;
-           float shadowDepth = texture2D(u_shadowMap, projCoords.xy).r;
-           float depth = projCoords.z;
-           float shadow = step(depth-bias,shadowDepth);
-           return shadow;
-        }
-        
-        // Determine if this fragment is in a shadow. Returns true or false.
-        bool in_shadow(void) {
-            
-          float u_Tolerance_constant = 0.2;
-        
-          // The vertex location rendered from the light source is almost in Normalized
-          // Device Coordinates (NDC), but the perspective division has not been
-          // performed yet. Perform the perspective divide. The (x,y,z) vertex location
-          // components are now each in the range [-1.0,+1.0].
-          vec3 vertex_relative_to_light = v_Vertex_relative_to_light.xyz / v_Vertex_relative_to_light.w;
-        
-          // Convert the the values from Normalized Device Coordinates (range [-1.0,+1.0])
-          // to the range [0.0,1.0]. This mapping is done by scaling
-          // the values by 0.5, which gives values in the range [-0.5,+0.5] and then
-          // shifting the values by +0.5.
-          vertex_relative_to_light = vertex_relative_to_light * 0.5 + 0.5;
-        
-          // Get the z value of this fragment in relationship to the light source.
-          // This value was stored in the shadow map (depth buffer of the frame buffer)
-          // which was passed to the shader as a texture map.
-          vec4 shadowmap_color = texture2D(shadowMap, vertex_relative_to_light.xy);
-        
-          // The texture map contains a single depth value for each pixel. However,
-          // the texture2D sampler always returns a color from a texture. For a
-          // gl.DEPTH_COMPONENT texture, the color contains the depth value in
-          // each of the color components. If the value was d, then the color returned
-          // is (d,d,d,1). This is a "color" (depth) value between [0.0,+1.0].
-          float shadowmap_distance = shadowmap_color.r;
-        
-          // Test the distance between this fragment and the light source as
-          // calculated using the shadowmap transformation (vertex_relative_to_light.z) and
-          // the smallest distance between the closest fragment to the light source
-          // for this location, as stored in the shadowmap. When the closest
-          // distance to the light source was saved in the shadowmap, some
-          // precision was lost. Therefore we need a small tolerance factor to
-          // compensate for the lost precision.
-          if ( vertex_relative_to_light.z <= shadowmap_distance + u_Tolerance_constant ) {
-            // This surface receives full light because it is the closest surface
-            // to the light.
-            return false;
-          } else {
-            // This surface is in a shadow because there is a closer surface to
-            // the light source.
-            return true;
-          }
-        }
 
         void main () {
             vec3 diffuse = v_color;
@@ -351,114 +286,22 @@ fragmentShader =
                 lighting += f_directionalLight(normal);
             }
 
-
-            
-//            float shadow = shadowCalculation(shadowMapTransform * vec4(v_fragPos, 1.0), shadowMap, 0.6);
-//            shadow = 0.5 + (shadow * 0.5);
-            
-            float shadow = 1.0;
-            
-            if (in_shadow()) {
-                shadow = 0.2;
-            }
-            
-            lighting = 0.3 + (lighting * 0.7);
-            
-
-//            gl_FragColor =  vec4(shadow * lighting * diffuse, 1.0);
-            
-//            gl_FragColor =  vec4(shadow * lighting * diffuse, 1.0);
-
-
-
-//            gl_FragColor =  vec4(lighting * diffuse, 1.0);
-
-
-            
-            
-        
-            // The vertex location rendered from the light source is almost in Normalized
-            // Device Coordinates (NDC), but the perspective division has not been
-            // performed yet. Perform the perspective divide. The (x,y,z) vertex location
-            // components are now each in the range [-1.0,+1.0].
-            vec3 vertex_relative_to_light = v_Vertex_relative_to_light.xyz / v_Vertex_relative_to_light.w;
-            
-            // Convert the the values from Normalized Device Coordinates (range [-1.0,+1.0])
-            // to the range [0.0,1.0].
-            vertex_relative_to_light = vertex_relative_to_light * 0.5 + 0.5;
-            
-            // Get the z value of this fragment in relationship to the light source.
-            // This value was stored in the shadow map (depth buffer of the frame buffer)
-            // which was passed to the shader as a texture map.
-            vec4 shadowmap_color = texture2D(shadowMap, vertex_relative_to_light.xy);
-            
-            // The texture map contains a single depth value for each pixel. However,
-            // the texture2D sampler always returns a color from a texture. For a
-            // gl.DEPTH_COMPONENT texture, the color contains the depth value in
-            // each of the color components. If the value was d, then the color returned
-            // is (d,d,d,1). This is a "color" (depth) value between [0.0,+1.0].
-            float shadowmap_distance = shadowmap_color.r;
-            
-            
-            // Test the distance between this fragment and the light source as
-            // calculated using the shadowmap transformation (vertex_relative_to_light.z) and
-            // the smallest distance between the closest fragment to the light source
-            // for this location, as stored in the shadowmap. When the closest
-            // distance to the light source was saved in the shadowmap, some
-            // precision was lost. Therefore we need a small tolerance factor to
-            // compensate for the lost precision.
-            //          if ( vertex_relative_to_light.z <= shadowmap_distance + tolerance ) {
-            //            // This surface receives full light because it is the closest surface
-            //            // to the light.
-            ////            return false;
-            //            shadowmap_distance = 0.0;
-            //          } else {
-            //            // This surface is in a shadow because there is a closer surface to
-            //            // the light source.
-            //            shadowmap_distance = 0.2;
-            //          }
-            
-            //          gl_FragColor = vec4(shadowmap_distance);
-            //          gl_FragColor = shadowmap_color;
-            float i = 0.0;
-            i = shadowmap_distance;
-            
-            gl_FragColor = vec4(vec3(shadowmap_distance), 1.0);
-            
-            
-            
-            
-            
-            
-            
 //            float unpackDepth(const in vec4 rgbaDepth) {
-//              const vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
-//              float depth = dot(rgbaDepth, bitShift);
-//              return depth;
+//                const vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
+//                float depth = dot(rgbaDepth, bitShift);
+//                return depth;
 //            }
+            vec3 shadowCoord = (v_Vertex_relative_to_light.xyz/v_Vertex_relative_to_light.w)/2.0 + 0.5;
+            vec4 rgbaDepth = texture2D(shadowMap, shadowCoord.xy);
+            vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
+            float depth = dot(rgbaDepth, bitShift);
+            float visibility = (shadowCoord.z > depth + 0.0001) ? 0.3 : 1.0;
 
-              vec3 shadowCoord = (v_Vertex_relative_to_light.xyz/v_Vertex_relative_to_light.w)/2.0 + 0.5;
-              vec4 rgbaDepth = texture2D(shadowMap, shadowCoord.xy);
-              
-              
-              const vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
-              float depth = dot(rgbaDepth, bitShift);
-              
-              
-//              float depth = unpackDepth(rgbaDepth);
-              float visibility = (shadowCoord.z > depth + 0.0001) ? 0.3 : 1.0;
-              
-              // TODO: Reset if outside shadowMap...
-//              if (shadowCoord.z < 0.9) {
-//                visibility = 1.0;
-//              }
-              
-//              gl_FragColor = vec4(v_Color.rgb * visibility, v_Color.a);
-            
+            // TODO: Reset if outside shadowMap...
+            if (shadowCoord.z < 0.9) {
+                visibility = 1.0;
+            }
+
             gl_FragColor =  vec4(visibility * lighting * diffuse, 1.0);
-            
-
-            
-            
         }
     |]
