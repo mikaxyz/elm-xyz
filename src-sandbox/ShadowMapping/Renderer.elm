@@ -260,6 +260,34 @@ fragmentShader =
             return color * intensity * directionalLight.w;
         }
 
+        // Shadow mapping
+        highp float getDepth(sampler2D shadowMapTexture, vec2 shadowMapCoords) {
+            vec4 rgbaDepth = texture2D(shadowMapTexture, shadowMapCoords);
+            vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
+            return dot(rgbaDepth, bitShift);
+        }
+
+        highp float getVisibility(sampler2D shadowMapTexture, vec2 shadowMapCoords, float realDepth, float acneBias) {
+            float depth = getDepth(shadowMapTexture, shadowMapCoords.xy);
+            float visibility = (realDepth > depth + acneBias) ? 0.0 : 1.0;
+            return visibility;
+        }
+
+        highp float getAverageVisibility(sampler2D shadowMapTexture, vec3 shadowMapCoords, vec2 texelSize, float acneBias) {
+            vec3 coords;
+            highp float depth;
+            const int sampleSize = 2; // TODO:How to pass in this as uniform? Needs a constant...
+            highp float visibility = 0.0;
+
+            for (int x = -sampleSize; x <= sampleSize; x++) {
+                for (int y = -sampleSize; y <= sampleSize; y++) {
+                    vec2 samplePoint = shadowMapCoords.xy + (vec2(x, y) * texelSize);
+                    visibility += getVisibility(shadowMapTexture, samplePoint, shadowMapCoords.z, acneBias);
+                }
+            }
+            return visibility / float((sampleSize * 2 + 1) * (sampleSize * 2 + 1));
+        }
+
         void main () {
             vec3 diffuse = v_color;
             vec3 normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
@@ -286,21 +314,31 @@ fragmentShader =
                 lighting += f_directionalLight(normal);
             }
 
-//            float unpackDepth(const in vec4 rgbaDepth) {
-//                const vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
-//                float depth = dot(rgbaDepth, bitShift);
-//                return depth;
-//            }
-            vec3 shadowCoord = (v_Vertex_relative_to_light.xyz/v_Vertex_relative_to_light.w)/2.0 + 0.5;
-            vec4 rgbaDepth = texture2D(shadowMap, shadowCoord.xy);
-            vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
-            float depth = dot(rgbaDepth, bitShift);
-            float visibility = (shadowCoord.z > depth + 0.0001) ? 0.3 : 1.0;
+            // Shadows
+            float visibility = 1.0;
+            const bool SHADOWS = true;
+            const bool SOFT_SHADOWS = true;
+            const float TEXEL_SIZE_MULTIPLIER = 1.0;
 
-            // TODO: Reset if outside shadowMap...
-            if (shadowCoord.z < 0.9) {
-                visibility = 1.0;
+            if (SHADOWS == true) {
+                vec3 shadowMapCoords = (v_Vertex_relative_to_light.xyz/v_Vertex_relative_to_light.w)/2.0 + 0.5;
+                float shadowMapWidth = 800.0;
+                float shadowMapHeight = 600.0;
+                float bias = 0.0001;
+                bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
+
+                if (within && SOFT_SHADOWS == true) {
+                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
+                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
+                    visibility = getAverageVisibility(shadowMap, shadowMapCoords, texelSize, bias);
+                } else if (within) {
+                    visibility = getVisibility(shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
+                }
             }
+
+            // Clamp some...
+            visibility = 0.6 + (visibility * 0.4);
+            lighting = 0.2 + (lighting * 0.8);
 
             gl_FragColor =  vec4(visibility * lighting * diffuse, 1.0);
         }

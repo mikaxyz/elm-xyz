@@ -16,15 +16,15 @@ pointLightPosition : Float -> Vec3
 pointLightPosition theta =
     -- Initial camera position
     --vec3 0 3 4
-    vec3 -2 2 0
-        |> Mat4.transform (Mat4.makeRotate (2 * theta) (vec3 0 1 0))
+    vec3 -3 3 0
+        |> Mat4.transform (Mat4.makeRotate (5 * theta) (vec3 0 1 0))
 
 
-graph : Maybe Texture -> { sneakers : ( List Vertex, List ( Int, Int, Int ) ) } -> Scene.Graph (Object.Object Material.Name)
-graph lightMap { sneakers } =
+graph : Float -> Maybe Texture -> { sneakers : ( List Vertex, List ( Int, Int, Int ) ) } -> Scene.Graph (Object.Object Material.Name)
+graph theta lightMap { sneakers } =
     Scene.graph
         (Object.group "ROOT")
-        [ Object.light (pointLightPosition 0.0)
+        [ Object.light (pointLightPosition theta)
             (Light.pointLight (vec3 0 0 0)
                 |> Light.withIntensity 1.0
                 --|> Light.withColor (Color.rgb 0.8 0.8 0.6)
@@ -45,6 +45,10 @@ graph lightMap { sneakers } =
 
             Nothing ->
                 Object.group "MIRROR"
+        , XYZMika.XYZ.Mesh.Cube.colored Color.white 0.05 0.05 0.05
+            |> Object.initWithTriangles
+            |> Object.withMaterialName Material.Color
+            |> Object.withPosition (pointLightPosition theta |> Vec3.add (vec3 0 -0.5 0))
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.1 0)

@@ -44,7 +44,7 @@ view model =
             model.scene
                 |> XYZMika.XYZ.Scene.map
                     (\_ ->
-                        Scene.graph Nothing { sneakers = sneakers }
+                        Scene.graph model.theta Nothing { sneakers = sneakers }
                     )
                 |> view_ model
 
