@@ -8,12 +8,12 @@ import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Task
-import Tree exposing (Tree)
 import XYZMika.Debug as Dbug
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Parser.Serialize
 import XYZMika.XYZ.Scene as Scene
 import XYZMika.XYZ.Scene.Camera as Camera
+import XYZMika.XYZ.Scene.Graph as Graph
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 import XYZMika.XYZ.Scene.Options as SceneOptions
@@ -95,7 +95,7 @@ applyHudValue hudObject hudValue value model =
                     model.scene
                         |> Maybe.map
                             (Scene.map
-                                (Tree.indexedMap
+                                (Graph.indexedMap
                                     (\index object ->
                                         if model.selectedTreeIndex == Just index then
                                             updateObject object

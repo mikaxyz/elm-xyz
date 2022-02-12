@@ -1,15 +1,14 @@
 module Scenes.Landscape exposing (init)
 
 import Material
-import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Tree exposing (Tree)
 import XYZMika.Color as Color exposing (Color)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Generator.Perlin as Perlin
 import XYZMika.XYZ.Mesh.Landscape
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -56,11 +55,11 @@ init =
                 , elevation = elevation
                 }
 
-        normalBone : Vertex -> Tree (Object Material.Name)
+        normalBone : Vertex -> Graph (Object Material.Name)
         normalBone v =
             [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
                 |> Object.initWithLines
-                |> Tree.singleton
+                |> Graph.singleton
 
         normalGuides =
             landscape
@@ -74,12 +73,12 @@ init =
                     )
                 |> List.map normalBone
 
-        bone : Vec3 -> Tree (Object Material.Name)
+        bone : Vec3 -> Graph (Object Material.Name)
         bone v =
             XYZMika.XYZ.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
                 |> Object.initWithTriangles
                 |> Object.withPosition (Vec3.setY -1 v)
-                |> Tree.singleton
+                |> Graph.singleton
 
         elevationBones density =
             landscape
@@ -104,6 +103,6 @@ init =
             |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
             |> Object.withOptionDragToRotateXY
-            |> (\obj -> Tree.tree obj helpers)
+            |> (\obj -> Graph.graph obj helpers)
         )
         |> Scene.withCameraPosition (vec3 0 4 7)

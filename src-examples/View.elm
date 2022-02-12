@@ -10,7 +10,6 @@ import Json.Decode as JD
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
-import Tree exposing (Tree)
 import WebGL
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore
@@ -18,6 +17,7 @@ import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
+import XYZMika.XYZ.Scene.Graph as Graph
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -83,7 +83,7 @@ sceneView (Hud hud) model scene =
                     (\tree ->
                         let
                             index =
-                                Tuple.first (Tree.label tree)
+                                Tuple.first (Graph.root tree)
                         in
                         if model.selectedTreeIndex == Just index then
                             Just { showBoundingBox = True }
@@ -100,12 +100,12 @@ sceneView (Hud hud) model scene =
             , classList [ ( "app__sidebar--expanded", hud.sidebarExpanded ) ]
             ]
             [ sidebarView
-                { treeCount = Tree.count (Scene.getGraph scene) }
+                { treeCount = Graph.count (Scene.getGraph scene) }
                 model.hud
                 (Scene.camera scene)
                 (Scene.getGraph scene
-                    |> Tree.indexedMap Tuple.pair
-                    |> Tree.foldl
+                    |> Graph.indexedMap Tuple.pair
+                    |> Graph.foldl
                         (\( i, x ) acc ->
                             if model.selectedTreeIndex == Just i then
                                 Just x

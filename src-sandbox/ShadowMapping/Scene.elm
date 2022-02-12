@@ -7,7 +7,7 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material.Renderer as Material
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Scene.Graph as Scene
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 
@@ -26,14 +26,9 @@ pointLightPosition theta =
     vec3 -3 4 2
 
 
-
---|> Mat4.transform (Mat4.makeRotate (5 * theta) (vec3 0 1 0))
-
-
-graph : Float -> Maybe Texture -> Vec3 -> Assets -> Scene.Graph (Object.Object Material.Name)
+graph : Float -> Maybe Texture -> Vec3 -> Assets -> Graph (Object.Object Material.Name)
 graph theta lightMap objectPosition assets =
-    Scene.graph
-        (Object.group "ROOT")
+    Graph.shallow (Object.group "ROOT")
         [ Object.light (pointLightPosition theta)
             (Light.pointLight (vec3 0 0 0)
                 |> Light.withIntensity 1.0
