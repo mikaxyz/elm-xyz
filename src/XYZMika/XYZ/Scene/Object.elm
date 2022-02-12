@@ -147,7 +147,7 @@ light : Vec3 -> Light -> Object materialId
 light v light_ =
     let
         size =
-            0.2
+            1
 
         verts =
             Cube.gray size size size
@@ -155,13 +155,9 @@ light v light_ =
     Light
         { position = v
         , rotation = Mat4.identity
-
-        --, mesh = verts |> WebGL.triangles
-        --, triangles = verts |> List.map toVec3s
-        --, boundingBox = verts |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
-        , mesh = [] |> WebGL.triangles
-        , triangles = []
-        , boundingBox = ( vec3 0 0 0, vec3 0 0 0 )
+        , mesh = verts |> WebGL.triangles
+        , triangles = verts |> List.map toVec3s
+        , boundingBox = verts |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
         , options = Nothing
