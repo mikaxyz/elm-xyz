@@ -46,23 +46,30 @@ subscriptions model =
 keyboardControl model =
     let
         speed =
-            0.1
+            0.3
 
-        m =
+        x =
             if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'D') then
-                Vec3.i
+                1.0
 
             else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'A') then
-                Vec3.negate Vec3.i
-
-            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'W') then
-                Vec3.k
-
-            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'S') then
-                Vec3.negate Vec3.k
+                -1.0
 
             else
-                vec3 0 0 0
+                0.0
+
+        y =
+            if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'S') then
+                1.0
+
+            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'W') then
+                -1.0
+
+            else
+                0.0
+
+        m =
+            vec3 x 0 y
     in
     { model | objectPosition = model.objectPosition |> Vec3.add (Vec3.scale speed m) }
 

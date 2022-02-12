@@ -30,16 +30,12 @@ graph : Float -> Maybe Texture -> Vec3 -> Assets -> Graph (Object.Object Materia
 graph theta lightMap objectPosition assets =
     Graph.shallow (Object.group "ROOT")
         [ Object.light
-            (Light.spotLight (spotLightPosition theta)
+            (Light.spotLight
+                (spotLightPosition theta)
+                |> Light.withTarget objectPosition
                 |> Light.withIntensity 1.0
-                --|> Light.withColor (Color.rgb 0.8 0.8 0.6)
                 |> Light.withColor Color.white
             )
-
-        --|> Object.withOptionRotationInTime
-        --    (\theta ->
-        --        Mat4.makeRotate (0.1 * theta) (vec3 0 1 0)
-        --    )
         , case lightMap of
             Just texture ->
                 XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 4 4 0.2
@@ -59,7 +55,8 @@ graph theta lightMap objectPosition assets =
             |> Object.withPosition (vec3 0 -0.1 0)
         , assets.mesh
             |> Object.initWithIndexedTriangles
-            |> Object.withPosition (objectPosition |> Vec3.add (vec3 0 0.55 0))
+            --|> Object.withPosition (objectPosition |> Vec3.add (vec3 0 0.55 0))
+            |> Object.withPosition (vec3 0 0.55 0)
             |> Object.withDiffuseMap assets.diffuse
             |> Object.withNormalMap assets.normal
             |> Object.withRotation (Mat4.makeRotate (10 * theta) (vec3 0 1 0))

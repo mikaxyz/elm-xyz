@@ -1,12 +1,14 @@
 module XYZMika.XYZ.Scene.Light.SpotLight exposing
     ( SpotLight
     , color
+    , direction
     , light
     , position
     , toVec4
     , withColor
     , withIntensity
     , withPosition
+    , withTarget
     )
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -38,6 +40,11 @@ withPosition x (SpotLight light_) =
     SpotLight { light_ | position = x }
 
 
+withTarget : Vec3 -> SpotLight -> SpotLight
+withTarget x (SpotLight light_) =
+    SpotLight { light_ | target = x }
+
+
 withIntensity : Float -> SpotLight -> SpotLight
 withIntensity x (SpotLight light_) =
     SpotLight { light_ | intensity = x }
@@ -56,6 +63,11 @@ position (SpotLight light_) =
 color : SpotLight -> Vec3
 color (SpotLight light_) =
     light_.color
+
+
+direction : SpotLight -> Vec3
+direction (SpotLight light_) =
+    Vec3.direction light_.target light_.position
 
 
 toVec4 : SpotLight -> Vec4

@@ -12,6 +12,7 @@ module XYZMika.XYZ.Scene.Light exposing
     , withColorVec
     , withIntensity
     , withPosition
+    , withTarget
     )
 
 import Color exposing (Color)
@@ -41,6 +42,19 @@ pointLight p =
 directional : Vec3 -> Light
 directional direction =
     DirectionalLight (DirectionalLight.light direction)
+
+
+withTarget : Vec3 -> Light -> Light
+withTarget x light =
+    case light of
+        DirectionalLight light_ ->
+            DirectionalLight light_
+
+        PointLight light_ ->
+            PointLight light_
+
+        SpotLight light_ ->
+            SpotLight (light_ |> SpotLight.withTarget x)
 
 
 withPosition : Vec3 -> Light -> Light

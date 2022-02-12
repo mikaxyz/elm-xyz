@@ -32,6 +32,7 @@ type alias Uniforms =
 
     --
     , spotLight1 : Vec4
+    , spotLight1direction : Vec3
     , spotLight1Color : Vec3
 
     --
@@ -78,18 +79,20 @@ type alias ShadowMap =
 renderer : ShadowMap -> Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
 renderer shadowMap fallbackTexture options uniforms object =
     let
-        spotLight : Int -> { light : Vec4, color : Vec3 }
+        spotLight : Int -> { light : Vec4, direction : Vec3, color : Vec3 }
         spotLight i =
             options
                 |> Material.spotLightByIndex (i - 1)
                 |> Maybe.map
                     (\light ->
                         { light = SpotLight.toVec4 light
+                        , direction = SpotLight.direction light
                         , color = SpotLight.color light
                         }
                     )
                 |> Maybe.withDefault
                     { light = vec4 0 0 0 0
+                    , direction = vec3 0 0 0
                     , color = vec3 0 0 0
                     }
 
@@ -132,6 +135,7 @@ renderer shadowMap fallbackTexture options uniforms object =
         --
         , spotLight1 = spotLight 1 |> .light
         , spotLight1Color = spotLight 1 |> .color
+        , spotLight1direction = spotLight 1 |> .direction
 
         --
         , pointLight1 = pointLight 1 |> .light
@@ -247,6 +251,7 @@ fragmentShader =
 
         uniform vec4 spotLight1;
         uniform vec3 spotLight1Color;
+        uniform vec3 spotLight1direction;
         uniform sampler2D shadowMap;
 
         varying vec3 v_color;
@@ -277,14 +282,21 @@ fragmentShader =
             return outMatrix;
         }
 
-        vec3 f_spotLight (vec3 normal, vec3 position) {
-            highp vec3 color = vec3(1.0, 1.0, 1.0);
-            highp vec3 direction = normalize(position - v_fragPos);
-            highp float diff = max(dot(normal, direction), 0.0);
-            highp float intensity = pow(diff, 1.0);
-            highp float distance = distance(position, v_fragPos);
+        vec3 f_spotLight (vec3 normal, vec3 lightPosition, vec3 lightDirection) {
+            highp float innerLimit = .99;
+            highp float outerLimit = innerLimit - 0.02;
 
-            return color * intensity;
+            float shininess = 1.0;
+
+            highp vec3 color = vec3(1.0, 1.0, 1.0);
+            highp vec3 direction = normalize(lightPosition - v_fragPos);
+
+            highp float dotFromDirection = dot(direction, -lightDirection);
+            float inLight = smoothstep(outerLimit, innerLimit, dotFromDirection);
+            float light = inLight * dot(normal, direction);
+            float specular = inLight * pow(dot(normal, direction), shininess);
+
+            return color * light * specular;
         }
 
         vec3 f_pointLight_PassThrough (vec3 normal, vec3 lightPosition) {
@@ -362,7 +374,7 @@ fragmentShader =
 
             vec3 lighting = vec3(0,0,0);
             if (spotLight1.w > 0.0) {
-               lighting += spotLight1.w * f_spotLight(normal, spotLight1.xyz) * spotLight1Color;
+               lighting += spotLight1.w * f_spotLight(normal, spotLight1.xyz, spotLight1direction.xyz) * spotLight1Color;
             }
             if (pointLight1.w > 0.0) {
                lighting += pointLight1.w * f_pointLight(normal, pointLight1.xyz) * pointLight1Color;
@@ -408,8 +420,8 @@ fragmentShader =
             }
 
             // Clamp some...
-            visibility = 0.6 + (visibility * 0.4);
-            lighting = 0.2 + (lighting * 0.8);
+//            visibility = 0.6 + (visibility * 0.4);
+//            lighting = 0.2 + (lighting * 0.8);
 
             gl_FragColor =  vec4(visibility * lighting * diffuse, 1.0);
         }
