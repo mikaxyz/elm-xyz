@@ -1,10 +1,8 @@
 module ShadowMapping.Model exposing (Model, Msg(..), init)
 
 import Keyboard
-import Math.Vector2 exposing (Vec2)
-import Math.Vector3 exposing (vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import ShadowMapping.Assets as Assets exposing (ObjId, TextureId)
-import ShadowMapping.Scene as Scene
 import Tree
 import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ.AssetStore as AssetStore
@@ -28,6 +26,7 @@ type alias Model =
     , dragon : Dragon
     , assets : AssetStore.Store ObjId TextureId
     , scene : Scene Material.Name
+    , objectPosition : Vec3
     }
 
 
@@ -40,4 +39,5 @@ init =
     , scene =
         XYZMika.XYZ.Scene.init (Tree.singleton (Object.group "LAODING"))
             |> XYZMika.XYZ.Scene.withCameraTarget (vec3 0 0.5 0)
+    , objectPosition = vec3 0 0 0
     }

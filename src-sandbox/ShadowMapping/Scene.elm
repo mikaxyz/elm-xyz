@@ -30,8 +30,8 @@ pointLightPosition theta =
 --|> Mat4.transform (Mat4.makeRotate (5 * theta) (vec3 0 1 0))
 
 
-graph : Float -> Maybe Texture -> Assets -> Scene.Graph (Object.Object Material.Name)
-graph theta lightMap assets =
+graph : Float -> Maybe Texture -> Vec3 -> Assets -> Scene.Graph (Object.Object Material.Name)
+graph theta lightMap objectPosition assets =
     Scene.graph
         (Object.group "ROOT")
         [ Object.light (pointLightPosition theta)
@@ -64,7 +64,7 @@ graph theta lightMap assets =
             |> Object.withPosition (vec3 0 -0.1 0)
         , assets.mesh
             |> Object.initWithIndexedTriangles
-            |> Object.withPosition (vec3 0 0.55 0)
+            |> Object.withPosition (objectPosition |> Vec3.add (vec3 0 0.55 0))
             |> Object.withDiffuseMap assets.diffuse
             |> Object.withNormalMap assets.normal
             |> Object.withRotation (Mat4.makeRotate (10 * theta) (vec3 0 1 0))

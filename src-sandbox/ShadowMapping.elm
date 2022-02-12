@@ -3,7 +3,7 @@ module ShadowMapping exposing (main)
 import Browser
 import Browser.Events
 import Keyboard
-import Math.Vector3 as Vec3
+import Math.Vector3 as Vec3 exposing (vec3)
 import ShadowMapping.Assets as Assets
 import ShadowMapping.Model as Model exposing (Model, Msg(..))
 import ShadowMapping.View as View
@@ -43,11 +43,35 @@ subscriptions model =
         ]
 
 
+keyboardControl model =
+    let
+        speed =
+            0.1
+
+        m =
+            if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'D') then
+                Vec3.i
+
+            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'A') then
+                Vec3.negate Vec3.i
+
+            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'W') then
+                Vec3.k
+
+            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'S') then
+                Vec3.negate Vec3.k
+
+            else
+                vec3 0 0 0
+    in
+    { model | objectPosition = model.objectPosition |> Vec3.add (Vec3.scale speed m) }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Animate elapsed ->
-            ( { model | theta = model.theta + (elapsed / 10000) }
+            ( { model | theta = model.theta + (elapsed / 10000) } |> keyboardControl
             , Cmd.none
             )
 

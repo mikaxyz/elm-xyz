@@ -46,7 +46,7 @@ view model =
                 model.scene
                     |> XYZMika.XYZ.Scene.map
                         (\_ ->
-                            Scene.graph model.theta Nothing assets
+                            Scene.graph model.theta Nothing model.objectPosition assets
                         )
                     |> view_ model
             )
