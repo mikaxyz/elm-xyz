@@ -213,17 +213,18 @@ type alias GraphRenderOptions =
 
 renderSimple :
     { width : Int, height : Int }
+    -> Maybe Options
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-renderSimple viewport scene renderer =
+renderSimple viewport options scene renderer =
     render
         []
         SceneOptions.create
         viewport
         (Math.Vector2.vec2 0 0)
         0.0
-        Nothing
+        options
         (\_ -> Nothing)
         scene
         renderer

@@ -355,8 +355,8 @@ fragmentShader =
 
             if (SHADOWS == true) {
                 vec3 shadowMapCoords = (v_Vertex_relative_to_light.xyz/v_Vertex_relative_to_light.w)/2.0 + 0.5;
-                float shadowMapWidth = 800.0;
-                float shadowMapHeight = 600.0;
+                float shadowMapWidth = 640.0;
+                float shadowMapHeight = 640.0;
                 float bias = 0.0001;
                 bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
 

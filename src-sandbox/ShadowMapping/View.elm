@@ -72,10 +72,8 @@ view_ model scene =
             in
             XYZMika.XYZ.Scene.renderSimple
                 viewport
-                (scene
-                 --|> XYZMika.XYZ.Scene.withCameraPosition Scene.pointLightPosition
-                 --|> XYZMika.XYZ.Scene.map (always (Scene.graph shadowMap))
-                )
+                Nothing
+                scene
                 (\material ->
                     case shadowMap of
                         Just texture ->
@@ -108,38 +106,42 @@ lightMap :
         )
 lightMap theta scene_ =
     let
+        viewport_ : { width : number, height : number }
+        viewport_ =
+            { width = 640
+            , height = 640
+            }
+
         lightPosition =
             Scene.pointLightPosition theta
 
         scene =
-            scene_
-                --|> XYZMika.XYZ.Scene.map (\_ -> Scene.graphForShadowMap)
-                |> XYZMika.XYZ.Scene.withCameraPosition lightPosition
-
-        aspectRatio =
-            toFloat viewport.width / toFloat viewport.height
+            XYZMika.XYZ.Scene.withCameraPosition lightPosition scene_
 
         camera =
             XYZMika.XYZ.Scene.camera scene
                 |> XYZMika.XYZ.Scene.Camera.toMat4
 
-        perspective =
-            --Mat4.makeOrtho -1 1 1 -1 0.1 10
-            -- TODO: Why does fovy need to be same as for
-            -- Normal camera???
-            Mat4.makePerspective 45 aspectRatio 0.01 100
+        perspective aspectRatio =
+            Mat4.makePerspective 70 aspectRatio 0.01 100
 
         p =
             Mat4.makeTranslate lightPosition
     in
-    ( WebGL.frameBuffer ( viewport.width, viewport.height )
+    ( WebGL.frameBuffer ( viewport_.width, viewport_.height )
         (XYZMika.XYZ.Scene.renderSimple
-            viewport
+            viewport_
+            (Just
+                { rotation = always Mat4.identity
+                , translate = always Mat4.identity
+                , perspective = perspective
+                }
+            )
             scene
             (always XYZMika.XYZ.Material.DepthMap.renderer)
          --(always XYZMika.XYZ.Material.Color.renderer)
         )
-    , { perspectiveMatrix = perspective
+    , { perspectiveMatrix = perspective (toFloat viewport_.width / toFloat viewport_.height)
       , cameraMatrix = camera
       , modelMatrix = p
       }
