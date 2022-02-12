@@ -1,13 +1,12 @@
 module XYZMika.XYZ.Scene exposing
     ( GraphRenderOptions
-    , Options
     , Scene
     , camera
-    , defaultOptions
     , getGraph
     , graphWithMatrix
     , init
     , map
+    , projectionMatrix
     , render
     , renderSimple
     , withCamera
@@ -16,6 +15,7 @@ module XYZMika.XYZ.Scene exposing
     , withCameraTarget
     , withLights
     , withLightsInGraph
+    , withPerspectiveProjection
     )
 
 import Color
@@ -44,7 +44,12 @@ type Scene materialId
     = Scene
         { graph : Tree (Object materialId)
         , camera : Camera
+        , projection : Projection
         }
+
+
+type Projection
+    = Perspective { fov : Float, near : Float, far : Float }
 
 
 init : Tree (Object materialId) -> Scene materialId
@@ -52,7 +57,20 @@ init graph =
     Scene
         { graph = graph
         , camera = Camera.init (vec3 0 3 4) (vec3 0 0 0)
+        , projection = Perspective { fov = 45, far = 100.0, near = 0.01 }
         }
+
+
+projectionMatrix : Float -> Scene materialId -> Mat4
+projectionMatrix aspectRatio (Scene scene) =
+    case scene.projection of
+        Perspective { fov, near, far } ->
+            Mat4.makePerspective fov aspectRatio near far
+
+
+withPerspectiveProjection : { fov : Float, near : Float, far : Float } -> Scene materialId -> Scene materialId
+withPerspectiveProjection config (Scene scene) =
+    Scene { scene | projection = Perspective config }
 
 
 getGraph : Scene materialId -> Tree (Object materialId)
@@ -191,21 +209,6 @@ graphWithMatrix ({ theta, drag, mat } as config) tree =
     Tree.singleton ( mat_, object ) |> Tree.replaceChildren (children |> List.map (graphWithMatrix { config | mat = mat_ }))
 
 
-type alias Options =
-    { rotation : Float -> Mat4
-    , translate : Float -> Mat4
-    , perspective : Float -> Mat4
-    }
-
-
-defaultOptions : Options
-defaultOptions =
-    { rotation = always Mat4.identity
-    , translate = always Mat4.identity
-    , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
-    }
-
-
 type alias GraphRenderOptions =
     { showBoundingBox : Bool
     }
@@ -213,18 +216,16 @@ type alias GraphRenderOptions =
 
 renderSimple :
     { width : Int, height : Int }
-    -> Maybe Options
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-renderSimple viewport options scene renderer =
+renderSimple viewport scene renderer =
     render
         []
         SceneOptions.create
         viewport
         (Math.Vector2.vec2 0 0)
         0.0
-        options
         (\_ -> Nothing)
         scene
         renderer
@@ -236,16 +237,12 @@ render :
     -> { width : Int, height : Int }
     -> Vec2
     -> Float
-    -> Maybe Options
     -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-render defaultLights sceneOptions viewport drag theta options graphRenderOptions (Scene scene) renderer =
+render defaultLights sceneOptions viewport drag theta graphRenderOptions (Scene scene) renderer =
     let
-        options_ =
-            options |> Maybe.withDefault defaultOptions
-
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
 
@@ -279,7 +276,7 @@ render defaultLights sceneOptions viewport drag theta options graphRenderOptions
         sceneOptions
         graphRenderOptions
         { sceneCamera = Camera.toMat4 scene.camera
-        , scenePerspective = options_.perspective aspectRatio
+        , scenePerspective = projectionMatrix aspectRatio (Scene scene)
         , sceneMatrix = Mat4.identity
         , sceneRotationMatrix = Mat4.identity
         }

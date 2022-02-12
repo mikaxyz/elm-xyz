@@ -1,4 +1,4 @@
-module Scenes.Landscape exposing (init, sceneOptions)
+module Scenes.Landscape exposing (init)
 
 import Material
 import Math.Matrix4 as Mat4
@@ -9,7 +9,7 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Generator.Perlin as Perlin
 import XYZMika.XYZ.Mesh.Landscape
 import XYZMika.XYZ.Mesh.Primitives
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -107,12 +107,3 @@ init =
             |> (\obj -> Tree.tree obj helpers)
         )
         |> Scene.withCameraPosition (vec3 0 4 7)
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Just
-        { rotation = always Mat4.identity
-        , translate = always Mat4.identity
-        , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
-        }

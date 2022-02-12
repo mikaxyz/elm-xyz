@@ -23,18 +23,16 @@ selectGraphAtClickPosition :
         , drag : Vec2
         , viewport : Viewport
         , viewPortElement : Dom.Element
-        , sceneOptions : Maybe Scene.Options
     }
     -> Scene.Scene materialId
     -> ( Float, Float )
     -> Maybe ( Int, Tree (Object materialId) )
-selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOptions } scene pos =
+selectGraphAtClickPosition { theta, drag, viewport, viewPortElement } scene pos =
     let
         clickPosition =
             getClickPosition
                 viewport
                 viewPortElement
-                sceneOptions
                 --(Model.sceneOptions model)
                 scene
                 pos
@@ -268,8 +266,8 @@ rayTriangleIntersect rayOrigin rayDirection ( triangle0, triangle1, triangle2 ) 
                 Just (vec3 v0 v1 v2)
 
 
-getClickPosition : Viewport -> Dom.Element -> Maybe Scene.Options -> Scene materialId -> ( Float, Float ) -> ClickPosition
-getClickPosition viewport viewPortElement sceneOptions scene ( x_, y_ ) =
+getClickPosition : Viewport -> Dom.Element -> Scene materialId -> ( Float, Float ) -> ClickPosition
+getClickPosition viewport viewPortElement scene ( x_, y_ ) =
     let
         ratio =
             viewport.width / viewPortElement.element.width
@@ -283,11 +281,8 @@ getClickPosition viewport viewPortElement sceneOptions scene ( x_, y_ ) =
         aspectRatio =
             viewport.width / viewport.height
 
-        sceneOptions_ =
-            sceneOptions |> Maybe.withDefault Scene.defaultOptions
-
         perspective =
-            sceneOptions_.perspective aspectRatio
+            Scene.projectionMatrix aspectRatio scene
 
         normalizedPosition =
             ( (x * 2) / viewport.width - 1, 1 - y / viewport.height * 2 )

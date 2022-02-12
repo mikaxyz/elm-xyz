@@ -205,7 +205,6 @@ update msg model =
                         , drag = model.drag
                         , viewport = Model.viewport
                         , viewPortElement = viewPortElement
-                        , sceneOptions = Model.sceneOptions model
                         }
                         scene
                         ( Vec2.getX pos, Vec2.getY pos )

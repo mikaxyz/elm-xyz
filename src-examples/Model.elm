@@ -15,7 +15,6 @@ module Model exposing
     , mapSceneOptions
     , nextScene
     , prevScene
-    , sceneOptions
     , updateAssetStore
     , viewport
     )
@@ -227,34 +226,6 @@ currentSceneName model =
 
         Nothing ->
             "-"
-
-
-sceneOptions : Model -> Maybe Scene.Options
-sceneOptions model =
-    case Array.get model.currentSceneIndex model.scenes of
-        Just BrickWall ->
-            Scenes.BrickWall.sceneOptions
-
-        Just NormalMapping ->
-            Scenes.NormalMapping.sceneOptions
-
-        Just Textures ->
-            Scenes.Textures.sceneOptions
-
-        Just Sandbox ->
-            Scenes.Sandbox.sceneOptions
-
-        Just Animals ->
-            Scenes.Animals.sceneOptions
-
-        Just Landscape ->
-            Scenes.Landscape.sceneOptions
-
-        Just Light ->
-            Scenes.Light.sceneOptions
-
-        Nothing ->
-            Nothing
 
 
 updateAssetStore : AssetStore.Store Asset.Obj Asset.Texture -> Model -> Model

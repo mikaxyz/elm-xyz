@@ -1,4 +1,4 @@
-module Scenes.NormalMapping exposing (init, sceneOptions)
+module Scenes.NormalMapping exposing (init)
 
 import Asset
 import Color
@@ -10,7 +10,7 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
@@ -68,8 +68,3 @@ getAssets assets =
         (AssetStore.verticesIndexed Asset.SneakerXyz assets)
         (AssetStore.texture Asset.SneakerDiffuse assets)
         (AssetStore.texture Asset.SneakerNormal assets)
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Nothing

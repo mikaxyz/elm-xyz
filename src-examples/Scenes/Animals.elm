@@ -1,4 +1,4 @@
-module Scenes.Animals exposing (init, sceneOptions)
+module Scenes.Animals exposing (init)
 
 import Asset
 import Color
@@ -9,7 +9,7 @@ import Tree
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -66,6 +66,7 @@ init assetStore =
         |> Maybe.withDefault (Tree.singleton (floor Color.darkCharcoal))
         |> Scene.init
         |> Scene.withCameraPosition (vec3 0 1 3)
+        |> Scene.withPerspectiveProjection { fov = 60, near = 0.01, far = 100 }
 
 
 floor : Color.Color -> Object Material.Name
@@ -76,12 +77,3 @@ floor color =
         |> Object.withPosition (vec3 0 0.1 0)
         |> Object.withMaterialName Material.Advanced
         |> Object.withOptionDragToRotateXY
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Just
-        { rotation = always Mat4.identity
-        , translate = always Mat4.identity
-        , perspective = \aspectRatio -> Mat4.makePerspective 60 aspectRatio 0.01 100
-        }

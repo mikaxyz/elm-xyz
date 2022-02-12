@@ -1,4 +1,4 @@
-module Scenes.Textures exposing (init, sceneOptions)
+module Scenes.Textures exposing (init)
 
 import Asset
 import Color
@@ -11,7 +11,7 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -135,8 +135,3 @@ getTreeAssets assets =
         (AssetStore.vertices Asset.Tree assets)
         (AssetStore.mesh Asset.Tree assets)
         (AssetStore.texture Asset.TreeDiffuse assets)
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Nothing

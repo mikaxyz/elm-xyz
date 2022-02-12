@@ -1,4 +1,4 @@
-module Scenes.BrickWall exposing (init, sceneOptions)
+module Scenes.BrickWall exposing (init)
 
 import Asset
 import Material
@@ -8,7 +8,7 @@ import Tree exposing (Tree)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
@@ -105,8 +105,3 @@ getAssets assets =
         (AssetStore.verticesIndexed Asset.Cube assets)
         (AssetStore.texture Asset.BrickWallDiffuse assets)
         (AssetStore.texture Asset.BrickWallNormal assets)
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Nothing

@@ -80,7 +80,6 @@ sceneView (Hud hud) model scene =
                     Model.viewport
                     (Model.getDrag model)
                     model.theta
-                    (Model.sceneOptions model)
                     (\tree ->
                         let
                             index =

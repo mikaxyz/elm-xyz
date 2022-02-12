@@ -1,4 +1,4 @@
-module Scenes.Light exposing (init, sceneOptions)
+module Scenes.Light exposing (init)
 
 import Color
 import Material
@@ -6,7 +6,7 @@ import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (Vec3, vec3)
 import Tree
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object
 
@@ -76,12 +76,3 @@ init =
         ]
         |> Scene.init
         |> Scene.withCameraPosition (vec3 0 4 7)
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Just
-        { rotation = always Mat4.identity
-        , translate = always Mat4.identity
-        , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
-        }

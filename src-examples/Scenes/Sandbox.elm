@@ -1,4 +1,4 @@
-module Scenes.Sandbox exposing (init, sceneOptions)
+module Scenes.Sandbox exposing (init)
 
 import Material
 import Math.Matrix4 as Mat4
@@ -6,7 +6,7 @@ import Math.Vector3 exposing (vec3)
 import Tree
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Tree exposing (tree)
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -31,8 +31,3 @@ init =
         ]
         |> Scene.init
         |> Scene.withCameraPosition (vec3 0 1 2.5)
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Nothing

@@ -72,7 +72,6 @@ view_ model scene =
             in
             XYZMika.XYZ.Scene.renderSimple
                 viewport
-                Nothing
                 scene
                 (\material ->
                     case shadowMap of
@@ -116,14 +115,16 @@ lightMap theta scene_ =
             Scene.pointLightPosition theta
 
         scene =
-            XYZMika.XYZ.Scene.withCameraPosition lightPosition scene_
+            scene_
+                |> XYZMika.XYZ.Scene.withCameraPosition lightPosition
+                |> XYZMika.XYZ.Scene.withPerspectiveProjection { fov = 70, near = 0.01, far = 100 }
 
         camera =
             XYZMika.XYZ.Scene.camera scene
                 |> XYZMika.XYZ.Scene.Camera.toMat4
 
-        perspective aspectRatio =
-            Mat4.makePerspective 70 aspectRatio 0.01 100
+        aspectRatio =
+            toFloat viewport_.width / toFloat viewport_.height
 
         p =
             Mat4.makeTranslate lightPosition
@@ -131,17 +132,11 @@ lightMap theta scene_ =
     ( WebGL.frameBuffer ( viewport_.width, viewport_.height )
         (XYZMika.XYZ.Scene.renderSimple
             viewport_
-            (Just
-                { rotation = always Mat4.identity
-                , translate = always Mat4.identity
-                , perspective = perspective
-                }
-            )
             scene
             (always XYZMika.XYZ.Material.DepthMap.renderer)
          --(always XYZMika.XYZ.Material.Color.renderer)
         )
-    , { perspectiveMatrix = perspective (toFloat viewport_.width / toFloat viewport_.height)
+    , { perspectiveMatrix = XYZMika.XYZ.Scene.projectionMatrix aspectRatio scene
       , cameraMatrix = camera
       , modelMatrix = p
       }
