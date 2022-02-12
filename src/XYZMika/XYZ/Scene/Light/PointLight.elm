@@ -55,15 +55,6 @@ color (PointLight light_) =
     light_.color
 
 
-type alias Options =
-    { lights :
-        { directional : Vec3
-        , point1 : PointLight
-        , point2 : PointLight
-        }
-    }
-
-
 toVec4 : PointLight -> Vec4
 toVec4 (PointLight light_) =
     Vec4.vec4
