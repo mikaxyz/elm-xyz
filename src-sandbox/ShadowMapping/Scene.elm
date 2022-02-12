@@ -1,4 +1,4 @@
-module ShadowMapping.Scene exposing (graph, pointLightPosition)
+module ShadowMapping.Scene exposing (graph, spotLightPosition)
 
 import Color
 import Math.Matrix4 as Mat4
@@ -19,8 +19,8 @@ type alias Assets =
     }
 
 
-pointLightPosition : Float -> Vec3
-pointLightPosition theta =
+spotLightPosition : Float -> Vec3
+spotLightPosition theta =
     -- Initial camera position
     --vec3 0 3 4
     vec3 -3 4 2
@@ -30,7 +30,7 @@ graph : Float -> Maybe Texture -> Vec3 -> Assets -> Graph (Object.Object Materia
 graph theta lightMap objectPosition assets =
     Graph.shallow (Object.group "ROOT")
         [ Object.light
-            (Light.pointLight (pointLightPosition theta)
+            (Light.spotLight (spotLightPosition theta)
                 |> Light.withIntensity 1.0
                 --|> Light.withColor (Color.rgb 0.8 0.8 0.6)
                 |> Light.withColor Color.white
@@ -53,7 +53,7 @@ graph theta lightMap objectPosition assets =
         , XYZMika.XYZ.Mesh.Cube.colored Color.white 0.05 0.05 0.05
             |> Object.initWithTriangles
             |> Object.withMaterialName Material.Color
-            |> Object.withPosition (pointLightPosition theta |> Vec3.add (vec3 0 0.5 0))
+            |> Object.withPosition (spotLightPosition theta |> Vec3.add (vec3 0 0.5 0))
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.1 0)

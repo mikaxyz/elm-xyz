@@ -53,6 +53,7 @@ view model =
         |> Maybe.withDefault (text "Loading...")
 
 
+view_ : Model -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name -> Html Msg
 view_ model scene =
     let
         ( frameBuffer, shadowMapTransforms ) =
@@ -112,7 +113,7 @@ lightMap theta scene_ =
             }
 
         lightPosition =
-            Scene.pointLightPosition theta
+            Scene.spotLightPosition theta
 
         scene =
             scene_

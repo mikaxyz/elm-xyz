@@ -3,8 +3,10 @@ module XYZMika.XYZ.Scene.Light exposing
     , directional
     , maybeDirectionalLight
     , maybePointLight
+    , maybeSpotLight
     , pointLight
     , position
+    , spotLight
     , toHumanReadable
     , withColor
     , withColorVec
@@ -17,11 +19,18 @@ import Math.Vector3 exposing (Vec3)
 import XYZMika.Color as Color
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight exposing (DirectionalLight)
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight exposing (PointLight)
+import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight exposing (SpotLight)
 
 
 type Light
     = DirectionalLight DirectionalLight
     | PointLight PointLight
+    | SpotLight SpotLight
+
+
+spotLight : Vec3 -> Light
+spotLight p =
+    SpotLight (SpotLight.light p)
 
 
 pointLight : Vec3 -> Light
@@ -43,6 +52,9 @@ withPosition x light =
         PointLight light_ ->
             PointLight (light_ |> PointLight.withPosition x)
 
+        SpotLight light_ ->
+            SpotLight (light_ |> SpotLight.withPosition x)
+
 
 withIntensity : Float -> Light -> Light
 withIntensity x light =
@@ -52,6 +64,9 @@ withIntensity x light =
 
         PointLight light_ ->
             PointLight (light_ |> PointLight.withIntensity x)
+
+        SpotLight light_ ->
+            SpotLight (light_ |> SpotLight.withIntensity x)
 
 
 withColor : Color -> Light -> Light
@@ -68,6 +83,9 @@ withColorVec x light =
         PointLight light_ ->
             PointLight (light_ |> PointLight.withColor x)
 
+        SpotLight light_ ->
+            SpotLight (light_ |> SpotLight.withColor x)
+
 
 position : Light -> Maybe Vec3
 position light =
@@ -77,6 +95,22 @@ position light =
 
         PointLight light_ ->
             Just (PointLight.position light_)
+
+        SpotLight light_ ->
+            Just (SpotLight.position light_)
+
+
+maybeSpotLight : Light -> Maybe SpotLight
+maybeSpotLight light =
+    case light of
+        DirectionalLight _ ->
+            Nothing
+
+        PointLight _ ->
+            Nothing
+
+        SpotLight x ->
+            Just x
 
 
 maybePointLight : Light -> Maybe PointLight
@@ -88,6 +122,9 @@ maybePointLight light =
         PointLight x ->
             Just x
 
+        SpotLight _ ->
+            Nothing
+
 
 maybeDirectionalLight : Light -> Maybe DirectionalLight
 maybeDirectionalLight light =
@@ -98,6 +135,9 @@ maybeDirectionalLight light =
         PointLight _ ->
             Nothing
 
+        SpotLight _ ->
+            Nothing
+
 
 toHumanReadable : Light -> String
 toHumanReadable light =
@@ -105,5 +145,8 @@ toHumanReadable light =
         DirectionalLight _ ->
             "DirectionalLight"
 
-        PointLight x ->
+        PointLight _ ->
             "PointLight"
+
+        SpotLight _ ->
+            "SpotLight"

@@ -12,6 +12,7 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material)
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
+import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms as Scene
 
@@ -23,6 +24,10 @@ type alias Uniforms =
     , sceneRotationMatrix : Mat4
     , objectColor : Vec3
     , directionalLight : Vec4
+
+    --
+    , spotLight1 : Vec4
+    , spotLight1Color : Vec3
 
     --
     , pointLight1 : Vec4
@@ -77,6 +82,21 @@ objectTextureMaps object =
 renderer : ShadowMap -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
 renderer shadowMap options uniforms object =
     let
+        spotLight : Int -> { light : Vec4, color : Vec3 }
+        spotLight i =
+            options
+                |> Material.spotLightByIndex (i - 1)
+                |> Maybe.map
+                    (\light ->
+                        { light = SpotLight.toVec4 light
+                        , color = SpotLight.color light
+                        }
+                    )
+                |> Maybe.withDefault
+                    { light = vec4 0 0 0 0
+                    , color = vec3 0 0 0
+                    }
+
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
             options
@@ -118,6 +138,10 @@ renderer shadowMap options uniforms object =
                 --
                 , objectColor = Object.colorVec3 object
                 , directionalLight = directionalLight
+
+                --
+                , spotLight1 = spotLight 1 |> .light
+                , spotLight1Color = spotLight 1 |> .color
 
                 --
                 , pointLight1 = pointLight 1 |> .light
@@ -225,6 +249,8 @@ fragmentShader =
         uniform vec4 pointLight5;
         uniform vec3 pointLight5Color;
 
+        uniform vec4 spotLight1;
+        uniform vec3 spotLight1Color;
         uniform sampler2D shadowMap;
 
         varying vec3 v_color;
@@ -253,6 +279,16 @@ fragmentShader =
                          );
 
             return outMatrix;
+        }
+
+        vec3 f_spotLight (vec3 normal, vec3 position) {
+            highp vec3 color = vec3(1.0, 1.0, 1.0);
+            highp vec3 direction = normalize(position - v_fragPos);
+            highp float diff = max(dot(normal, direction), 0.0);
+            highp float intensity = pow(diff, 1.0);
+            highp float distance = distance(position, v_fragPos);
+
+            return color * intensity;
         }
 
         vec3 f_pointLight_PassThrough (vec3 normal, vec3 lightPosition) {
@@ -315,6 +351,10 @@ fragmentShader =
             vec3 normal = vec3(sceneRotationMatrix * vec4(v_normal, 1.0));
 
             vec3 lighting = vec3(0,0,0);
+            if (spotLight1.w > 0.0) {
+               lighting += spotLight1.w * f_spotLight(normal, spotLight1.xyz) * spotLight1Color;
+            }
+
             if (pointLight1.w > 0.0) {
                lighting += pointLight1.w * f_pointLight(normal, pointLight1.xyz) * pointLight1Color;
             }

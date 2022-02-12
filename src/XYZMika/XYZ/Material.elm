@@ -7,6 +7,7 @@ module XYZMika.XYZ.Material exposing
     , lights
     , material
     , pointLightByIndex
+    , spotLightByIndex
     , toEntity
     , toEntityWithSettings
     , withLights
@@ -18,6 +19,7 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 import XYZMika.XYZ.Scene.Light.DirectionalLight exposing (DirectionalLight)
 import XYZMika.XYZ.Scene.Light.PointLight exposing (PointLight)
+import XYZMika.XYZ.Scene.Light.SpotLight exposing (SpotLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -46,6 +48,14 @@ pointLightByIndex : Int -> Options -> Maybe PointLight
 pointLightByIndex i (Options options) =
     options.lights
         |> List.filterMap Light.maybePointLight
+        |> List.drop i
+        |> List.head
+
+
+spotLightByIndex : Int -> Options -> Maybe SpotLight
+spotLightByIndex i (Options options) =
+    options.lights
+        |> List.filterMap Light.maybeSpotLight
         |> List.drop i
         |> List.head
 
