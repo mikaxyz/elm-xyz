@@ -143,8 +143,8 @@ group name =
         }
 
 
-light : Vec3 -> Light -> Object materialId
-light v light_ =
+light : Light -> Object materialId
+light light_ =
     let
         size =
             1
@@ -153,7 +153,7 @@ light v light_ =
             Cube.gray size size size
     in
     Light
-        { position = v
+        { position = Light.position light_ |> Maybe.withDefault (vec3 0 0 0)
         , rotation = Mat4.identity
         , mesh = verts |> WebGL.triangles
         , triangles = verts |> List.map toVec3s
@@ -389,8 +389,19 @@ glSetting object =
 
 
 withPosition : Vec3 -> Object materialId -> Object materialId
-withPosition x obj =
-    obj |> mapData (\data -> { data | position = x })
+withPosition x object =
+    case object of
+        Disabled disabledObject ->
+            Disabled (withPosition x disabledObject)
+
+        Mesh data ->
+            Mesh { data | position = x }
+
+        Light data light_ ->
+            Light { data | position = x } (Light.withPosition x light_)
+
+        Group name data ->
+            Group name { data | position = x }
 
 
 withRotation : Mat4 -> Object materialId -> Object materialId

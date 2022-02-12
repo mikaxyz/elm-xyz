@@ -24,8 +24,8 @@ init =
             --|> Object.withPosition (vec3 0 -0.5 0)
             |> Object.withOptionDragToRotateY
         )
-        [ Object.light (vec3 0 3 -3)
-            (Light.pointLight (vec3 0 0 0)
+        [ Object.light
+            (Light.pointLight (vec3 0 3 -3)
                 |> Light.withIntensity 1.0
                 |> Light.withColor Color.white
             )

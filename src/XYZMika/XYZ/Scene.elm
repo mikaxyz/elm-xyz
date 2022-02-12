@@ -165,15 +165,7 @@ replaceLightsInRoot lights scene =
 
                 nonEmptyList ->
                     nonEmptyList
-                        |> List.map
-                            (\light ->
-                                Object.light
-                                    (Light.position light
-                                        |> Maybe.withDefault (vec3 0 0 0)
-                                    )
-                                    light
-                                    |> Tree.singleton
-                            )
+                        |> List.map (Object.light >> Tree.singleton)
                         |> Tree.tree (Object.group "defaultLights")
                         |> (\x -> Tree.appendChild x tree)
 

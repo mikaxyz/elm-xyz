@@ -53,8 +53,8 @@ render cube =
 
 pointLight : Float -> Vec3 -> Vec3 -> Graph (Object materialId)
 pointLight intensity position color =
-    Object.light position
-        (Light.pointLight (vec3 0 0 0)
+    Object.light
+        (Light.pointLight position
             |> Light.withIntensity intensity
             |> Light.withColorVec color
         )

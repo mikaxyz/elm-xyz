@@ -29,8 +29,8 @@ pointLightPosition theta =
 graph : Float -> Maybe Texture -> Vec3 -> Assets -> Graph (Object.Object Material.Name)
 graph theta lightMap objectPosition assets =
     Graph.shallow (Object.group "ROOT")
-        [ Object.light (pointLightPosition theta)
-            (Light.pointLight (vec3 0 0 0)
+        [ Object.light
+            (Light.pointLight (pointLightPosition theta)
                 |> Light.withIntensity 1.0
                 --|> Light.withColor (Color.rgb 0.8 0.8 0.6)
                 |> Light.withColor Color.white
