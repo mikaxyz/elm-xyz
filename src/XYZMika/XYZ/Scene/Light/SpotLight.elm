@@ -39,6 +39,7 @@ type alias ShaderData =
     , direction : Vec3
     , color : Vec3
     , fov : Float
+    , resolution : Float
     }
 
 
@@ -160,14 +161,24 @@ toVec4 (SpotLight light_) =
 
 toShaderData : Maybe SpotLight -> ShaderData
 toShaderData spotLight =
-    case spotLight of
-        Just (SpotLight light_) ->
+    case
+        spotLight
+            |> Maybe.andThen
+                (\(SpotLight light_) ->
+                    case light_.shadowMap of
+                        Just shadowMap ->
+                            Just ( light_, shadowMap )
+
+                        Nothing ->
+                            Nothing
+                )
+    of
+        Just ( light_, ShadowMap shadowMap ) ->
             { light = toVec4 (SpotLight light_)
             , direction = direction (SpotLight light_)
             , color = light_.color
             , fov = 1.0 - ((light_.fov / 180) / pi)
-
-            --light_.fov
+            , resolution = toFloat shadowMap.resolution
             }
 
         Nothing ->
@@ -175,4 +186,5 @@ toShaderData spotLight =
             , direction = vec3 0 0 0
             , color = vec3 0 0 0
             , fov = 0.0
+            , resolution = 0.0
             }

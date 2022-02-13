@@ -24,13 +24,17 @@ graph : Maybe Texture -> Assets -> Graph (Object.Object Material.Name)
 graph lightMap assets =
     Graph.shallow (Object.group "ROOT")
         [ Object.spotLight
-            --(Light.spotLight spotLightPosition 90
-            --    |> Light.withIntensity 1.0
-            --    |> Light.withColor Color.white
-            --)
-            (SpotLight.light (vec3 0 2 2) 90
+            (SpotLight.light (vec3 2 4 -3) 45
                 |> SpotLight.withShadowMap
-                    { resolution = 1200
+                    { resolution = 800
+                    , near = 0.01
+                    , far = 100
+                    }
+            )
+        , Object.spotLight
+            (SpotLight.light (vec3 -3 3 1) 30
+                |> SpotLight.withShadowMap
+                    { resolution = 800
                     , near = 0.01
                     , far = 100
                     }

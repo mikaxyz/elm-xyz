@@ -112,7 +112,7 @@ modifiers model =
     [ XYZMika.XYZ.Scene.PositionModifier
         (\index position ->
             case index of
-                3 ->
+                4 ->
                     Vec3.add model.objectPosition position
 
                 _ ->
@@ -121,7 +121,7 @@ modifiers model =
     , XYZMika.XYZ.Scene.RotationModifier
         (\index matrix ->
             case index of
-                3 ->
+                4 ->
                     matrix
                         |> Mat4.rotate (5 * model.theta) Vec3.j
 
@@ -132,6 +132,9 @@ modifiers model =
         (\index target ->
             case index of
                 1 ->
+                    Vec3.add model.objectPosition target
+
+                2 ->
                     Vec3.add model.objectPosition target
 
                 _ ->

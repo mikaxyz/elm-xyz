@@ -32,16 +32,17 @@ doc model =
     }
 
 
-type alias ShadowMaps =
+type alias ShadowMapBuffers =
     { shadowMap1 : ( Maybe WebGL.FrameBuffer, Mat4 )
+    , shadowMap2 : ( Maybe WebGL.FrameBuffer, Mat4 )
     }
 
 
 view : Model -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name -> Html Msg
 view model scene =
     let
-        shadowMaps : ShadowMaps
-        shadowMaps =
+        frameBuffers : ShadowMapBuffers
+        frameBuffers =
             scene
                 |> XYZMika.XYZ.Scene.withModifiers (Model.modifiers model)
                 |> XYZMika.XYZ.Scene.spotLights
@@ -50,18 +51,21 @@ view model scene =
                         SpotLight.shadowMapData spotlight
                             |> Maybe.map (\shadowMapData -> ( shadowMapData, spotlight ))
                     )
-                |> List.map (shadowMapForSpotLight (Model.modifiers model) scene)
+                |> List.map (frameBufferForSpotLight (Model.modifiers model) scene)
                 |> (\x ->
                         case x of
                             [ ( fb, mat ) ] ->
-                                ShadowMaps ( Just fb, mat )
+                                ShadowMapBuffers ( Just fb, mat ) ( Nothing, Mat4.identity )
+
+                            [ ( fb1, mat1 ), ( fb2, mat2 ) ] ->
+                                ShadowMapBuffers ( Just fb1, mat1 ) ( Just fb2, mat2 )
 
                             _ ->
-                                ShadowMaps ( Nothing, Mat4.identity )
+                                ShadowMapBuffers ( Nothing, Mat4.identity ) ( Nothing, Mat4.identity )
                    )
     in
     WebGL.toHtmlWithFrameBuffers
-        ([ shadowMaps.shadowMap1 ] |> List.filterMap Tuple.first)
+        ([ frameBuffers.shadowMap1, frameBuffers.shadowMap2 ] |> List.filterMap Tuple.first)
         [ WebGL.alpha True, WebGL.antialias, WebGL.depth 1 ]
         [ width viewport.width
         , height viewport.height
@@ -73,24 +77,48 @@ view model scene =
                 viewport
                 scene
                 (\material ->
-                    case textures of
-                        [ texture ] ->
+                    let
+                        shadowMaps =
+                            case textures of
+                                t1 :: [] ->
+                                    Just
+                                        { shadowMap1 =
+                                            { texture = t1
+                                            , viewMatrix = Tuple.second frameBuffers.shadowMap1
+                                            }
+                                        , shadowMap2 = Nothing
+                                        }
+
+                                t1 :: t2 :: [] ->
+                                    Just
+                                        { shadowMap1 =
+                                            { texture = t1
+                                            , viewMatrix = Tuple.second frameBuffers.shadowMap1
+                                            }
+                                        , shadowMap2 =
+                                            Just
+                                                { texture = t2
+                                                , viewMatrix = Tuple.second frameBuffers.shadowMap2
+                                                }
+                                        }
+
+                                _ ->
+                                    Nothing
+                    in
+                    case shadowMaps of
+                        Just shadowMaps_ ->
                             material
                                 |> Maybe.map XYZMika.XYZ.Material.Renderer.renderer
                                 |> Maybe.withDefault
-                                    (ShadowMapping.Material.Advanced.renderer
-                                        { texture = texture
-                                        , viewMatrix = Tuple.second shadowMaps.shadowMap1
-                                        }
-                                    )
+                                    (ShadowMapping.Material.Advanced.renderer shadowMaps_)
 
-                        _ ->
+                        Nothing ->
                             XYZMika.XYZ.Material.Advanced.renderer
                 )
         )
 
 
-shadowMapForSpotLight :
+frameBufferForSpotLight :
     List XYZMika.XYZ.Scene.Modifier
     -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name
     ->
@@ -102,14 +130,14 @@ shadowMapForSpotLight :
         , SpotLight
         )
     -> ( WebGL.FrameBuffer, Mat4 )
-shadowMapForSpotLight modifiers originalScene ( shadowMapData, spotLight ) =
+frameBufferForSpotLight modifiers originalScene ( shadowMapData, spotLight ) =
     let
         scene =
             originalScene
                 |> XYZMika.XYZ.Scene.withCameraPosition (SpotLight.position spotLight)
                 |> XYZMika.XYZ.Scene.withCameraTarget (SpotLight.target spotLight)
                 |> XYZMika.XYZ.Scene.withPerspectiveProjection
-                    { fov = shadowMapData.fov
+                    { fov = min 180 (shadowMapData.fov + 10)
                     , near = shadowMapData.near
                     , far = shadowMapData.far
                     }
