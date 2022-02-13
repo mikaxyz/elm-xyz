@@ -1,4 +1,4 @@
-module ShadowMapping.Scene exposing (graph, spotLightPosition)
+module ShadowMapping.Scene exposing (graph)
 
 import Color
 import Math.Matrix4 as Mat4
@@ -9,6 +9,7 @@ import XYZMika.XYZ.Material.Renderer as Material
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Light as Light
+import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight
 import XYZMika.XYZ.Scene.Object as Object
 
 
@@ -19,18 +20,20 @@ type alias Assets =
     }
 
 
-spotLightPosition : Vec3
-spotLightPosition =
-    vec3 -3 4 2
-
-
 graph : Maybe Texture -> Assets -> Graph (Object.Object Material.Name)
 graph lightMap assets =
     Graph.shallow (Object.group "ROOT")
-        [ Object.light
-            (Light.spotLight spotLightPosition
-                |> Light.withIntensity 1.0
-                |> Light.withColor Color.white
+        [ Object.spotLight
+            --(Light.spotLight spotLightPosition 90
+            --    |> Light.withIntensity 1.0
+            --    |> Light.withColor Color.white
+            --)
+            (SpotLight.light (vec3 0 2 2) 90
+                |> SpotLight.withShadowMap
+                    { resolution = 1200
+                    , near = 0.01
+                    , far = 100
+                    }
             )
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
             |> Object.initWithTriangles

@@ -34,6 +34,9 @@ type alias Uniforms =
     , spotLight1 : Vec4
     , spotLight1direction : Vec3
     , spotLight1Color : Vec3
+    , spotLight1fov : Float
+    , shadowMap : Texture
+    , shadowMapViewMatrix : Mat4
 
     --
     , pointLight1 : Vec4
@@ -46,10 +49,6 @@ type alias Uniforms =
     , pointLight4Color : Vec3
     , pointLight5 : Vec4
     , pointLight5Color : Vec3
-    , shadowMap : Texture
-    , shadowMapCameraMatrix : Mat4
-    , shadowMapPerspectiveMatrix : Mat4
-    , shadowMapModelMatrix : Mat4
     }
 
 
@@ -68,33 +67,29 @@ type alias Varyings =
     }
 
 
+
+--type alias ShadowMap =
+--{ texture : Texture
+--, perspectiveMatrix : Mat4
+--, cameraMatrix : Mat4
+--, modelMatrix : Mat4
+--}
+
+
 type alias ShadowMap =
     { texture : Texture
-    , perspectiveMatrix : Mat4
-    , cameraMatrix : Mat4
-    , modelMatrix : Mat4
+    , viewMatrix : Mat4
     }
 
 
 renderer : ShadowMap -> Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
 renderer shadowMap fallbackTexture options uniforms object =
     let
-        spotLight : Int -> { light : Vec4, direction : Vec3, color : Vec3 }
+        spotLight : Int -> SpotLight.ShaderData
         spotLight i =
             options
                 |> Material.spotLightByIndex (i - 1)
-                |> Maybe.map
-                    (\light ->
-                        { light = SpotLight.toVec4 light
-                        , direction = SpotLight.direction light
-                        , color = SpotLight.color light
-                        }
-                    )
-                |> Maybe.withDefault
-                    { light = vec4 0 0 0 0
-                    , direction = vec3 0 0 0
-                    , color = vec3 0 0 0
-                    }
+                |> SpotLight.toShaderData
 
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
@@ -136,6 +131,9 @@ renderer shadowMap fallbackTexture options uniforms object =
         , spotLight1 = spotLight 1 |> .light
         , spotLight1Color = spotLight 1 |> .color
         , spotLight1direction = spotLight 1 |> .direction
+        , spotLight1fov = spotLight 1 |> .fov
+        , shadowMap = shadowMap.texture
+        , shadowMapViewMatrix = shadowMap.viewMatrix
 
         --
         , pointLight1 = pointLight 1 |> .light
@@ -148,12 +146,6 @@ renderer shadowMap fallbackTexture options uniforms object =
         , pointLight4Color = pointLight 4 |> .color
         , pointLight5 = pointLight 5 |> .light
         , pointLight5Color = pointLight 5 |> .color
-
-        --
-        , shadowMap = shadowMap.texture
-        , shadowMapCameraMatrix = shadowMap.cameraMatrix
-        , shadowMapPerspectiveMatrix = shadowMap.perspectiveMatrix
-        , shadowMapModelMatrix = shadowMap.modelMatrix
         }
         |> Material.toEntityWithSettings
             [ WebGL.Settings.DepthTest.default
@@ -189,9 +181,7 @@ vertexShader =
 
         uniform vec3 objectColor;
 
-        uniform mat4 shadowMapCameraMatrix;
-        uniform mat4 shadowMapPerspectiveMatrix;
-        uniform mat4 shadowMapModelMatrix;
+        uniform mat4 shadowMapViewMatrix;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -217,7 +207,7 @@ vertexShader =
 
             vec4 pos = vec4(v_fragPos, 1.0);
             pos = sceneMatrix * vec4(position, 1.0);
-            v_Vertex_relative_to_light = shadowMapPerspectiveMatrix * shadowMapCameraMatrix * pos;
+            v_Vertex_relative_to_light = shadowMapViewMatrix * pos;
         }
     |]
 
@@ -252,7 +242,9 @@ fragmentShader =
         uniform vec4 spotLight1;
         uniform vec3 spotLight1Color;
         uniform vec3 spotLight1direction;
+        uniform float spotLight1fov;
         uniform sampler2D shadowMap;
+        varying vec4 v_Vertex_relative_to_light;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -263,8 +255,6 @@ fragmentShader =
         varying vec3 v_t;
         varying vec3 v_b;
         varying vec3 v_n;
-
-        varying vec4 v_Vertex_relative_to_light;
 
         highp mat4 transpose(in highp mat4 inMatrix) {
             highp vec4 i0 = inMatrix[0];
@@ -282,8 +272,8 @@ fragmentShader =
             return outMatrix;
         }
 
-        vec3 f_spotLight (vec3 normal, vec3 lightPosition, vec3 lightDirection) {
-            highp float innerLimit = .97;
+        vec3 f_spotLight (vec3 normal, vec3 lightPosition, vec3 lightDirection, float fov) {
+            highp float innerLimit = fov;
             highp float outerLimit = innerLimit - 0.02;
 
             float shininess = 1.0;
@@ -374,7 +364,7 @@ fragmentShader =
 
             vec3 lighting = vec3(0,0,0);
             if (spotLight1.w > 0.0) {
-               lighting += spotLight1.w * f_spotLight(normal, spotLight1.xyz, spotLight1direction.xyz) * spotLight1Color;
+               lighting += spotLight1.w * f_spotLight(normal, spotLight1.xyz, spotLight1direction.xyz, spotLight1fov) * spotLight1Color;
             }
             if (pointLight1.w > 0.0) {
                lighting += pointLight1.w * f_pointLight(normal, pointLight1.xyz) * pointLight1Color;

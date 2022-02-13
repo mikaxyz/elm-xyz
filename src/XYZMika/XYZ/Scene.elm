@@ -11,12 +11,14 @@ module XYZMika.XYZ.Scene exposing
     , render
     , renderSimple
     , renderSimpleWithModifiers
+    , spotLights
     , withCamera
     , withCameraMap
     , withCameraPosition
     , withCameraTarget
     , withLights
     , withLightsInGraph
+    , withModifiers
     , withPerspectiveProjection
     )
 
@@ -37,6 +39,7 @@ import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
+import XYZMika.XYZ.Scene.Light.SpotLight exposing (SpotLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Options as SceneOptions
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -108,6 +111,21 @@ withCameraMap f (Scene scene) =
 map : (Tree (Object materialId) -> Tree (Object materialId)) -> Scene materialId -> Scene materialId
 map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
+
+
+spotLights : Scene materialId -> List SpotLight
+spotLights (Scene scene) =
+    scene.graph
+        |> Tree.foldl
+            (\obj acc ->
+                case Object.maybeLight obj |> Maybe.andThen Light.maybeSpotLight of
+                    Just light ->
+                        light :: acc
+
+                    Nothing ->
+                        acc
+            )
+            []
 
 
 withLightsInGraph : Scene materialId -> Scene materialId
@@ -277,6 +295,19 @@ applyModifiers modifiers index object =
                 applyModifier index acc animation
             )
             object
+
+
+withModifiers : List Modifier -> Scene materialId -> Scene materialId
+withModifiers modifiers (Scene scene) =
+    Scene
+        { scene
+            | graph =
+                scene.graph
+                    |> Tree.indexedMap
+                        (\index object ->
+                            applyModifiers modifiers index object
+                        )
+        }
 
 
 render :

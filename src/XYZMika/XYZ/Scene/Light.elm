@@ -1,6 +1,7 @@
 module XYZMika.XYZ.Scene.Light exposing
     ( Light
     , directional
+    , fromSpotLight
     , maybeDirectionalLight
     , maybePointLight
     , maybeSpotLight
@@ -30,9 +31,14 @@ type Light
     | SpotLight SpotLight
 
 
-spotLight : Vec3 -> Light
-spotLight p =
-    SpotLight (SpotLight.light p)
+fromSpotLight : SpotLight -> Light
+fromSpotLight x =
+    SpotLight x
+
+
+spotLight : Vec3 -> Float -> Light
+spotLight p fov =
+    SpotLight (SpotLight.light p fov)
 
 
 pointLight : Vec3 -> Light

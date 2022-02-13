@@ -6,7 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toHumanReadable
     , rotationInTime, rotationWithDrag, maybeLight
-    , disable, enable, group, isDisabled, lightTargetMap, maybeGroup, maybeLightDisabled, withLightTarget
+    , disable, enable, group, isDisabled, lightTargetMap, maybeGroup, maybeLightDisabled, spotLight, withLightTarget
     )
 
 {-|
@@ -54,6 +54,7 @@ import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube as Cube
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
+import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight exposing (SpotLight)
 
 
 type Object materialId
@@ -166,6 +167,31 @@ light light_ =
         , glSetting = Nothing
         }
         light_
+
+
+spotLight : SpotLight -> Object materialId
+spotLight light_ =
+    let
+        size =
+            1
+
+        verts =
+            Cube.gray size size size
+    in
+    Light
+        { position = SpotLight.position light_
+        , rotation = Mat4.identity
+        , mesh = verts |> WebGL.triangles
+        , triangles = verts |> List.map toVec3s
+        , boundingBox = verts |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , options = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        }
+        (Light.fromSpotLight light_)
 
 
 maybeLight : Object materialId -> Maybe Light

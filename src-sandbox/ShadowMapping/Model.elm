@@ -48,6 +48,7 @@ init =
     , scene =
         XYZMika.XYZ.Scene.init
             (Graph.singleton (Object.group "LAODING"))
+            |> XYZMika.XYZ.Scene.withCameraPosition (vec3 0 5 7)
             |> XYZMika.XYZ.Scene.withCameraTarget (vec3 0 0.5 0)
     , objectPosition = vec3 0 0 0
     }
