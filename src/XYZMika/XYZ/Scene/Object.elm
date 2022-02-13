@@ -6,7 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toHumanReadable
     , rotationInTime, rotationWithDrag, maybeLight
-    , disable, enable, group, isDisabled, maybeGroup, maybeLightDisabled
+    , disable, enable, group, isDisabled, lightTargetMap, maybeGroup, maybeLightDisabled, withLightTarget
     )
 
 {-|
@@ -402,6 +402,38 @@ withPosition x object =
 
         Group name data ->
             Group name { data | position = x }
+
+
+withLightTarget : Vec3 -> Object materialId -> Object materialId
+withLightTarget x object =
+    case object of
+        Disabled disabledObject ->
+            Disabled (withPosition x disabledObject)
+
+        Mesh data ->
+            Mesh { data | position = x }
+
+        Light data light_ ->
+            Light { data | position = x } (Light.withTarget x light_)
+
+        Group name data ->
+            Group name { data | position = x }
+
+
+lightTargetMap : (Vec3 -> Vec3) -> Object materialId -> Object materialId
+lightTargetMap f object =
+    case object of
+        Disabled disabledObject ->
+            Disabled (lightTargetMap f disabledObject)
+
+        Mesh data ->
+            Mesh data
+
+        Light data light_ ->
+            Light data (Light.targetMap f light_)
+
+        Group name data ->
+            Group name data
 
 
 withRotation : Mat4 -> Object materialId -> Object materialId

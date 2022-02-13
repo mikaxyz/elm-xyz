@@ -283,7 +283,7 @@ fragmentShader =
         }
 
         vec3 f_spotLight (vec3 normal, vec3 lightPosition, vec3 lightDirection) {
-            highp float innerLimit = .99;
+            highp float innerLimit = .97;
             highp float outerLimit = innerLimit - 0.02;
 
             float shininess = 1.0;
@@ -400,7 +400,7 @@ fragmentShader =
             // Shadows
             float visibility = 1.0;
             const bool SHADOWS = true;
-            const bool SOFT_SHADOWS = false;
+            const bool SOFT_SHADOWS = true;
             const float TEXEL_SIZE_MULTIPLIER = 1.0;
 
             if (SHADOWS == true) {

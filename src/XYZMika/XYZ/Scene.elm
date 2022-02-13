@@ -1,5 +1,6 @@
 module XYZMika.XYZ.Scene exposing
     ( GraphRenderOptions
+    , Modifier(..)
     , Scene
     , camera
     , getGraph
@@ -9,6 +10,7 @@ module XYZMika.XYZ.Scene exposing
     , projectionMatrix
     , render
     , renderSimple
+    , renderSimpleWithModifiers
     , withCamera
     , withCameraMap
     , withCameraPosition
@@ -214,6 +216,7 @@ renderSimple :
 renderSimple viewport scene renderer =
     render
         []
+        []
         SceneOptions.create
         viewport
         (Math.Vector2.vec2 0 0)
@@ -223,8 +226,62 @@ renderSimple viewport scene renderer =
         renderer
 
 
+renderSimpleWithModifiers :
+    List Modifier
+    -> { width : Int, height : Int }
+    -> Scene materialId
+    -> Renderer materialId (Uniforms {})
+    -> List Entity
+renderSimpleWithModifiers modifiers viewport scene renderer =
+    render
+        []
+        modifiers
+        SceneOptions.create
+        viewport
+        (Math.Vector2.vec2 0 0)
+        0.0
+        (\_ -> Nothing)
+        scene
+        renderer
+
+
+type Modifier
+    = PositionModifier (Int -> Vec3 -> Vec3)
+    | RotationModifier (Int -> Mat4 -> Mat4)
+    | SpotLightTargetModifier (Int -> Vec3 -> Vec3)
+
+
+applyModifier : Int -> Object materialId -> Modifier -> Object materialId
+applyModifier index object modifier =
+    case modifier of
+        PositionModifier f ->
+            Object.withPosition (f index (Object.position object)) object
+
+        RotationModifier f ->
+            Object.withRotation (f index (Object.rotation object)) object
+
+        SpotLightTargetModifier f ->
+            case Object.maybeLight object of
+                Just _ ->
+                    Object.lightTargetMap (f index) object
+
+                Nothing ->
+                    object
+
+
+applyModifiers : List Modifier -> Int -> Object materialId -> Object materialId
+applyModifiers modifiers index object =
+    modifiers
+        |> List.foldl
+            (\animation acc ->
+                applyModifier index acc animation
+            )
+            object
+
+
 render :
     List Light
+    -> List Modifier
     -> SceneOptions.Options
     -> { width : Int, height : Int }
     -> Vec2
@@ -233,14 +290,16 @@ render :
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-render defaultLights sceneOptions viewport drag theta graphRenderOptions (Scene scene) renderer =
+render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptions (Scene scene) renderer =
     let
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
 
         lightsInScene : List Light
         lightsInScene =
-            graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph
+            scene.graph
+                |> Tree.indexedMap (\index object -> applyModifiers modifiers index object)
+                |> graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
                 |> Tree.foldl
                     (\( transform, object ) acc ->
                         case Object.maybeLight object of
@@ -272,7 +331,15 @@ render defaultLights sceneOptions viewport drag theta graphRenderOptions (Scene 
         , sceneMatrix = Mat4.identity
         , sceneRotationMatrix = Mat4.identity
         }
-        (GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
+        (GraphNode
+            (scene.graph
+                |> Tree.indexedMap (\index object -> applyModifiers modifiers index object)
+                |> graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
+                |> Tree.indexedMap
+                    (\i ( sceneMatrix, object ) ->
+                        Renderable i sceneMatrix object
+                    )
+            )
             :: (if SceneOptions.showLightGizmos sceneOptions then
                     Renderer.lights rendererOptions
                         |> List.filterMap Light.position

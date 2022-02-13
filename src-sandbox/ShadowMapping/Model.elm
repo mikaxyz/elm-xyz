@@ -1,8 +1,17 @@
-module ShadowMapping.Model exposing (Model, Msg(..), init)
+module ShadowMapping.Model exposing
+    ( Model
+    , Msg(..)
+    , init
+    , initScene
+    , keyboardControl
+    , modifiers
+    )
 
 import Keyboard
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Matrix4 as Mat4
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import ShadowMapping.Assets as Assets exposing (ObjId, TextureId)
+import ShadowMapping.Scene as Scene
 import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material.Renderer as Material
@@ -42,3 +51,89 @@ init =
             |> XYZMika.XYZ.Scene.withCameraTarget (vec3 0 0.5 0)
     , objectPosition = vec3 0 0 0
     }
+
+
+initScene : Model -> Model
+initScene model =
+    Maybe.map3
+        (\mesh diffuse normal -> { mesh = mesh, diffuse = diffuse, normal = normal })
+        (AssetStore.verticesIndexed Assets.SneakerXyz model.assets)
+        (AssetStore.texture Assets.SneakerDiffuse model.assets)
+        (AssetStore.texture Assets.SneakerNormal model.assets)
+        |> Maybe.map
+            (\assets ->
+                { model
+                    | scene =
+                        model.scene
+                            |> XYZMika.XYZ.Scene.map
+                                (\_ ->
+                                    Scene.graph Nothing assets
+                                )
+                }
+            )
+        |> Maybe.withDefault model
+
+
+keyboardControl : Model -> Model
+keyboardControl model =
+    let
+        speed =
+            0.05
+
+        x =
+            if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'D') then
+                1.0
+
+            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'A') then
+                -1.0
+
+            else
+                0.0
+
+        y =
+            if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'S') then
+                1.0
+
+            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'W') then
+                -1.0
+
+            else
+                0.0
+
+        m =
+            vec3 x 0 y
+    in
+    { model | objectPosition = model.objectPosition |> Vec3.add (Vec3.scale speed m) }
+
+
+modifiers : Model -> List XYZMika.XYZ.Scene.Modifier
+modifiers model =
+    [ XYZMika.XYZ.Scene.PositionModifier
+        (\index position ->
+            case index of
+                3 ->
+                    Vec3.add model.objectPosition position
+
+                _ ->
+                    position
+        )
+    , XYZMika.XYZ.Scene.RotationModifier
+        (\index matrix ->
+            case index of
+                3 ->
+                    matrix
+                        |> Mat4.rotate (5 * model.theta) Vec3.j
+
+                _ ->
+                    matrix
+        )
+    , XYZMika.XYZ.Scene.SpotLightTargetModifier
+        (\index target ->
+            case index of
+                1 ->
+                    Vec3.add model.objectPosition target
+
+                _ ->
+                    target
+        )
+    ]

@@ -76,6 +76,7 @@ sceneView (Hud hud) model scene =
                 ]
                 (Scene.render
                     [ Light.directional (vec3 -1 1 1) ]
+                    []
                     model.sceneOptions
                     Model.viewport
                     (Model.getDrag model)

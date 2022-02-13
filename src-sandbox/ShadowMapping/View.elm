@@ -1,16 +1,14 @@
-module ShadowMapping.View exposing (doc, lightMap, view)
+module ShadowMapping.View exposing (doc, view)
 
 import Browser
-import Html exposing (Html, text)
+import Html exposing (Html)
 import Html.Attributes exposing (height, width)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import ShadowMapping.Assets as Asset
 import ShadowMapping.Material.Advanced
-import ShadowMapping.Model exposing (Model, Msg(..))
+import ShadowMapping.Model as Model exposing (Model, Msg(..))
 import ShadowMapping.Scene as Scene
 import WebGL
 import XYZMika.Dragon as Dragon
-import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Material.Advanced
 import XYZMika.XYZ.Material.DepthMap
 import XYZMika.XYZ.Material.Renderer
@@ -29,35 +27,16 @@ doc : Model -> Browser.Document Msg
 doc model =
     { title = "ShadowMapping"
     , body =
-        [ view model
+        [ view model model.scene
         ]
     }
 
 
-view : Model -> Html Msg
-view model =
-    Maybe.map3
-        (\mesh diffuse normal -> { mesh = mesh, diffuse = diffuse, normal = normal })
-        (AssetStore.verticesIndexed Asset.SneakerXyz model.assets)
-        (AssetStore.texture Asset.SneakerDiffuse model.assets)
-        (AssetStore.texture Asset.SneakerNormal model.assets)
-        |> Maybe.map
-            (\assets ->
-                model.scene
-                    |> XYZMika.XYZ.Scene.map
-                        (\_ ->
-                            Scene.graph model.theta Nothing model.objectPosition assets
-                        )
-                    |> view_ model
-            )
-        |> Maybe.withDefault (text "Loading...")
-
-
-view_ : Model -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name -> Html Msg
-view_ model scene =
+view : Model -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name -> Html Msg
+view model scene =
     let
         ( frameBuffer, shadowMapTransforms ) =
-            lightMap model.theta scene
+            shadowMap model
     in
     WebGL.toHtmlWithFrameBuffers
         [ frameBuffer ]
@@ -67,15 +46,12 @@ view_ model scene =
         , Dragon.dragEvents DragonMsg
         ]
         (\textures ->
-            let
-                shadowMap =
-                    List.head textures
-            in
-            XYZMika.XYZ.Scene.renderSimple
+            XYZMika.XYZ.Scene.renderSimpleWithModifiers
+                (Model.modifiers model)
                 viewport
                 scene
                 (\material ->
-                    case shadowMap of
+                    case List.head textures of
                         Just texture ->
                             material
                                 |> Maybe.map XYZMika.XYZ.Material.Renderer.renderer
@@ -94,9 +70,8 @@ view_ model scene =
         )
 
 
-lightMap :
-    Float
-    -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name
+shadowMap :
+    Model
     ->
         ( WebGL.FrameBuffer
         , { perspectiveMatrix : Mat4
@@ -104,7 +79,7 @@ lightMap :
           , modelMatrix : Mat4
           }
         )
-lightMap theta scene_ =
+shadowMap model =
     let
         viewport_ : { width : number, height : number }
         viewport_ =
@@ -112,12 +87,9 @@ lightMap theta scene_ =
             , height = 640
             }
 
-        lightPosition =
-            Scene.spotLightPosition theta
-
         scene =
-            scene_
-                |> XYZMika.XYZ.Scene.withCameraPosition lightPosition
+            model.scene
+                |> XYZMika.XYZ.Scene.withCameraPosition Scene.spotLightPosition
                 |> XYZMika.XYZ.Scene.withPerspectiveProjection { fov = 70, near = 0.01, far = 100 }
 
         camera =
@@ -128,14 +100,14 @@ lightMap theta scene_ =
             toFloat viewport_.width / toFloat viewport_.height
 
         p =
-            Mat4.makeTranslate lightPosition
+            Mat4.makeTranslate Scene.spotLightPosition
     in
     ( WebGL.frameBuffer ( viewport_.width, viewport_.height )
-        (XYZMika.XYZ.Scene.renderSimple
+        (XYZMika.XYZ.Scene.renderSimpleWithModifiers
+            (Model.modifiers model)
             viewport_
             scene
             (always XYZMika.XYZ.Material.DepthMap.renderer)
-         --(always XYZMika.XYZ.Material.Color.renderer)
         )
     , { perspectiveMatrix = XYZMika.XYZ.Scene.projectionMatrix aspectRatio scene
       , cameraMatrix = camera

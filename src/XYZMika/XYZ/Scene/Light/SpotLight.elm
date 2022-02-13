@@ -4,6 +4,7 @@ module XYZMika.XYZ.Scene.Light.SpotLight exposing
     , direction
     , light
     , position
+    , targetMap
     , toVec4
     , withColor
     , withIntensity
@@ -68,6 +69,11 @@ color (SpotLight light_) =
 direction : SpotLight -> Vec3
 direction (SpotLight light_) =
     Vec3.direction light_.target light_.position
+
+
+targetMap : (Vec3 -> Vec3) -> SpotLight -> SpotLight
+targetMap f (SpotLight light_) =
+    SpotLight { light_ | target = f light_.target }
 
 
 toVec4 : SpotLight -> Vec4

@@ -7,6 +7,7 @@ module XYZMika.XYZ.Scene.Light exposing
     , pointLight
     , position
     , spotLight
+    , targetMap
     , toHumanReadable
     , withColor
     , withColorVec
@@ -112,6 +113,19 @@ position light =
 
         SpotLight light_ ->
             Just (SpotLight.position light_)
+
+
+targetMap : (Vec3 -> Vec3) -> Light -> Light
+targetMap f light =
+    case light of
+        DirectionalLight light_ ->
+            DirectionalLight light_
+
+        PointLight light_ ->
+            PointLight light_
+
+        SpotLight light_ ->
+            SpotLight (light_ |> SpotLight.targetMap f)
 
 
 maybeSpotLight : Light -> Maybe SpotLight

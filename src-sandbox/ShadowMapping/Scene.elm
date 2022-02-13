@@ -2,7 +2,7 @@ module ShadowMapping.Scene exposing (graph, spotLightPosition)
 
 import Color
 import Math.Matrix4 as Mat4
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material.Renderer as Material
@@ -19,47 +19,27 @@ type alias Assets =
     }
 
 
-spotLightPosition : Float -> Vec3
-spotLightPosition theta =
-    -- Initial camera position
-    --vec3 0 3 4
+spotLightPosition : Vec3
+spotLightPosition =
     vec3 -3 4 2
 
 
-graph : Float -> Maybe Texture -> Vec3 -> Assets -> Graph (Object.Object Material.Name)
-graph theta lightMap objectPosition assets =
+graph : Maybe Texture -> Assets -> Graph (Object.Object Material.Name)
+graph lightMap assets =
     Graph.shallow (Object.group "ROOT")
         [ Object.light
-            (Light.spotLight
-                (spotLightPosition theta)
-                |> Light.withTarget objectPosition
+            (Light.spotLight spotLightPosition
                 |> Light.withIntensity 1.0
                 |> Light.withColor Color.white
             )
-        , case lightMap of
-            Just texture ->
-                XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 4 4 0.2
-                    |> Object.initWithTriangles
-                    |> Object.withDiffuseMap texture
-                    |> Object.withMaterialName Material.Advanced
-                    |> Object.withPosition (vec3 0 2 -5)
-
-            Nothing ->
-                Object.group "MIRROR"
-        , XYZMika.XYZ.Mesh.Cube.colored Color.white 0.05 0.05 0.05
-            |> Object.initWithTriangles
-            |> Object.withMaterialName Material.Color
-            |> Object.withPosition (spotLightPosition theta |> Vec3.add (vec3 0 0.5 0))
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkGreen 10 0.2 10
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.1 0)
         , assets.mesh
             |> Object.initWithIndexedTriangles
-            --|> Object.withPosition (objectPosition |> Vec3.add (vec3 0 0.55 0))
             |> Object.withPosition (vec3 0 0.55 0)
             |> Object.withDiffuseMap assets.diffuse
             |> Object.withNormalMap assets.normal
-            |> Object.withRotation (Mat4.makeRotate (10 * theta) (vec3 0 1 0))
 
         -- Blocks
         , XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 0.5 1 0.5

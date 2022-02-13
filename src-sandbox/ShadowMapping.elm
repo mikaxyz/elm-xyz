@@ -43,47 +43,20 @@ subscriptions model =
         ]
 
 
-keyboardControl model =
-    let
-        speed =
-            0.3
-
-        x =
-            if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'D') then
-                1.0
-
-            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'A') then
-                -1.0
-
-            else
-                0.0
-
-        y =
-            if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'S') then
-                1.0
-
-            else if model.keyboard |> Keyboard.isKeyDown (Keyboard.Alpha 'W') then
-                -1.0
-
-            else
-                0.0
-
-        m =
-            vec3 x 0 y
-    in
-    { model | objectPosition = model.objectPosition |> Vec3.add (Vec3.scale speed m) }
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Animate elapsed ->
-            ( { model | theta = model.theta + (elapsed / 10000) } |> keyboardControl
+            ( { model | theta = model.theta + (elapsed / 10000) }
+                |> Model.keyboardControl
             , Cmd.none
             )
 
         AssetLoaded (Ok asset) ->
-            ( { model | assets = model.assets |> AssetStore.addToStore asset }, Cmd.none )
+            ( { model | assets = model.assets |> AssetStore.addToStore asset }
+                |> Model.initScene
+            , Cmd.none
+            )
 
         AssetLoaded (Err error) ->
             let
