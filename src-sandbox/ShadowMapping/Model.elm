@@ -56,11 +56,20 @@ init =
 
 initScene : Model -> Model
 initScene model =
-    Maybe.map3
-        (\mesh diffuse normal -> { mesh = mesh, diffuse = diffuse, normal = normal })
+    Maybe.map5
+        (\mesh diffuse normal carpetDiffuse carpetNormal ->
+            { mesh = mesh
+            , diffuse = diffuse
+            , normal = normal
+            , carpetDiffuse = carpetDiffuse
+            , carpetNormal = carpetNormal
+            }
+        )
         (AssetStore.verticesIndexed Assets.SneakerXyz model.assets)
         (AssetStore.texture Assets.SneakerDiffuse model.assets)
         (AssetStore.texture Assets.SneakerNormal model.assets)
+        (AssetStore.texture Assets.CarpetDiffuse model.assets)
+        (AssetStore.texture Assets.CarpetNormal model.assets)
         |> Maybe.map
             (\assets ->
                 { model
@@ -68,7 +77,7 @@ initScene model =
                         model.scene
                             |> XYZMika.XYZ.Scene.map
                                 (\_ ->
-                                    Scene.graph Nothing assets
+                                    Scene.graph assets
                                 )
                 }
             )
@@ -112,7 +121,7 @@ modifiers model =
     [ XYZMika.XYZ.Scene.PositionModifier
         (\index position ->
             case index of
-                4 ->
+                3 ->
                     Vec3.add model.objectPosition position
 
                 _ ->
@@ -121,7 +130,7 @@ modifiers model =
     , XYZMika.XYZ.Scene.RotationModifier
         (\index matrix ->
             case index of
-                4 ->
+                3 ->
                     matrix
                         |> Mat4.rotate (5 * model.theta) Vec3.j
 

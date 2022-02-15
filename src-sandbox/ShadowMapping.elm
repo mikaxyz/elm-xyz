@@ -24,6 +24,8 @@ main =
                             [ AssetStore.loadXyz Assets.SneakerXyz model.assets AssetLoaded
                             , AssetStore.loadTexture Assets.SneakerNormal model.assets AssetLoaded
                             , AssetStore.loadTexture Assets.SneakerDiffuse model.assets AssetLoaded
+                            , AssetStore.loadTexture Assets.CarpetDiffuse model.assets AssetLoaded
+                            , AssetStore.loadTexture Assets.CarpetNormal model.assets AssetLoaded
                             ]
                         )
                    )
