@@ -425,7 +425,7 @@ fragmentShader =
 
             // Shadows
             const bool SHADOWS = true;
-            const bool SOFT_SHADOWS = false;
+            const bool SOFT_SHADOWS = true;
             const float TEXEL_SIZE_MULTIPLIER = 1.0;
 
             float visibility1 = 1.0;

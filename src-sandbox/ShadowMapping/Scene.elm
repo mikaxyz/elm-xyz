@@ -24,7 +24,7 @@ type alias Assets =
 graph : Assets -> Graph (Object.Object Material.Name)
 graph assets =
     [ Object.spotLight
-        (SpotLight.light (vec3 2 4 -3) 45
+        (SpotLight.light (vec3 2 5 -4) 45
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
@@ -32,7 +32,7 @@ graph assets =
                 }
         )
     , Object.spotLight
-        (SpotLight.light (vec3 -3 3 1) 30
+        (SpotLight.light (vec3 -3 3 2) 30
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01

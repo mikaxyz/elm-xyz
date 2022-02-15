@@ -66,7 +66,11 @@ view model scene =
     in
     WebGL.toHtmlWithFrameBuffers
         ([ frameBuffers.shadowMap1, frameBuffers.shadowMap2 ] |> List.filterMap Tuple.first)
-        [ WebGL.alpha True, WebGL.antialias, WebGL.depth 1 ]
+        [ WebGL.alpha True
+        , WebGL.antialias
+        , WebGL.depth 1
+        , WebGL.clearColor (22 / 255.0) (22 / 255.0) (29 / 255.0) 1
+        ]
         [ width viewport.width
         , height viewport.height
         , Dragon.dragEvents DragonMsg
