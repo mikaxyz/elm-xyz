@@ -8,7 +8,6 @@ import ShadowMapping.Material.Advanced
 import ShadowMapping.Model as Model exposing (Model, Msg(..))
 import WebGL
 import XYZMika.Dragon as Dragon
-import XYZMika.XYZ.Material.Advanced
 import XYZMika.XYZ.Material.DepthMap
 import XYZMika.XYZ.Material.Renderer
 import XYZMika.XYZ.Scene
@@ -33,39 +32,63 @@ doc model =
 
 
 type alias ShadowMapBuffers =
-    { shadowMap1 : ( Maybe WebGL.FrameBuffer, Mat4 )
-    , shadowMap2 : ( Maybe WebGL.FrameBuffer, Mat4 )
+    { shadowMap1 : Maybe ( WebGL.FrameBuffer, Mat4 )
+    , shadowMap2 : Maybe ( WebGL.FrameBuffer, Mat4 )
+    , shadowMap3 : Maybe ( WebGL.FrameBuffer, Mat4 )
     }
 
 
 view : Model -> XYZMika.XYZ.Scene.Scene XYZMika.XYZ.Material.Renderer.Name -> Html Msg
 view model scene =
     let
+        frameBufferAndViewMatrixForLight =
+            frameBufferForSpotLight (Model.modifiers model) scene
+
         frameBuffers : ShadowMapBuffers
         frameBuffers =
             scene
                 |> XYZMika.XYZ.Scene.withModifiers (Model.modifiers model)
                 |> XYZMika.XYZ.Scene.spotLights
-                |> List.filterMap
+                |> List.map
                     (\spotlight ->
                         SpotLight.shadowMapData spotlight
                             |> Maybe.map (\shadowMapData -> ( shadowMapData, spotlight ))
                     )
-                |> List.map (frameBufferForSpotLight (Model.modifiers model) scene)
-                |> (\x ->
-                        case x of
-                            [ ( fb, mat ) ] ->
-                                ShadowMapBuffers ( Just fb, mat ) ( Nothing, Mat4.identity )
+                |> (\lights ->
+                        lights
+                            |> List.foldl
+                                (\light ( acc, index ) ->
+                                    let
+                                        index_ =
+                                            index + 1
+                                    in
+                                    case light of
+                                        Just light_ ->
+                                            case index of
+                                                0 ->
+                                                    ( { acc | shadowMap1 = Just <| frameBufferAndViewMatrixForLight light_ }, index_ )
 
-                            [ ( fb1, mat1 ), ( fb2, mat2 ) ] ->
-                                ShadowMapBuffers ( Just fb1, mat1 ) ( Just fb2, mat2 )
+                                                1 ->
+                                                    ( { acc | shadowMap2 = Just <| frameBufferAndViewMatrixForLight light_ }, index_ )
 
-                            _ ->
-                                ShadowMapBuffers ( Nothing, Mat4.identity ) ( Nothing, Mat4.identity )
+                                                2 ->
+                                                    ( { acc | shadowMap3 = Just <| frameBufferAndViewMatrixForLight light_ }, index_ )
+
+                                                _ ->
+                                                    ( acc, index_ )
+
+                                        Nothing ->
+                                            ( acc, index_ )
+                                )
+                                ( ShadowMapBuffers Nothing Nothing Nothing, 0 )
+                            |> Tuple.first
                    )
     in
     WebGL.toHtmlWithFrameBuffers
-        ([ frameBuffers.shadowMap1, frameBuffers.shadowMap2 ] |> List.filterMap Tuple.first)
+        ([ frameBuffers.shadowMap1, frameBuffers.shadowMap2, frameBuffers.shadowMap3 ]
+            |> List.filterMap identity
+            |> List.map Tuple.first
+        )
         [ WebGL.alpha True
         , WebGL.antialias
         , WebGL.depth 1
@@ -76,49 +99,66 @@ view model scene =
         , Dragon.dragEvents DragonMsg
         ]
         (\textures ->
-            XYZMika.XYZ.Scene.renderSimpleWithModifiers
-                (Model.modifiers model)
-                viewport
-                scene
-                (\material ->
-                    let
-                        shadowMaps =
-                            case textures of
-                                t1 :: [] ->
-                                    Just
-                                        { shadowMap1 =
-                                            { texture = t1
-                                            , viewMatrix = Tuple.second frameBuffers.shadowMap1
-                                            }
-                                        , shadowMap2 = Nothing
-                                        }
+            case List.head textures of
+                Just texture1 ->
+                    XYZMika.XYZ.Scene.renderSimpleWithModifiers
+                        (Model.modifiers model)
+                        viewport
+                        scene
+                        (\material ->
+                            [ frameBuffers.shadowMap1, frameBuffers.shadowMap2, frameBuffers.shadowMap3 ]
+                                |> List.foldl
+                                    (\shadowMap ( acc, textures_, index ) ->
+                                        let
+                                            attach tex x =
+                                                case index of
+                                                    0 ->
+                                                        { x
+                                                            | shadowMap1 =
+                                                                Maybe.map
+                                                                    (\( _, mat ) -> { texture = tex, viewMatrix = mat })
+                                                                    shadowMap
+                                                        }
 
-                                t1 :: t2 :: [] ->
-                                    Just
-                                        { shadowMap1 =
-                                            { texture = t1
-                                            , viewMatrix = Tuple.second frameBuffers.shadowMap1
-                                            }
-                                        , shadowMap2 =
-                                            Just
-                                                { texture = t2
-                                                , viewMatrix = Tuple.second frameBuffers.shadowMap2
-                                                }
-                                        }
+                                                    1 ->
+                                                        { x
+                                                            | shadowMap2 =
+                                                                Maybe.map
+                                                                    (\( _, mat ) -> { texture = tex, viewMatrix = mat })
+                                                                    shadowMap
+                                                        }
 
-                                _ ->
-                                    Nothing
-                    in
-                    case shadowMaps of
-                        Just shadowMaps_ ->
-                            material
-                                |> Maybe.map XYZMika.XYZ.Material.Renderer.renderer
-                                |> Maybe.withDefault
-                                    (ShadowMapping.Material.Advanced.renderer shadowMaps_)
+                                                    2 ->
+                                                        { x
+                                                            | shadowMap3 =
+                                                                Maybe.map
+                                                                    (\( _, mat ) -> { texture = tex, viewMatrix = mat })
+                                                                    shadowMap
+                                                        }
 
-                        Nothing ->
-                            XYZMika.XYZ.Material.Advanced.renderer
-                )
+                                                    _ ->
+                                                        x
+                                        in
+                                        case textures_ of
+                                            tex :: rest ->
+                                                ( attach tex acc, rest, index + 1 )
+
+                                            [] ->
+                                                ( acc, [], index + 1 )
+                                    )
+                                    ( { shadowMap1 = Nothing
+                                      , shadowMap2 = Nothing
+                                      , shadowMap3 = Nothing
+                                      }
+                                    , textures
+                                    , 0
+                                    )
+                                |> (\( acc, _, _ ) -> acc)
+                                |> ShadowMapping.Material.Advanced.renderer texture1
+                        )
+
+                Nothing ->
+                    []
         )
 
 

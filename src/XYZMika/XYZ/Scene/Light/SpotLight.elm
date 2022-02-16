@@ -12,6 +12,7 @@ module XYZMika.XYZ.Scene.Light.SpotLight exposing
     , toShaderData
     , toVec4
     , withColor
+    , withColorVec
     , withIntensity
     , withPosition
     , withShadowMap
@@ -20,6 +21,7 @@ module XYZMika.XYZ.Scene.Light.SpotLight exposing
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
+import XYZMika.Color exposing (Color)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 
 
@@ -115,9 +117,14 @@ withIntensity x (SpotLight light_) =
     SpotLight { light_ | intensity = x }
 
 
-withColor : Vec3 -> SpotLight -> SpotLight
-withColor x (SpotLight light_) =
+withColorVec : Vec3 -> SpotLight -> SpotLight
+withColorVec x (SpotLight light_) =
     SpotLight { light_ | color = x }
+
+
+withColor : Color -> SpotLight -> SpotLight
+withColor color_ (SpotLight light_) =
+    SpotLight { light_ | color = XYZMika.Color.toVec3 color_ }
 
 
 position : SpotLight -> Vec3
@@ -161,24 +168,16 @@ toVec4 (SpotLight light_) =
 
 toShaderData : Maybe SpotLight -> ShaderData
 toShaderData spotLight =
-    case
-        spotLight
-            |> Maybe.andThen
-                (\(SpotLight light_) ->
-                    case light_.shadowMap of
-                        Just shadowMap ->
-                            Just ( light_, shadowMap )
-
-                        Nothing ->
-                            Nothing
-                )
-    of
-        Just ( light_, ShadowMap shadowMap ) ->
+    case spotLight of
+        Just (SpotLight light_) ->
             { light = toVec4 (SpotLight light_)
             , direction = direction (SpotLight light_)
             , color = light_.color
             , fov = 1.0 - ((light_.fov / 180) / pi)
-            , resolution = toFloat shadowMap.resolution
+            , resolution =
+                light_.shadowMap
+                    |> Maybe.map (\(ShadowMap x) -> toFloat x.resolution)
+                    |> Maybe.withDefault 0.0
             }
 
         Nothing ->

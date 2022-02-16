@@ -105,7 +105,7 @@ withColorVec x light =
             PointLight (light_ |> PointLight.withColor x)
 
         SpotLight light_ ->
-            SpotLight (light_ |> SpotLight.withColor x)
+            SpotLight (light_ |> SpotLight.withColorVec x)
 
 
 position : Light -> Maybe Vec3

@@ -23,8 +23,15 @@ type alias Assets =
 
 graph : Assets -> Graph (Object.Object Material.Name)
 graph assets =
-    [ Object.spotLight
-        (SpotLight.light (vec3 2 5 -4) 45
+    [ assets.mesh
+        |> Object.initWithIndexedTriangles
+        |> Object.withPosition (vec3 0 0.55 0)
+        |> Object.withDiffuseMap assets.diffuse
+        |> Object.withNormalMap assets.normal
+    , Object.spotLight
+        (SpotLight.light (vec3 4 3 4) 45
+            |> SpotLight.withColor (Color.rgb 0.7 0.98 0.7)
+            |> SpotLight.withIntensity 0.7
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
@@ -32,18 +39,25 @@ graph assets =
                 }
         )
     , Object.spotLight
-        (SpotLight.light (vec3 -3 3 2) 30
+        (SpotLight.light (vec3 -4 3 4) 30
+            |> SpotLight.withColor (Color.rgb 0.98 0.8 0.8)
+            |> SpotLight.withIntensity 0.5
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
                 , far = 100
                 }
         )
-    , assets.mesh
-        |> Object.initWithIndexedTriangles
-        |> Object.withPosition (vec3 0 0.55 0)
-        |> Object.withDiffuseMap assets.diffuse
-        |> Object.withNormalMap assets.normal
+    , Object.spotLight
+        (SpotLight.light (vec3 -4 3 -4) 40
+            |> SpotLight.withColor (Color.rgb 0.8 0.8 0.98)
+            |> SpotLight.withIntensity 0.6
+            |> SpotLight.withShadowMap
+                { resolution = 800
+                , near = 0.01
+                , far = 100
+                }
+        )
 
     -- Blocks
     , XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 0.5 1 0.5
