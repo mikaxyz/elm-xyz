@@ -55,6 +55,7 @@ pointLightByIndex i (Options options) =
 spotLightByIndex : Int -> Options -> Maybe SpotLight
 spotLightByIndex i (Options options) =
     options.lights
+        |> List.reverse
         |> List.filterMap Light.maybeSpotLight
         |> List.drop i
         |> List.head

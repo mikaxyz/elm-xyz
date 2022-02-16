@@ -50,6 +50,7 @@ view model scene =
             scene
                 |> XYZMika.XYZ.Scene.withModifiers (Model.modifiers model)
                 |> XYZMika.XYZ.Scene.spotLights
+                |> List.reverse
                 |> List.map
                     (\spotlight ->
                         SpotLight.shadowMapData spotlight
