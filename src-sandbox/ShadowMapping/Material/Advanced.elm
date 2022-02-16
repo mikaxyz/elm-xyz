@@ -471,20 +471,33 @@ fragmentShader =
             return color * intensity * directionalLight.w;
         }
 
-        // Shadow mapping
-        highp float getDepth(sampler2D shadowMapTexture, vec2 shadowMapCoords) {
+        // Spotlights/Shadow mapping
+        highp float getDepth
+        ( sampler2D shadowMapTexture
+        , vec2 shadowMapCoords
+        ) {
             vec4 rgbaDepth = texture2D(shadowMapTexture, shadowMapCoords);
             vec4 bitShift = vec4(1.0, 1.0/256.0, 1.0/(256.0*256.0), 1.0/(256.0*256.0*256.0));
             return dot(rgbaDepth, bitShift);
         }
 
-        highp float getVisibility(sampler2D shadowMapTexture, vec2 shadowMapCoords, float realDepth, float acneBias) {
+        highp float getVisibility
+        ( sampler2D shadowMapTexture
+        , vec2 shadowMapCoords
+        , float realDepth
+        , float acneBias
+        ) {
             float depth = getDepth(shadowMapTexture, shadowMapCoords.xy);
             float visibility = (realDepth > depth + acneBias) ? 0.0 : 1.0;
             return visibility;
         }
 
-        highp float getAverageVisibility(sampler2D shadowMapTexture, vec3 shadowMapCoords, vec2 texelSize, float acneBias) {
+        highp float getAverageVisibility
+        ( sampler2D shadowMapTexture
+        , vec3 shadowMapCoords
+        , vec2 texelSize
+        , float acneBias
+        ) {
             vec3 coords;
             highp float depth;
             const int sampleSize = 2; // TODO:How to pass in this as uniform? Needs a constant...
@@ -497,6 +510,63 @@ fragmentShader =
                 }
             }
             return visibility / float((sampleSize * 2 + 1) * (sampleSize * 2 + 1));
+        }
+
+        highp float applyShadowMap
+        ( sampler2D shadowMap
+        , vec4 vertexRelativeToSpotLight
+        , float resolution
+        ) {
+            const bool SOFT_SHADOWS = true;
+            const float TEXEL_SIZE_MULTIPLIER = 1.0;
+
+            float visibility = 1.0;
+            vec3 lighting = vec3(0.0, 0.0, 0.0);
+
+            vec3 shadowMapCoords = (vertexRelativeToSpotLight.xyz/vertexRelativeToSpotLight.w)/2.0 + 0.5;
+            float shadowMapWidth = resolution;
+            float shadowMapHeight = resolution;
+            float bias = 0.0001;
+
+            if (SOFT_SHADOWS) {
+                vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
+                texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
+                visibility = getAverageVisibility(shadowMap, shadowMapCoords, texelSize, bias);
+            } else {
+                visibility = getVisibility(shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
+            }
+
+            return visibility;
+        }
+
+        vec3 applySpotLight
+        ( vec3 normal
+        , vec3 lightPosition
+        , vec3 lightDirection
+        , vec3 color
+        , float fov
+
+        , sampler2D shadowMap
+        , vec4 vertexRelativeToSpotLight
+        , float resolution
+        ) {
+            highp float innerLimit = fov;
+            highp float outerLimit = innerLimit - 0.02;
+            float shininess = 1.0;
+            highp vec3 direction = normalize(lightPosition - v_fragPos);
+
+            highp float dotFromDirection = dot(direction, -lightDirection);
+            float inLight = smoothstep(outerLimit, innerLimit, dotFromDirection);
+            float light = inLight * dot(normal, direction);
+            float specular = inLight * pow(dot(normal, direction), shininess);
+
+            float shadow = applyShadowMap
+                ( shadowMap
+                , vertexRelativeToSpotLight
+                , resolution
+                );
+
+            return color * light * specular * shadow;
         }
 
         void main () {
@@ -526,130 +596,60 @@ fragmentShader =
             }
 
             // Spotlights
-            const bool SHADOWS = true;
-            const bool SOFT_SHADOWS = true;
-            const float TEXEL_SIZE_MULTIPLIER = 1.0;
+            lighting += applySpotLight
+                ( normal
+                , spotLight1.xyz
+                , spotLight1_direction.xyz
+                , spotLight1_color
+                , spotLight1_fov
+                , spotLight1_shadowMap
+                , v_vertexRelativeToSpotLight1
+                , spotLight1_resolution
+                );
 
-            float visibility1 = 1.0;
-            vec3 lighting1 = vec3(0.0, 0.0, 0.0);
-            if (spotLight1.w > 0.0) {
-               lighting1 += spotLight1.w * f_spotLight(normal, spotLight1.xyz, spotLight1_direction.xyz, spotLight1_fov) * spotLight1_color;
-            }
+            lighting += applySpotLight
+                ( normal
+                , spotLight2.xyz
+                , spotLight2_direction.xyz
+                , spotLight2_color
+                , spotLight2_fov
+                , spotLight2_shadowMap
+                , v_vertexRelativeToSpotLight2
+                , spotLight2_resolution
+                );
 
-            if (SHADOWS == true && spotLight1_resolution > 0.0) {
-                vec3 shadowMapCoords = (v_vertexRelativeToSpotLight1.xyz/v_vertexRelativeToSpotLight1.w)/2.0 + 0.5;
-                float shadowMapWidth = spotLight1_resolution;
-                float shadowMapHeight = spotLight1_resolution;
-                float bias = 0.0001;
-                bool within = true;
-                // bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
+            lighting += applySpotLight
+                ( normal
+                , spotLight3.xyz
+                , spotLight3_direction.xyz
+                , spotLight3_color
+                , spotLight3_fov
+                , spotLight3_shadowMap
+                , v_vertexRelativeToSpotLight3
+                , spotLight3_resolution
+                );
 
-                if (within && SOFT_SHADOWS == true) {
-                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
-                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
-                    visibility1 = getAverageVisibility(spotLight1_shadowMap, shadowMapCoords, texelSize, bias);
-                } else if (within) {
-                    visibility1 = getVisibility(spotLight1_shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
-                }
-            }
+            lighting += applySpotLight
+                ( normal
+                , spotLight4.xyz
+                , spotLight4_direction.xyz
+                , spotLight4_color
+                , spotLight4_fov
+                , spotLight4_shadowMap
+                , v_vertexRelativeToSpotLight4
+                , spotLight4_resolution
+                );
 
-            float visibility2 = 1.0;
-            vec3 lighting2 = vec3(0.0, 0.0, 0.0);
-            if (spotLight2.w > 0.0) {
-               lighting2 += spotLight2.w * f_spotLight(normal, spotLight2.xyz, spotLight2_direction.xyz, spotLight2_fov) * spotLight2_color;
-            }
-
-            if (SHADOWS == true && spotLight2_resolution > 0.0) {
-                vec3 shadowMapCoords = (v_vertexRelativeToSpotLight2.xyz/v_vertexRelativeToSpotLight2.w)/2.0 + 0.5;
-                float shadowMapWidth = spotLight2_resolution;
-                float shadowMapHeight = spotLight2_resolution;
-                float bias = 0.0001;
-                bool within = true;
-                // bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
-
-                if (within && SOFT_SHADOWS == true) {
-                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
-                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
-                    visibility2 = getAverageVisibility(spotLight2_shadowMap, shadowMapCoords, texelSize, bias);
-                } else if (within) {
-                    visibility2 = getVisibility(spotLight2_shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
-                }
-            }
-
-            float visibility3 = 1.0;
-            vec3 lighting3 = vec3(0.0, 0.0, 0.0);
-            if (spotLight3.w > 0.0) {
-               lighting3 += spotLight3.w * f_spotLight(normal, spotLight3.xyz, spotLight3_direction.xyz, spotLight3_fov) * spotLight3_color;
-            }
-
-            if (SHADOWS == true && spotLight3_resolution > 0.0) {
-                vec3 shadowMapCoords = (v_vertexRelativeToSpotLight3.xyz/v_vertexRelativeToSpotLight3.w)/2.0 + 0.5;
-                float shadowMapWidth = spotLight3_resolution;
-                float shadowMapHeight = spotLight3_resolution;
-                float bias = 0.0001;
-                bool within = true;
-                // bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
-
-                if (within && SOFT_SHADOWS == true) {
-                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
-                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
-                    visibility3 = getAverageVisibility(spotLight3_shadowMap, shadowMapCoords, texelSize, bias);
-                } else if (within) {
-                    visibility3 = getVisibility(spotLight3_shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
-                }
-            }
-
-            float visibility4 = 1.0;
-            vec3 lighting4 = vec3(0.0, 0.0, 0.0);
-            if (spotLight4.w > 0.0) {
-               lighting4 += spotLight4.w * f_spotLight(normal, spotLight4.xyz, spotLight4_direction.xyz, spotLight4_fov) * spotLight4_color;
-            }
-
-            if (SHADOWS == true && spotLight4_resolution > 0.0) {
-                vec3 shadowMapCoords = (v_vertexRelativeToSpotLight4.xyz/v_vertexRelativeToSpotLight4.w)/2.0 + 0.5;
-                float shadowMapWidth = spotLight4_resolution;
-                float shadowMapHeight = spotLight4_resolution;
-                float bias = 0.0001;
-                bool within = true;
-                // bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
-
-                if (within && SOFT_SHADOWS == true) {
-                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
-                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
-                    visibility4 = getAverageVisibility(spotLight4_shadowMap, shadowMapCoords, texelSize, bias);
-                } else if (within) {
-                    visibility4 = getVisibility(spotLight4_shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
-                }
-            }
-
-            float visibility5 = 1.0;
-            vec3 lighting5 = vec3(0.0, 0.0, 0.0);
-            if (spotLight5.w > 0.0) {
-               lighting5 += spotLight5.w * f_spotLight(normal, spotLight5.xyz, spotLight5_direction.xyz, spotLight5_fov) * spotLight5_color;
-            }
-
-            if (SHADOWS == true && spotLight5_resolution > 0.0) {
-                vec3 shadowMapCoords = (v_vertexRelativeToSpotLight5.xyz/v_vertexRelativeToSpotLight5.w)/2.0 + 0.5;
-                float shadowMapWidth = spotLight5_resolution;
-                float shadowMapHeight = spotLight5_resolution;
-                float bias = 0.0001;
-                bool within = true;
-                // bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
-
-                if (within && SOFT_SHADOWS == true) {
-                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
-                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
-                    visibility5 = getAverageVisibility(spotLight5_shadowMap, shadowMapCoords, texelSize, bias);
-                } else if (within) {
-                    visibility5 = getVisibility(spotLight5_shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
-                }
-            }
-
-            lighting += (lighting1 * visibility1);
-            lighting += (lighting2 * visibility2);
-            lighting += (lighting3 * visibility3);
-            lighting += (lighting4 * visibility4);
-            lighting += (lighting5 * visibility5);
+            lighting += applySpotLight
+                ( normal
+                , spotLight5.xyz
+                , spotLight5_direction.xyz
+                , spotLight5_color
+                , spotLight5_fov
+                , spotLight5_shadowMap
+                , v_vertexRelativeToSpotLight5
+                , spotLight5_resolution
+                );
 
             gl_FragColor =  vec4(lighting * diffuse, 1.0);
         }
