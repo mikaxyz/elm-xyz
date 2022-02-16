@@ -151,4 +151,10 @@ withZoom val (Camera camera) =
 
 toMat4 : Camera -> Mat4
 toMat4 (Camera camera) =
-    Mat4.makeLookAt camera.position camera.target camera.up
+    -- TODO: This is just a quick fix
+    -- Camera.up be set perpendicular always?
+    if Vec3.direction camera.position camera.target == camera.up then
+        Mat4.makeLookAt camera.position camera.target (vec3 0 0 -1)
+
+    else
+        Mat4.makeLookAt camera.position camera.target camera.up
