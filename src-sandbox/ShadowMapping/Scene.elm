@@ -29,9 +29,9 @@ graph assets =
         |> Object.withDiffuseMap assets.diffuse
         |> Object.withNormalMap assets.normal
     , Object.spotLight
-        (SpotLight.light (vec3 4 3 4) 45
+        (SpotLight.light (vec3 -3 2 -3) 45
             |> SpotLight.withColor (Color.rgb 0.7 0.98 0.7)
-            |> SpotLight.withIntensity 0.7
+            |> SpotLight.withIntensity 0.5
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
@@ -39,7 +39,7 @@ graph assets =
                 }
         )
     , Object.spotLight
-        (SpotLight.light (vec3 -4 3 4) 30
+        (SpotLight.light (vec3 -1 3 -4) 45
             |> SpotLight.withColor (Color.rgb 0.98 0.8 0.8)
             |> SpotLight.withIntensity 0.5
             |> SpotLight.withShadowMap
@@ -49,9 +49,29 @@ graph assets =
                 }
         )
     , Object.spotLight
-        (SpotLight.light (vec3 -4 3 -4) 40
+        (SpotLight.light (vec3 0 4 -5) 75
             |> SpotLight.withColor (Color.rgb 0.8 0.8 0.98)
             |> SpotLight.withIntensity 0.6
+            |> SpotLight.withShadowMap
+                { resolution = 800
+                , near = 0.01
+                , far = 100
+                }
+        )
+    , Object.spotLight
+        (SpotLight.light (vec3 1 3 -4) 45
+            |> SpotLight.withColor (Color.rgb 0.8 0.98 0.98)
+            |> SpotLight.withIntensity 0.5
+            |> SpotLight.withShadowMap
+                { resolution = 800
+                , near = 0.01
+                , far = 100
+                }
+        )
+    , Object.spotLight
+        (SpotLight.light (vec3 3 2 -3) 45
+            |> SpotLight.withColor (Color.rgb 0.98 0.98 0.8)
+            |> SpotLight.withIntensity 0.5
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01

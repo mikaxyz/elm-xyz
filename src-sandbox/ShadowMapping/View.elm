@@ -36,6 +36,8 @@ type alias ShadowMapBuffers =
     { shadowMap1 : Maybe ( WebGL.FrameBuffer, Mat4 )
     , shadowMap2 : Maybe ( WebGL.FrameBuffer, Mat4 )
     , shadowMap3 : Maybe ( WebGL.FrameBuffer, Mat4 )
+    , shadowMap4 : Maybe ( WebGL.FrameBuffer, Mat4 )
+    , shadowMap5 : Maybe ( WebGL.FrameBuffer, Mat4 )
     }
 
 
@@ -76,18 +78,29 @@ view model scene =
                                                 2 ->
                                                     ( { acc | shadowMap3 = Just <| frameBufferAndViewMatrixForLight light_ }, index_ )
 
+                                                3 ->
+                                                    ( { acc | shadowMap4 = Just <| frameBufferAndViewMatrixForLight light_ }, index_ )
+
+                                                4 ->
+                                                    ( { acc | shadowMap5 = Just <| frameBufferAndViewMatrixForLight light_ }, index_ )
+
                                                 _ ->
                                                     ( acc, index_ )
 
                                         Nothing ->
                                             ( acc, index_ )
                                 )
-                                ( ShadowMapBuffers Nothing Nothing Nothing, 0 )
+                                ( ShadowMapBuffers Nothing Nothing Nothing Nothing Nothing, 0 )
                             |> Tuple.first
                    )
     in
     WebGL.toHtmlWithFrameBuffers
-        ([ frameBuffers.shadowMap1, frameBuffers.shadowMap2, frameBuffers.shadowMap3 ]
+        ([ frameBuffers.shadowMap1
+         , frameBuffers.shadowMap2
+         , frameBuffers.shadowMap3
+         , frameBuffers.shadowMap4
+         , frameBuffers.shadowMap5
+         ]
             |> List.filterMap identity
             |> List.map Tuple.first
         )
@@ -108,7 +121,12 @@ view model scene =
                         viewport
                         scene
                         (\material ->
-                            [ frameBuffers.shadowMap1, frameBuffers.shadowMap2, frameBuffers.shadowMap3 ]
+                            [ frameBuffers.shadowMap1
+                            , frameBuffers.shadowMap2
+                            , frameBuffers.shadowMap3
+                            , frameBuffers.shadowMap4
+                            , frameBuffers.shadowMap5
+                            ]
                                 |> List.foldl
                                     (\shadowMap ( acc, textures_, index ) ->
                                         let
@@ -126,6 +144,12 @@ view model scene =
 
                                                     ( 2, Just ( _, mat ) ) ->
                                                         Just { x | shadowMap3 = Just { texture = tex, viewMatrix = mat } }
+
+                                                    ( 3, Just ( _, mat ) ) ->
+                                                        Just { x | shadowMap4 = Just { texture = tex, viewMatrix = mat } }
+
+                                                    ( 4, Just ( _, mat ) ) ->
+                                                        Just { x | shadowMap5 = Just { texture = tex, viewMatrix = mat } }
 
                                                     _ ->
                                                         Nothing
@@ -145,6 +169,8 @@ view model scene =
                                     ( { shadowMap1 = Nothing
                                       , shadowMap2 = Nothing
                                       , shadowMap3 = Nothing
+                                      , shadowMap4 = Nothing
+                                      , shadowMap5 = Nothing
                                       }
                                     , textures
                                     , 0

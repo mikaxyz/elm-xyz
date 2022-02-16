@@ -52,6 +52,24 @@ type alias Uniforms =
     , spotLight3_shadowMapViewMatrix : Mat4
 
     --
+    , spotLight4 : Vec4
+    , spotLight4_direction : Vec3
+    , spotLight4_color : Vec3
+    , spotLight4_fov : Float
+    , spotLight4_resolution : Float
+    , spotLight4_shadowMap : Texture
+    , spotLight4_shadowMapViewMatrix : Mat4
+
+    --
+    , spotLight5 : Vec4
+    , spotLight5_direction : Vec3
+    , spotLight5_color : Vec3
+    , spotLight5_fov : Float
+    , spotLight5_resolution : Float
+    , spotLight5_shadowMap : Texture
+    , spotLight5_shadowMapViewMatrix : Mat4
+
+    --
     , pointLight1 : Vec4
     , pointLight1Color : Vec3
     , pointLight2 : Vec4
@@ -74,6 +92,8 @@ type alias Varyings =
     , v_vertexRelativeToSpotLight1 : Vec4
     , v_vertexRelativeToSpotLight2 : Vec4
     , v_vertexRelativeToSpotLight3 : Vec4
+    , v_vertexRelativeToSpotLight4 : Vec4
+    , v_vertexRelativeToSpotLight5 : Vec4
 
     --
     , v_t : Vec3
@@ -92,6 +112,8 @@ type alias ShadowMaps =
     { shadowMap1 : Maybe ShadowMap
     , shadowMap2 : Maybe ShadowMap
     , shadowMap3 : Maybe ShadowMap
+    , shadowMap4 : Maybe ShadowMap
+    , shadowMap5 : Maybe ShadowMap
     }
 
 
@@ -202,6 +224,36 @@ renderer placeholderShadowMap shadowMaps options uniforms object =
                         |> Maybe.withDefault Mat4.identity
 
                 --
+                , spotLight4 = spotLight 4 |> .light
+                , spotLight4_color = spotLight 4 |> .color
+                , spotLight4_direction = spotLight 4 |> .direction
+                , spotLight4_fov = spotLight 4 |> .fov
+                , spotLight4_resolution = spotLight 4 |> .resolution
+                , spotLight4_shadowMap =
+                    shadowMaps.shadowMap4
+                        |> Maybe.map .texture
+                        |> Maybe.withDefault placeholderShadowMap
+                , spotLight4_shadowMapViewMatrix =
+                    shadowMaps.shadowMap4
+                        |> Maybe.map .viewMatrix
+                        |> Maybe.withDefault Mat4.identity
+
+                --
+                , spotLight5 = spotLight 5 |> .light
+                , spotLight5_color = spotLight 5 |> .color
+                , spotLight5_direction = spotLight 5 |> .direction
+                , spotLight5_fov = spotLight 5 |> .fov
+                , spotLight5_resolution = spotLight 5 |> .resolution
+                , spotLight5_shadowMap =
+                    shadowMaps.shadowMap5
+                        |> Maybe.map .texture
+                        |> Maybe.withDefault placeholderShadowMap
+                , spotLight5_shadowMapViewMatrix =
+                    shadowMaps.shadowMap5
+                        |> Maybe.map .viewMatrix
+                        |> Maybe.withDefault Mat4.identity
+
+                --
                 , pointLight1 = pointLight 1 |> .light
                 , pointLight1Color = pointLight 1 |> .color
                 , pointLight2 = pointLight 2 |> .light
@@ -256,10 +308,14 @@ vertexShader =
         uniform mat4 spotLight1_shadowMapViewMatrix;
         uniform mat4 spotLight2_shadowMapViewMatrix;
         uniform mat4 spotLight3_shadowMapViewMatrix;
+        uniform mat4 spotLight4_shadowMapViewMatrix;
+        uniform mat4 spotLight5_shadowMapViewMatrix;
 
         varying vec4 v_vertexRelativeToSpotLight1;
         varying vec4 v_vertexRelativeToSpotLight2;
         varying vec4 v_vertexRelativeToSpotLight3;
+        varying vec4 v_vertexRelativeToSpotLight4;
+        varying vec4 v_vertexRelativeToSpotLight5;
 
         void main () {
             gl_Position = scenePerspective * sceneCamera * sceneMatrix * vec4(position, 1.0);
@@ -276,6 +332,8 @@ vertexShader =
             v_vertexRelativeToSpotLight1 = spotLight1_shadowMapViewMatrix * pos;
             v_vertexRelativeToSpotLight2 = spotLight2_shadowMapViewMatrix * pos;
             v_vertexRelativeToSpotLight3 = spotLight3_shadowMapViewMatrix * pos;
+            v_vertexRelativeToSpotLight4 = spotLight4_shadowMapViewMatrix * pos;
+            v_vertexRelativeToSpotLight5 = spotLight5_shadowMapViewMatrix * pos;
         }
     |]
 
@@ -326,6 +384,22 @@ fragmentShader =
         uniform float spotLight3_resolution;
         uniform sampler2D spotLight3_shadowMap;
         varying vec4 v_vertexRelativeToSpotLight3;
+
+        uniform vec4 spotLight4;
+        uniform vec3 spotLight4_color;
+        uniform vec3 spotLight4_direction;
+        uniform float spotLight4_fov;
+        uniform float spotLight4_resolution;
+        uniform sampler2D spotLight4_shadowMap;
+        varying vec4 v_vertexRelativeToSpotLight4;
+
+        uniform vec4 spotLight5;
+        uniform vec3 spotLight5_color;
+        uniform vec3 spotLight5_direction;
+        uniform float spotLight5_fov;
+        uniform float spotLight5_resolution;
+        uniform sampler2D spotLight5_shadowMap;
+        varying vec4 v_vertexRelativeToSpotLight5;
 
         varying vec3 v_color;
         varying vec3 v_normal;
@@ -525,9 +599,57 @@ fragmentShader =
                 }
             }
 
+            float visibility4 = 1.0;
+            vec3 lighting4 = vec3(0.0, 0.0, 0.0);
+            if (spotLight4.w > 0.0) {
+               lighting4 += spotLight4.w * f_spotLight(normal, spotLight4.xyz, spotLight4_direction.xyz, spotLight4_fov) * spotLight4_color;
+            }
+
+            if (SHADOWS == true && spotLight4_resolution > 0.0) {
+                vec3 shadowMapCoords = (v_vertexRelativeToSpotLight4.xyz/v_vertexRelativeToSpotLight4.w)/2.0 + 0.5;
+                float shadowMapWidth = spotLight4_resolution;
+                float shadowMapHeight = spotLight4_resolution;
+                float bias = 0.0001;
+                bool within = true;
+                // bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
+
+                if (within && SOFT_SHADOWS == true) {
+                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
+                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
+                    visibility4 = getAverageVisibility(spotLight4_shadowMap, shadowMapCoords, texelSize, bias);
+                } else if (within) {
+                    visibility4 = getVisibility(spotLight4_shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
+                }
+            }
+
+            float visibility5 = 1.0;
+            vec3 lighting5 = vec3(0.0, 0.0, 0.0);
+            if (spotLight5.w > 0.0) {
+               lighting5 += spotLight5.w * f_spotLight(normal, spotLight5.xyz, spotLight5_direction.xyz, spotLight5_fov) * spotLight5_color;
+            }
+
+            if (SHADOWS == true && spotLight5_resolution > 0.0) {
+                vec3 shadowMapCoords = (v_vertexRelativeToSpotLight5.xyz/v_vertexRelativeToSpotLight5.w)/2.0 + 0.5;
+                float shadowMapWidth = spotLight5_resolution;
+                float shadowMapHeight = spotLight5_resolution;
+                float bias = 0.0001;
+                bool within = true;
+                // bool within = (shadowMapCoords.x >= -1.0) && (shadowMapCoords.x <= 1.0) && (shadowMapCoords.y >= -1.0) && (shadowMapCoords.y <= 1.0);
+
+                if (within && SOFT_SHADOWS == true) {
+                    vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
+                    texelSize = texelSize * TEXEL_SIZE_MULTIPLIER;
+                    visibility5 = getAverageVisibility(spotLight5_shadowMap, shadowMapCoords, texelSize, bias);
+                } else if (within) {
+                    visibility5 = getVisibility(spotLight5_shadowMap, shadowMapCoords.xy, shadowMapCoords.z, bias);
+                }
+            }
+
             lighting += (lighting1 * visibility1);
             lighting += (lighting2 * visibility2);
             lighting += (lighting3 * visibility3);
+            lighting += (lighting4 * visibility4);
+            lighting += (lighting5 * visibility5);
 
             gl_FragColor =  vec4(lighting * diffuse, 1.0);
         }
