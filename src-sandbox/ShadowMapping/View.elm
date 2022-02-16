@@ -7,6 +7,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import ShadowMapping.Material.Advanced
 import ShadowMapping.Model as Model exposing (Model, Msg(..))
 import WebGL
+import WebGL.Texture exposing (Texture)
 import XYZMika.Dragon as Dragon
 import XYZMika.XYZ.Material.DepthMap
 import XYZMika.XYZ.Material.Renderer
@@ -110,38 +111,32 @@ view model scene =
                                 |> List.foldl
                                     (\shadowMap ( acc, textures_, index ) ->
                                         let
+                                            attach :
+                                                Texture
+                                                -> ShadowMapping.Material.Advanced.ShadowMaps
+                                                -> Maybe ShadowMapping.Material.Advanced.ShadowMaps
                                             attach tex x =
-                                                case index of
-                                                    0 ->
-                                                        { x
-                                                            | shadowMap1 =
-                                                                Maybe.map
-                                                                    (\( _, mat ) -> { texture = tex, viewMatrix = mat })
-                                                                    shadowMap
-                                                        }
+                                                case ( index, shadowMap ) of
+                                                    ( 0, Just ( _, mat ) ) ->
+                                                        Just { x | shadowMap1 = Just { texture = tex, viewMatrix = mat } }
 
-                                                    1 ->
-                                                        { x
-                                                            | shadowMap2 =
-                                                                Maybe.map
-                                                                    (\( _, mat ) -> { texture = tex, viewMatrix = mat })
-                                                                    shadowMap
-                                                        }
+                                                    ( 1, Just ( _, mat ) ) ->
+                                                        Just { x | shadowMap2 = Just { texture = tex, viewMatrix = mat } }
 
-                                                    2 ->
-                                                        { x
-                                                            | shadowMap3 =
-                                                                Maybe.map
-                                                                    (\( _, mat ) -> { texture = tex, viewMatrix = mat })
-                                                                    shadowMap
-                                                        }
+                                                    ( 2, Just ( _, mat ) ) ->
+                                                        Just { x | shadowMap3 = Just { texture = tex, viewMatrix = mat } }
 
                                                     _ ->
-                                                        x
+                                                        Nothing
                                         in
                                         case textures_ of
                                             tex :: rest ->
-                                                ( attach tex acc, rest, index + 1 )
+                                                case attach tex acc of
+                                                    Just updated ->
+                                                        ( updated, rest, index + 1 )
+
+                                                    Nothing ->
+                                                        ( acc, tex :: rest, index + 1 )
 
                                             [] ->
                                                 ( acc, [], index + 1 )

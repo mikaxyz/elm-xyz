@@ -1,4 +1,4 @@
-module ShadowMapping.Material.Advanced exposing (renderer)
+module ShadowMapping.Material.Advanced exposing (ShadowMaps, renderer)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
