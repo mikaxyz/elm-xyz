@@ -1,4 +1,4 @@
-module ShadowMapping.Material.Textured exposing (renderer)
+module XYZMika.XYZ.Material.Advanced.TexturedWithShadowMaps exposing (renderer)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
@@ -107,8 +107,8 @@ type alias Varyings =
     }
 
 
-renderer : ShadowMaps -> Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer shadowMaps fallbackTexture options uniforms object =
+renderer : Texture -> ShadowMaps -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer fallbackTexture shadowMaps options uniforms object =
     let
         spotLight : Int -> SpotLight.ShaderData
         spotLight i =

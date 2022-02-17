@@ -1,15 +1,13 @@
-module ShadowMapping.Material.Advanced exposing (renderer)
+module XYZMika.XYZ.Material.Advanced.WithShadowMaps exposing (renderer)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4, vec4)
-import ShadowMapping.Material.Textured
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material, ShadowMaps)
-import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight
@@ -103,27 +101,8 @@ type alias Varyings =
     }
 
 
-objectTextureMaps : Object materialId -> Maybe Texture
-objectTextureMaps object =
-    [ Object.diffuseMap object
-    , Object.normalMap object
-    ]
-        |> List.filterMap identity
-        |> List.head
-
-
-renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer options =
-    case Material.shadowMaps options of
-        Just shadowMaps ->
-            renderer_ shadowMaps options
-
-        Nothing ->
-            XYZMika.XYZ.Material.Simple.renderer options
-
-
-renderer_ : ShadowMaps -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer_ shadowMaps options uniforms object =
+renderer : ShadowMaps -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer shadowMaps options uniforms object =
     let
         spotLight : Int -> SpotLight.ShaderData
         spotLight i =
@@ -153,114 +132,104 @@ renderer_ shadowMaps options uniforms object =
                 |> Maybe.map DirectionalLight.toVec4
                 |> Maybe.withDefault (vec4 0 0 0 0)
     in
-    case objectTextureMaps object of
-        Just fallbackTexture ->
-            ShadowMapping.Material.Textured.renderer
-                shadowMaps
-                fallbackTexture
-                options
-                uniforms
-                object
+    material
+        { sceneCamera = uniforms.sceneCamera
+        , scenePerspective = uniforms.scenePerspective
+        , sceneMatrix = uniforms.sceneMatrix
+        , sceneRotationMatrix = uniforms.sceneRotationMatrix
 
-        Nothing ->
-            material
-                { sceneCamera = uniforms.sceneCamera
-                , scenePerspective = uniforms.scenePerspective
-                , sceneMatrix = uniforms.sceneMatrix
-                , sceneRotationMatrix = uniforms.sceneRotationMatrix
+        --
+        , objectColor = Object.colorVec3 object
+        , directionalLight = directionalLight
 
-                --
-                , objectColor = Object.colorVec3 object
-                , directionalLight = directionalLight
+        --
+        , spotLight1 = spotLight 1 |> .light
+        , spotLight1_color = spotLight 1 |> .color
+        , spotLight1_direction = spotLight 1 |> .direction
+        , spotLight1_fov = spotLight 1 |> .fov
+        , spotLight1_resolution = spotLight 1 |> .resolution
+        , spotLight1_shadowMap =
+            shadowMaps.shadowMap1
+                |> Maybe.map .texture
+                |> Maybe.withDefault shadowMaps.fallbackTexture
+        , spotLight1_shadowMapViewMatrix =
+            shadowMaps.shadowMap1
+                |> Maybe.map .viewMatrix
+                |> Maybe.withDefault Mat4.identity
 
-                --
-                , spotLight1 = spotLight 1 |> .light
-                , spotLight1_color = spotLight 1 |> .color
-                , spotLight1_direction = spotLight 1 |> .direction
-                , spotLight1_fov = spotLight 1 |> .fov
-                , spotLight1_resolution = spotLight 1 |> .resolution
-                , spotLight1_shadowMap =
-                    shadowMaps.shadowMap1
-                        |> Maybe.map .texture
-                        |> Maybe.withDefault shadowMaps.fallbackTexture
-                , spotLight1_shadowMapViewMatrix =
-                    shadowMaps.shadowMap1
-                        |> Maybe.map .viewMatrix
-                        |> Maybe.withDefault Mat4.identity
+        --
+        , spotLight2 = spotLight 2 |> .light
+        , spotLight2_color = spotLight 2 |> .color
+        , spotLight2_direction = spotLight 2 |> .direction
+        , spotLight2_fov = spotLight 2 |> .fov
+        , spotLight2_resolution = spotLight 2 |> .resolution
+        , spotLight2_shadowMap =
+            shadowMaps.shadowMap2
+                |> Maybe.map .texture
+                |> Maybe.withDefault shadowMaps.fallbackTexture
+        , spotLight2_shadowMapViewMatrix =
+            shadowMaps.shadowMap2
+                |> Maybe.map .viewMatrix
+                |> Maybe.withDefault Mat4.identity
 
-                --
-                , spotLight2 = spotLight 2 |> .light
-                , spotLight2_color = spotLight 2 |> .color
-                , spotLight2_direction = spotLight 2 |> .direction
-                , spotLight2_fov = spotLight 2 |> .fov
-                , spotLight2_resolution = spotLight 2 |> .resolution
-                , spotLight2_shadowMap =
-                    shadowMaps.shadowMap2
-                        |> Maybe.map .texture
-                        |> Maybe.withDefault shadowMaps.fallbackTexture
-                , spotLight2_shadowMapViewMatrix =
-                    shadowMaps.shadowMap2
-                        |> Maybe.map .viewMatrix
-                        |> Maybe.withDefault Mat4.identity
+        --
+        , spotLight3 = spotLight 3 |> .light
+        , spotLight3_color = spotLight 3 |> .color
+        , spotLight3_direction = spotLight 3 |> .direction
+        , spotLight3_fov = spotLight 3 |> .fov
+        , spotLight3_resolution = spotLight 3 |> .resolution
+        , spotLight3_shadowMap =
+            shadowMaps.shadowMap3
+                |> Maybe.map .texture
+                |> Maybe.withDefault shadowMaps.fallbackTexture
+        , spotLight3_shadowMapViewMatrix =
+            shadowMaps.shadowMap3
+                |> Maybe.map .viewMatrix
+                |> Maybe.withDefault Mat4.identity
 
-                --
-                , spotLight3 = spotLight 3 |> .light
-                , spotLight3_color = spotLight 3 |> .color
-                , spotLight3_direction = spotLight 3 |> .direction
-                , spotLight3_fov = spotLight 3 |> .fov
-                , spotLight3_resolution = spotLight 3 |> .resolution
-                , spotLight3_shadowMap =
-                    shadowMaps.shadowMap3
-                        |> Maybe.map .texture
-                        |> Maybe.withDefault shadowMaps.fallbackTexture
-                , spotLight3_shadowMapViewMatrix =
-                    shadowMaps.shadowMap3
-                        |> Maybe.map .viewMatrix
-                        |> Maybe.withDefault Mat4.identity
+        --
+        , spotLight4 = spotLight 4 |> .light
+        , spotLight4_color = spotLight 4 |> .color
+        , spotLight4_direction = spotLight 4 |> .direction
+        , spotLight4_fov = spotLight 4 |> .fov
+        , spotLight4_resolution = spotLight 4 |> .resolution
+        , spotLight4_shadowMap =
+            shadowMaps.shadowMap4
+                |> Maybe.map .texture
+                |> Maybe.withDefault shadowMaps.fallbackTexture
+        , spotLight4_shadowMapViewMatrix =
+            shadowMaps.shadowMap4
+                |> Maybe.map .viewMatrix
+                |> Maybe.withDefault Mat4.identity
 
-                --
-                , spotLight4 = spotLight 4 |> .light
-                , spotLight4_color = spotLight 4 |> .color
-                , spotLight4_direction = spotLight 4 |> .direction
-                , spotLight4_fov = spotLight 4 |> .fov
-                , spotLight4_resolution = spotLight 4 |> .resolution
-                , spotLight4_shadowMap =
-                    shadowMaps.shadowMap4
-                        |> Maybe.map .texture
-                        |> Maybe.withDefault shadowMaps.fallbackTexture
-                , spotLight4_shadowMapViewMatrix =
-                    shadowMaps.shadowMap4
-                        |> Maybe.map .viewMatrix
-                        |> Maybe.withDefault Mat4.identity
+        --
+        , spotLight5 = spotLight 5 |> .light
+        , spotLight5_color = spotLight 5 |> .color
+        , spotLight5_direction = spotLight 5 |> .direction
+        , spotLight5_fov = spotLight 5 |> .fov
+        , spotLight5_resolution = spotLight 5 |> .resolution
+        , spotLight5_shadowMap =
+            shadowMaps.shadowMap5
+                |> Maybe.map .texture
+                |> Maybe.withDefault shadowMaps.fallbackTexture
+        , spotLight5_shadowMapViewMatrix =
+            shadowMaps.shadowMap5
+                |> Maybe.map .viewMatrix
+                |> Maybe.withDefault Mat4.identity
 
-                --
-                , spotLight5 = spotLight 5 |> .light
-                , spotLight5_color = spotLight 5 |> .color
-                , spotLight5_direction = spotLight 5 |> .direction
-                , spotLight5_fov = spotLight 5 |> .fov
-                , spotLight5_resolution = spotLight 5 |> .resolution
-                , spotLight5_shadowMap =
-                    shadowMaps.shadowMap5
-                        |> Maybe.map .texture
-                        |> Maybe.withDefault shadowMaps.fallbackTexture
-                , spotLight5_shadowMapViewMatrix =
-                    shadowMaps.shadowMap5
-                        |> Maybe.map .viewMatrix
-                        |> Maybe.withDefault Mat4.identity
-
-                --
-                , pointLight1 = pointLight 1 |> .light
-                , pointLight1Color = pointLight 1 |> .color
-                , pointLight2 = pointLight 2 |> .light
-                , pointLight2Color = pointLight 2 |> .color
-                , pointLight3 = pointLight 3 |> .light
-                , pointLight3Color = pointLight 3 |> .color
-                , pointLight4 = pointLight 4 |> .light
-                , pointLight4Color = pointLight 4 |> .color
-                , pointLight5 = pointLight 5 |> .light
-                , pointLight5Color = pointLight 5 |> .color
-                }
-                |> Material.toEntity object
+        --
+        , pointLight1 = pointLight 1 |> .light
+        , pointLight1Color = pointLight 1 |> .color
+        , pointLight2 = pointLight 2 |> .light
+        , pointLight2Color = pointLight 2 |> .color
+        , pointLight3 = pointLight 3 |> .light
+        , pointLight3Color = pointLight 3 |> .color
+        , pointLight4 = pointLight 4 |> .light
+        , pointLight4Color = pointLight 4 |> .color
+        , pointLight5 = pointLight 5 |> .light
+        , pointLight5Color = pointLight 5 |> .color
+        }
+        |> Material.toEntity object
 
 
 material : Uniforms -> Material Uniforms Varyings

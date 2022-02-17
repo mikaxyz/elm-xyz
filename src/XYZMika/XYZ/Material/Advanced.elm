@@ -8,7 +8,9 @@ import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Material as Material exposing (Material)
-import XYZMika.XYZ.Material.Textured
+import XYZMika.XYZ.Material.Advanced.Textured
+import XYZMika.XYZ.Material.Advanced.TexturedWithShadowMaps
+import XYZMika.XYZ.Material.Advanced.WithShadowMaps
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
@@ -62,6 +64,42 @@ objectTextureMaps object =
 
 renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
 renderer options uniforms object =
+    case Material.shadowMaps options of
+        Just shadowMaps ->
+            case objectTextureMaps object of
+                Just fallbackTexture ->
+                    XYZMika.XYZ.Material.Advanced.TexturedWithShadowMaps.renderer
+                        fallbackTexture
+                        shadowMaps
+                        options
+                        uniforms
+                        object
+
+                Nothing ->
+                    XYZMika.XYZ.Material.Advanced.WithShadowMaps.renderer
+                        shadowMaps
+                        options
+                        uniforms
+                        object
+
+        Nothing ->
+            case objectTextureMaps object of
+                Just fallbackTexture ->
+                    XYZMika.XYZ.Material.Advanced.Textured.renderer
+                        fallbackTexture
+                        options
+                        uniforms
+                        object
+
+                Nothing ->
+                    renderer_
+                        options
+                        uniforms
+                        object
+
+
+renderer_ : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer_ options uniforms object =
     let
         pointLight : Int -> { light : Vec4, color : Vec3 }
         pointLight i =
@@ -85,38 +123,29 @@ renderer options uniforms object =
                 |> Maybe.map DirectionalLight.toVec4
                 |> Maybe.withDefault (vec4 0 0 0 0)
     in
-    case objectTextureMaps object of
-        Just fallbackTexture ->
-            XYZMika.XYZ.Material.Textured.renderer
-                fallbackTexture
-                options
-                uniforms
-                object
+    material
+        { sceneCamera = uniforms.sceneCamera
+        , scenePerspective = uniforms.scenePerspective
+        , sceneMatrix = uniforms.sceneMatrix
+        , sceneRotationMatrix = uniforms.sceneRotationMatrix
 
-        Nothing ->
-            material
-                { sceneCamera = uniforms.sceneCamera
-                , scenePerspective = uniforms.scenePerspective
-                , sceneMatrix = uniforms.sceneMatrix
-                , sceneRotationMatrix = uniforms.sceneRotationMatrix
+        --
+        , objectColor = Object.colorVec3 object
+        , directionalLight = directionalLight
 
-                --
-                , objectColor = Object.colorVec3 object
-                , directionalLight = directionalLight
-
-                --
-                , pointLight1 = pointLight 1 |> .light
-                , pointLight1Color = pointLight 1 |> .color
-                , pointLight2 = pointLight 2 |> .light
-                , pointLight2Color = pointLight 2 |> .color
-                , pointLight3 = pointLight 3 |> .light
-                , pointLight3Color = pointLight 3 |> .color
-                , pointLight4 = pointLight 4 |> .light
-                , pointLight4Color = pointLight 4 |> .color
-                , pointLight5 = pointLight 5 |> .light
-                , pointLight5Color = pointLight 5 |> .color
-                }
-                |> Material.toEntity object
+        --
+        , pointLight1 = pointLight 1 |> .light
+        , pointLight1Color = pointLight 1 |> .color
+        , pointLight2 = pointLight 2 |> .light
+        , pointLight2Color = pointLight 2 |> .color
+        , pointLight3 = pointLight 3 |> .light
+        , pointLight3Color = pointLight 3 |> .color
+        , pointLight4 = pointLight 4 |> .light
+        , pointLight4Color = pointLight 4 |> .color
+        , pointLight5 = pointLight 5 |> .light
+        , pointLight5Color = pointLight 5 |> .color
+        }
+        |> Material.toEntity object
 
 
 material : Uniforms -> Material Uniforms Varyings

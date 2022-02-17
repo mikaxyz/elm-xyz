@@ -1,4 +1,4 @@
-module XYZMika.XYZ.Material.Textured exposing (renderer)
+module XYZMika.XYZ.Material.Advanced.Textured exposing (renderer)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
@@ -136,7 +136,7 @@ vertexShader =
         uniform mat4 scenePerspective;
         uniform mat4 sceneMatrix;
         uniform mat4 sceneRotationMatrix;
-        
+
         uniform vec3 objectColor;
 
         varying vec3 v_color;
@@ -251,12 +251,12 @@ fragmentShader =
         void main () {
             vec3 diffuse;
             if(hasDiffuseMap) {
-            
+
 //            vec3 texPos = (v_pos.xyz / v_pos.w) * 0.5 + 0.5;
 ////            texPos.xyz = (gl_Position.xyz / gl_Position.w) * 0.5 + 0.5;
 //            float depthFromZBuffer = texture2D(diffuseMap, v_uv).x;
 //            diffuse = vec3(1,1,1) * depthFromZBuffer;
-            
+
                 diffuse = texture2D(diffuseMap, v_uv).rgb;
             } else {
                 diffuse = v_color;

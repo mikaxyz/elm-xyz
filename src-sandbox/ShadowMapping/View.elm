@@ -2,12 +2,10 @@ module ShadowMapping.View exposing (doc, view)
 
 import Browser
 import Html exposing (Html)
-import Math.Matrix4 exposing (Mat4)
-import ShadowMapping.Material.Advanced
 import ShadowMapping.Model as Model exposing (Model, Msg(..))
-import WebGL
 import XYZMika.Dragon as Dragon
 import XYZMika.XYZ
+import XYZMika.XYZ.Material.Advanced
 
 
 doc : Model -> Browser.Document Msg
@@ -24,5 +22,5 @@ view model =
         , height = 600
         }
         (Model.modifiers model)
-        (\_ -> ShadowMapping.Material.Advanced.renderer)
+        (always XYZMika.XYZ.Material.Advanced.renderer)
         model.scene
