@@ -7,7 +7,7 @@ import Math.Vector4 exposing (Vec4, vec4)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Material as Material exposing (Material)
+import XYZMika.XYZ.Material as Material exposing (Material, ShadowMaps)
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight
@@ -107,23 +107,8 @@ type alias Varyings =
     }
 
 
-type alias ShadowMap =
-    { texture : Texture
-    , viewMatrix : Mat4
-    }
-
-
-type alias ShadowMaps =
-    { shadowMap1 : Maybe ShadowMap
-    , shadowMap2 : Maybe ShadowMap
-    , shadowMap3 : Maybe ShadowMap
-    , shadowMap4 : Maybe ShadowMap
-    , shadowMap5 : Maybe ShadowMap
-    }
-
-
-renderer : Texture -> ShadowMaps -> Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer placeholderShadowMap shadowMaps fallbackTexture options uniforms object =
+renderer : ShadowMaps -> Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer shadowMaps fallbackTexture options uniforms object =
     let
         spotLight : Int -> SpotLight.ShaderData
         spotLight i =
@@ -178,7 +163,7 @@ renderer placeholderShadowMap shadowMaps fallbackTexture options uniforms object
         , spotLight1_shadowMap =
             shadowMaps.shadowMap1
                 |> Maybe.map .texture
-                |> Maybe.withDefault placeholderShadowMap
+                |> Maybe.withDefault shadowMaps.fallbackTexture
         , spotLight1_shadowMapViewMatrix =
             shadowMaps.shadowMap1
                 |> Maybe.map .viewMatrix
@@ -193,7 +178,7 @@ renderer placeholderShadowMap shadowMaps fallbackTexture options uniforms object
         , spotLight2_shadowMap =
             shadowMaps.shadowMap2
                 |> Maybe.map .texture
-                |> Maybe.withDefault placeholderShadowMap
+                |> Maybe.withDefault shadowMaps.fallbackTexture
         , spotLight2_shadowMapViewMatrix =
             shadowMaps.shadowMap2
                 |> Maybe.map .viewMatrix
@@ -208,7 +193,7 @@ renderer placeholderShadowMap shadowMaps fallbackTexture options uniforms object
         , spotLight3_shadowMap =
             shadowMaps.shadowMap3
                 |> Maybe.map .texture
-                |> Maybe.withDefault placeholderShadowMap
+                |> Maybe.withDefault shadowMaps.fallbackTexture
         , spotLight3_shadowMapViewMatrix =
             shadowMaps.shadowMap3
                 |> Maybe.map .viewMatrix
@@ -223,7 +208,7 @@ renderer placeholderShadowMap shadowMaps fallbackTexture options uniforms object
         , spotLight4_shadowMap =
             shadowMaps.shadowMap4
                 |> Maybe.map .texture
-                |> Maybe.withDefault placeholderShadowMap
+                |> Maybe.withDefault shadowMaps.fallbackTexture
         , spotLight4_shadowMapViewMatrix =
             shadowMaps.shadowMap4
                 |> Maybe.map .viewMatrix
@@ -238,7 +223,7 @@ renderer placeholderShadowMap shadowMaps fallbackTexture options uniforms object
         , spotLight5_shadowMap =
             shadowMaps.shadowMap5
                 |> Maybe.map .texture
-                |> Maybe.withDefault placeholderShadowMap
+                |> Maybe.withDefault shadowMaps.fallbackTexture
         , spotLight5_shadowMapViewMatrix =
             shadowMaps.shadowMap5
                 |> Maybe.map .viewMatrix

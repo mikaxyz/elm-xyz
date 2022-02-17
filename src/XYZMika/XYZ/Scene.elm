@@ -231,17 +231,8 @@ renderSimple :
     -> Scene materialId
     -> Renderer materialId (Uniforms {})
     -> List Entity
-renderSimple viewport scene renderer =
-    render
-        []
-        []
-        SceneOptions.create
-        viewport
-        (Math.Vector2.vec2 0 0)
-        0.0
-        (\_ -> Nothing)
-        scene
-        renderer
+renderSimple =
+    renderSimpleWithModifiers []
 
 
 renderSimpleWithModifiers :
@@ -539,10 +530,10 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
 
                             entity : Uniforms u -> Entity
                             entity uniforms_ =
-                                object
-                                    |> Object.materialName
-                                    |> renderer
-                                    |> (\r -> r rendererOptions uniforms_ object)
+                                renderer (Object.materialName object)
+                                    rendererOptions
+                                    uniforms_
+                                    object
 
                             boundingBox : Uniforms u -> Entity
                             boundingBox uniforms_ =

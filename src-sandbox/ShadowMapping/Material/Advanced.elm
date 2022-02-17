@@ -1,4 +1,4 @@
-module ShadowMapping.Material.Advanced exposing (ShadowMaps, renderer)
+module ShadowMapping.Material.Advanced exposing (renderer)
 
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
@@ -8,7 +8,8 @@ import ShadowMapping.Material.Textured
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
-import XYZMika.XYZ.Material as Material exposing (Material)
+import XYZMika.XYZ.Material as Material exposing (Material, ShadowMaps)
+import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene.Light.DirectionalLight as DirectionalLight
 import XYZMika.XYZ.Scene.Light.PointLight as PointLight
 import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight
@@ -102,21 +103,6 @@ type alias Varyings =
     }
 
 
-type alias ShadowMap =
-    { texture : Texture
-    , viewMatrix : Mat4
-    }
-
-
-type alias ShadowMaps =
-    { shadowMap1 : Maybe ShadowMap
-    , shadowMap2 : Maybe ShadowMap
-    , shadowMap3 : Maybe ShadowMap
-    , shadowMap4 : Maybe ShadowMap
-    , shadowMap5 : Maybe ShadowMap
-    }
-
-
 objectTextureMaps : Object materialId -> Maybe Texture
 objectTextureMaps object =
     [ Object.diffuseMap object
@@ -126,8 +112,18 @@ objectTextureMaps object =
         |> List.head
 
 
-renderer : Texture -> ShadowMaps -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
-renderer placeholderShadowMap shadowMaps options uniforms object =
+renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer options =
+    case Material.shadowMaps options of
+        Just shadowMaps ->
+            renderer_ shadowMaps options
+
+        Nothing ->
+            XYZMika.XYZ.Material.Simple.renderer options
+
+
+renderer_ : ShadowMaps -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer_ shadowMaps options uniforms object =
     let
         spotLight : Int -> SpotLight.ShaderData
         spotLight i =
@@ -160,7 +156,6 @@ renderer placeholderShadowMap shadowMaps options uniforms object =
     case objectTextureMaps object of
         Just fallbackTexture ->
             ShadowMapping.Material.Textured.renderer
-                placeholderShadowMap
                 shadowMaps
                 fallbackTexture
                 options
@@ -187,7 +182,7 @@ renderer placeholderShadowMap shadowMaps options uniforms object =
                 , spotLight1_shadowMap =
                     shadowMaps.shadowMap1
                         |> Maybe.map .texture
-                        |> Maybe.withDefault placeholderShadowMap
+                        |> Maybe.withDefault shadowMaps.fallbackTexture
                 , spotLight1_shadowMapViewMatrix =
                     shadowMaps.shadowMap1
                         |> Maybe.map .viewMatrix
@@ -202,7 +197,7 @@ renderer placeholderShadowMap shadowMaps options uniforms object =
                 , spotLight2_shadowMap =
                     shadowMaps.shadowMap2
                         |> Maybe.map .texture
-                        |> Maybe.withDefault placeholderShadowMap
+                        |> Maybe.withDefault shadowMaps.fallbackTexture
                 , spotLight2_shadowMapViewMatrix =
                     shadowMaps.shadowMap2
                         |> Maybe.map .viewMatrix
@@ -217,7 +212,7 @@ renderer placeholderShadowMap shadowMaps options uniforms object =
                 , spotLight3_shadowMap =
                     shadowMaps.shadowMap3
                         |> Maybe.map .texture
-                        |> Maybe.withDefault placeholderShadowMap
+                        |> Maybe.withDefault shadowMaps.fallbackTexture
                 , spotLight3_shadowMapViewMatrix =
                     shadowMaps.shadowMap3
                         |> Maybe.map .viewMatrix
@@ -232,7 +227,7 @@ renderer placeholderShadowMap shadowMaps options uniforms object =
                 , spotLight4_shadowMap =
                     shadowMaps.shadowMap4
                         |> Maybe.map .texture
-                        |> Maybe.withDefault placeholderShadowMap
+                        |> Maybe.withDefault shadowMaps.fallbackTexture
                 , spotLight4_shadowMapViewMatrix =
                     shadowMaps.shadowMap4
                         |> Maybe.map .viewMatrix
@@ -247,7 +242,7 @@ renderer placeholderShadowMap shadowMaps options uniforms object =
                 , spotLight5_shadowMap =
                     shadowMaps.shadowMap5
                         |> Maybe.map .texture
-                        |> Maybe.withDefault placeholderShadowMap
+                        |> Maybe.withDefault shadowMaps.fallbackTexture
                 , spotLight5_shadowMapViewMatrix =
                     shadowMaps.shadowMap5
                         |> Maybe.map .viewMatrix
