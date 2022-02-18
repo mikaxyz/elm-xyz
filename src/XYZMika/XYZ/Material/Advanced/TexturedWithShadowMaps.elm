@@ -497,7 +497,7 @@ fragmentShader =
         , vec4 vertexRelativeToSpotLight
         , float resolution
         ) {
-            const bool SOFT_SHADOWS = true;
+            const bool SOFT_SHADOWS = false;
             const float TEXEL_SIZE_MULTIPLIER = 1.0;
 
             float visibility = 1.0;
