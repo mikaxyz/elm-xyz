@@ -15,7 +15,7 @@ speed =
     48
 
 
-init : Scene Material.Name
+init : Scene {} Material.Name
 init =
     Tree.tree
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 -0.6 -1, vec3 1 -0.5 1 )

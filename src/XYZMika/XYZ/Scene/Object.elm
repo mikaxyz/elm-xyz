@@ -57,14 +57,14 @@ import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight exposing (SpotLight)
 
 
-type Object materialId
-    = Disabled (Object materialId)
-    | Mesh (ObjectData materialId)
-    | Light (ObjectData materialId) Light
-    | Group String (ObjectData materialId)
+type Object id materialId
+    = Disabled (Object id materialId)
+    | Mesh (ObjectData id materialId)
+    | Light (ObjectData id materialId) Light
+    | Group String (ObjectData id materialId)
 
 
-toHumanReadable : Object materialId -> String
+toHumanReadable : Object id materialId -> String
 toHumanReadable object =
     case object of
         Disabled _ ->
@@ -80,8 +80,9 @@ toHumanReadable object =
             "Group <" ++ name ++ ">"
 
 
-type alias ObjectData materialId =
-    { position : Vec3
+type alias ObjectData id materialId =
+    { id : Maybe id
+    , position : Vec3
     , rotation : Mat4
     , mesh : Mesh Vertex
     , triangles : List ( Vec3, Vec3, Vec3 )
@@ -95,7 +96,7 @@ type alias ObjectData materialId =
     }
 
 
-disable : Object materialId -> Object materialId
+disable : Object id materialId -> Object id materialId
 disable object =
     case object of
         Disabled x ->
@@ -111,7 +112,7 @@ disable object =
             Disabled (Group name data)
 
 
-enable : Object materialId -> Object materialId
+enable : Object id materialId -> Object id materialId
 enable object =
     case object of
         Disabled x ->
@@ -127,10 +128,11 @@ enable object =
             Group name data
 
 
-group : String -> Object materialId
+group : String -> Object id materialId
 group name =
     Group name
-        { position = vec3 0 0 0
+        { id = Nothing
+        , position = vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = [] |> WebGL.triangles
         , triangles = []
@@ -144,7 +146,7 @@ group name =
         }
 
 
-light : Light -> Object materialId
+light : Light -> Object id materialId
 light light_ =
     let
         size =
@@ -154,7 +156,8 @@ light light_ =
             Cube.gray size size size
     in
     Light
-        { position = Light.position light_ |> Maybe.withDefault (vec3 0 0 0)
+        { id = Nothing
+        , position = Light.position light_ |> Maybe.withDefault (vec3 0 0 0)
         , rotation = Mat4.identity
         , mesh = verts |> WebGL.triangles
         , triangles = verts |> List.map toVec3s
@@ -169,7 +172,7 @@ light light_ =
         light_
 
 
-spotLight : SpotLight -> Object materialId
+spotLight : SpotLight -> Object id materialId
 spotLight light_ =
     let
         size =
@@ -179,7 +182,8 @@ spotLight light_ =
             Cube.gray size size size
     in
     Light
-        { position = SpotLight.position light_
+        { id = Nothing
+        , position = SpotLight.position light_
         , rotation = Mat4.identity
         , mesh = verts |> WebGL.triangles
         , triangles = verts |> List.map toVec3s
@@ -194,7 +198,7 @@ spotLight light_ =
         (Light.fromSpotLight light_)
 
 
-maybeLight : Object materialId -> Maybe Light
+maybeLight : Object id materialId -> Maybe Light
 maybeLight object =
     case object of
         Disabled _ ->
@@ -210,7 +214,7 @@ maybeLight object =
             Nothing
 
 
-maybeLightDisabled : Object materialId -> Maybe Light
+maybeLightDisabled : Object id materialId -> Maybe Light
 maybeLightDisabled object =
     case object of
         Disabled object_ ->
@@ -226,7 +230,7 @@ maybeLightDisabled object =
             Nothing
 
 
-maybeGroup : String -> Object materialId -> Maybe (Object materialId)
+maybeGroup : String -> Object id materialId -> Maybe (Object id materialId)
 maybeGroup name object =
     case object of
         Disabled _ ->
@@ -246,7 +250,7 @@ maybeGroup name object =
                 Nothing
 
 
-isDisabled : Object materialId -> Bool
+isDisabled : Object id materialId -> Bool
 isDisabled object =
     case object of
         Disabled _ ->
@@ -262,10 +266,11 @@ isDisabled object =
             False
 
 
-initWithBounds : ( Vec3, Vec3 ) -> List ( Vec3, Vec3, Vec3 ) -> Mesh Vertex -> Object a
+initWithBounds : ( Vec3, Vec3 ) -> List ( Vec3, Vec3, Vec3 ) -> Mesh Vertex -> Object id a
 initWithBounds bounds tris x =
     Mesh
-        { position = Vec3.vec3 0 0 0
+        { id = Nothing
+        , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
         , triangles = tris
@@ -279,10 +284,11 @@ initWithBounds bounds tris x =
         }
 
 
-initWithLines : List ( Vertex, Vertex ) -> Object materialId
+initWithLines : List ( Vertex, Vertex ) -> Object id materialId
 initWithLines x =
     Mesh
-        { position = Vec3.vec3 0 0 0
+        { id = Nothing
+        , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.lines x
         , triangles = []
@@ -299,10 +305,11 @@ initWithLines x =
         }
 
 
-initWithTriangles : List ( Vertex, Vertex, Vertex ) -> Object materialId
+initWithTriangles : List ( Vertex, Vertex, Vertex ) -> Object id materialId
 initWithTriangles x =
     Mesh
-        { position = Vec3.vec3 0 0 0
+        { id = Nothing
+        , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.triangles x
         , triangles = x |> List.map toVec3s
@@ -319,7 +326,7 @@ initWithTriangles x =
         }
 
 
-initWithIndexedTriangles : ( List Vertex, List ( Int, Int, Int ) ) -> Object materialId
+initWithIndexedTriangles : ( List Vertex, List ( Int, Int, Int ) ) -> Object id materialId
 initWithIndexedTriangles ( v, i ) =
     initWithBounds (getBounds v) (toTriangles ( v, i )) (WebGL.indexedTriangles v i)
 
@@ -382,7 +389,7 @@ vMax v1 v2 =
     vec3 x y z
 
 
-withGlSetting : WebGL.Settings.Setting -> Object materialId -> Object materialId
+withGlSetting : WebGL.Settings.Setting -> Object id materialId -> Object id materialId
 withGlSetting x object =
     case object of
         Disabled object_ ->
@@ -398,7 +405,7 @@ withGlSetting x object =
             Group name { data | glSetting = Just x }
 
 
-glSetting : Object materialId -> Maybe WebGL.Settings.Setting
+glSetting : Object id materialId -> Maybe WebGL.Settings.Setting
 glSetting object =
     case object of
         Disabled object_ ->
@@ -414,7 +421,7 @@ glSetting object =
             data.glSetting
 
 
-withPosition : Vec3 -> Object materialId -> Object materialId
+withPosition : Vec3 -> Object id materialId -> Object id materialId
 withPosition x object =
     case object of
         Disabled disabledObject ->
@@ -430,7 +437,7 @@ withPosition x object =
             Group name { data | position = x }
 
 
-withLightTarget : Vec3 -> Object materialId -> Object materialId
+withLightTarget : Vec3 -> Object id materialId -> Object id materialId
 withLightTarget x object =
     case object of
         Disabled disabledObject ->
@@ -446,7 +453,7 @@ withLightTarget x object =
             Group name { data | position = x }
 
 
-lightTargetMap : (Vec3 -> Vec3) -> Object materialId -> Object materialId
+lightTargetMap : (Vec3 -> Vec3) -> Object id materialId -> Object id materialId
 lightTargetMap f object =
     case object of
         Disabled disabledObject ->
@@ -462,27 +469,27 @@ lightTargetMap f object =
             Group name data
 
 
-withRotation : Mat4 -> Object materialId -> Object materialId
+withRotation : Mat4 -> Object id materialId -> Object id materialId
 withRotation x obj =
     obj |> mapData (\data -> { data | rotation = x })
 
 
-withColor : Color -> Object materialId -> Object materialId
+withColor : Color -> Object id materialId -> Object id materialId
 withColor x obj =
     obj |> mapData (\data -> { data | color = x })
 
 
-withMaterialName : materialId -> Object materialId -> Object materialId
+withMaterialName : materialId -> Object id materialId -> Object id materialId
 withMaterialName x obj =
     obj |> mapData (\data -> { data | material = Just x })
 
 
-withDiffuseMap : Texture -> Object materialId -> Object materialId
+withDiffuseMap : Texture -> Object id materialId -> Object id materialId
 withDiffuseMap x obj =
     obj |> mapData (\data -> { data | diffuseMap = Just x })
 
 
-withNormalMap : Texture -> Object materialId -> Object materialId
+withNormalMap : Texture -> Object id materialId -> Object id materialId
 withNormalMap x obj =
     obj |> mapData (\data -> { data | normalMap = Just x })
 
@@ -491,7 +498,7 @@ withNormalMap x obj =
 -- HELPERS
 
 
-mapOptions : (Maybe Options -> Maybe Options) -> Object materialId -> Object materialId
+mapOptions : (Maybe Options -> Maybe Options) -> Object id materialId -> Object id materialId
 mapOptions f obj =
     case obj of
         Disabled obj_ ->
@@ -507,7 +514,7 @@ mapOptions f obj =
             Group name { data | options = f data.options }
 
 
-mapData : (ObjectData materialId -> ObjectData materialId) -> Object materialId -> Object materialId
+mapData : (ObjectData id materialId -> ObjectData id materialId) -> Object id materialId -> Object id materialId
 mapData f obj =
     case obj of
         Disabled obj_ ->
@@ -523,7 +530,7 @@ mapData f obj =
             Group name (f data)
 
 
-get : (ObjectData materialId -> a) -> Object materialId -> a
+get : (ObjectData id materialId -> a) -> Object id materialId -> a
 get f obj =
     case obj of
         Disabled obj_ ->
@@ -543,37 +550,37 @@ get f obj =
 -- Read
 
 
-boundingBox : Object materialId -> ( Vec3, Vec3 )
+boundingBox : Object id materialId -> ( Vec3, Vec3 )
 boundingBox obj =
     obj |> get .boundingBox
 
 
-mesh : Object materialId -> Mesh Vertex
+mesh : Object id materialId -> Mesh Vertex
 mesh obj =
     obj |> get .mesh
 
 
-triangles : Object materialId -> List ( Vec3, Vec3, Vec3 )
+triangles : Object id materialId -> List ( Vec3, Vec3, Vec3 )
 triangles obj =
     obj |> get .triangles
 
 
-position : Object materialId -> Vec3
+position : Object id materialId -> Vec3
 position obj =
     obj |> get .position
 
 
-rotation : Object materialId -> Mat4
+rotation : Object id materialId -> Mat4
 rotation obj =
     obj |> get .rotation
 
 
-color : Object materialId -> Color
+color : Object id materialId -> Color
 color obj =
     obj |> get .color
 
 
-colorVec3 : Object materialId -> Vec3
+colorVec3 : Object id materialId -> Vec3
 colorVec3 obj =
     obj
         |> get .color
@@ -581,27 +588,27 @@ colorVec3 obj =
         |> (\{ red, green, blue } -> vec3 red green blue)
 
 
-materialName : Object materialId -> Maybe materialId
+materialName : Object id materialId -> Maybe materialId
 materialName obj =
     obj |> get .material
 
 
-diffuseMap : Object materialId -> Maybe Texture
+diffuseMap : Object id materialId -> Maybe Texture
 diffuseMap obj =
     obj |> get .diffuseMap
 
 
-diffuseMapWithDefault : Texture -> Object materialId -> Texture
+diffuseMapWithDefault : Texture -> Object id materialId -> Texture
 diffuseMapWithDefault default obj =
     obj |> get .diffuseMap |> Maybe.withDefault default
 
 
-normalMap : Object materialId -> Maybe Texture
+normalMap : Object id materialId -> Maybe Texture
 normalMap obj =
     obj |> get .normalMap
 
 
-normalMapWithDefault : Texture -> Object materialId -> Texture
+normalMapWithDefault : Texture -> Object id materialId -> Texture
 normalMapWithDefault default obj =
     obj |> get .normalMap |> Maybe.withDefault default
 
@@ -610,7 +617,7 @@ normalMapWithDefault default obj =
 --
 
 
-rotationWithDrag : Vec2 -> Object materialId -> Object materialId
+rotationWithDrag : Vec2 -> Object id materialId -> Object id materialId
 rotationWithDrag drag obj =
     obj
         |> get .options
@@ -627,7 +634,7 @@ rotationWithDrag drag obj =
         |> Maybe.withDefault obj
 
 
-rotationInTime : Float -> Object materialId -> Object materialId
+rotationInTime : Float -> Object id materialId -> Object id materialId
 rotationInTime theta obj =
     obj
         |> get .options
@@ -663,7 +670,7 @@ defaultOptions =
     }
 
 
-withOptionRotationInTime : (Float -> Mat4) -> Object materialId -> Object materialId
+withOptionRotationInTime : (Float -> Mat4) -> Object id materialId -> Object id materialId
 withOptionRotationInTime f obj =
     obj
         |> mapOptions
@@ -678,7 +685,7 @@ withOptionRotationInTime f obj =
 --
 
 
-withOptionDragToRotateX : Object materialId -> Object materialId
+withOptionDragToRotateX : Object id materialId -> Object id materialId
 withOptionDragToRotateX obj =
     obj
         |> mapOptions
@@ -689,7 +696,7 @@ withOptionDragToRotateX obj =
             )
 
 
-withOptionDragToRotateY : Object materialId -> Object materialId
+withOptionDragToRotateY : Object id materialId -> Object id materialId
 withOptionDragToRotateY obj =
     obj
         |> mapOptions
@@ -700,7 +707,7 @@ withOptionDragToRotateY obj =
             )
 
 
-withOptionDragToRotateXY : Object materialId -> Object materialId
+withOptionDragToRotateXY : Object id materialId -> Object id materialId
 withOptionDragToRotateXY obj =
     obj
         |> mapOptions

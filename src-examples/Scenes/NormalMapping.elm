@@ -22,7 +22,7 @@ type alias Assets =
     }
 
 
-init : Store Asset.Obj Asset.Texture -> Scene Material.Name
+init : Store Asset.Obj Asset.Texture -> Scene {} Material.Name
 init assets =
     assets
         |> getAssets
@@ -35,7 +35,7 @@ init assets =
         |> Scene.withCameraTarget (vec3 0 0.5 0)
 
 
-render : Assets -> List (Graph (Object Material.Name))
+render : Assets -> List (Graph (Object {} Material.Name))
 render cube =
     [ pointLight 0.1 (vec3 5 5 -5) (vec3 0.85 0.95 1)
     , pointLight 0.8 (vec3 -3 3 10) (vec3 0.99 0.99 0.9)
@@ -51,7 +51,7 @@ render cube =
     ]
 
 
-pointLight : Float -> Vec3 -> Vec3 -> Graph (Object materialId)
+pointLight : Float -> Vec3 -> Vec3 -> Graph (Object {} materialId)
 pointLight intensity position color =
     Object.light
         (Light.pointLight position

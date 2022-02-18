@@ -53,7 +53,7 @@ type alias Varyings =
     }
 
 
-objectTextureMaps : Object materialId -> Maybe Texture
+objectTextureMaps : Object objectId materialId -> Maybe Texture
 objectTextureMaps object =
     [ Object.diffuseMap object
     , Object.normalMap object
@@ -62,7 +62,7 @@ objectTextureMaps object =
         |> List.head
 
 
-renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer : Material.Options -> Scene.Uniforms u -> Object objectId materialId -> Entity
 renderer options uniforms object =
     case Material.shadowMaps options of
         Just shadowMaps ->
@@ -98,7 +98,7 @@ renderer options uniforms object =
                         object
 
 
-renderer_ : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer_ : Material.Options -> Scene.Uniforms u -> Object objectId materialId -> Entity
 renderer_ options uniforms object =
     let
         pointLight : Int -> { light : Vec4, color : Vec3 }

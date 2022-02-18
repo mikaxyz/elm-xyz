@@ -21,7 +21,7 @@ type alias Assets =
     }
 
 
-init : Store Asset.Obj Asset.Texture -> Scene Material.Name
+init : Store Asset.Obj Asset.Texture -> Scene {} Material.Name
 init assets =
     assets
         |> getAssets
@@ -46,7 +46,7 @@ init assets =
         |> Scene.withCamera { position = vec3 0 3 8, target = vec3 0 1 0 }
 
 
-pointLight : Float -> Vec3 -> Vec3 -> Graph (Object materialId)
+pointLight : Float -> Vec3 -> Vec3 -> Graph (Object {} materialId)
 pointLight intensity position color =
     Object.light
         (Light.pointLight position
@@ -56,13 +56,13 @@ pointLight intensity position color =
         |> Graph.singleton
 
 
-render : Assets -> List (Graph (Object Material.Name))
+render : Assets -> List (Graph (Object {} Material.Name))
 render assets =
     let
         indexedVerticesToTree :
             Vec3
             -> ( List Vertex, List ( Int, Int, Int ) )
-            -> Graph (Object Material.Name)
+            -> Graph (Object {} Material.Name)
         indexedVerticesToTree pos mesh =
             Graph.singleton
                 (mesh

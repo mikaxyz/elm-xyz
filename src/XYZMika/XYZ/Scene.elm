@@ -45,9 +45,9 @@ import XYZMika.XYZ.Scene.Options as SceneOptions
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
-type Scene materialId
+type Scene objectId materialId
     = Scene
-        { graph : Tree (Object materialId)
+        { graph : Tree (Object objectId materialId)
         , camera : Camera
         , projection : Projection
         }
@@ -57,7 +57,7 @@ type Projection
     = Perspective { fov : Float, near : Float, far : Float }
 
 
-init : Tree (Object materialId) -> Scene materialId
+init : Tree (Object objectId materialId) -> Scene objectId materialId
 init graph =
     Scene
         { graph = graph
@@ -66,54 +66,54 @@ init graph =
         }
 
 
-projectionMatrix : Float -> Scene materialId -> Mat4
+projectionMatrix : Float -> Scene objectId materialId -> Mat4
 projectionMatrix aspectRatio (Scene scene) =
     case scene.projection of
         Perspective { fov, near, far } ->
             Mat4.makePerspective fov aspectRatio near far
 
 
-withPerspectiveProjection : { fov : Float, near : Float, far : Float } -> Scene materialId -> Scene materialId
+withPerspectiveProjection : { fov : Float, near : Float, far : Float } -> Scene objectId materialId -> Scene objectId materialId
 withPerspectiveProjection config (Scene scene) =
     Scene { scene | projection = Perspective config }
 
 
-getGraph : Scene materialId -> Tree (Object materialId)
+getGraph : Scene objectId materialId -> Tree (Object objectId materialId)
 getGraph (Scene scene) =
     scene.graph
 
 
-camera : Scene materialId -> Camera
+camera : Scene objectId materialId -> Camera
 camera (Scene scene) =
     scene.camera
 
 
-withCamera : { position : Vec3, target : Vec3 } -> Scene materialId -> Scene materialId
+withCamera : { position : Vec3, target : Vec3 } -> Scene objectId materialId -> Scene objectId materialId
 withCamera { position, target } (Scene scene) =
     Scene { scene | camera = Camera.init position target }
 
 
-withCameraPosition : Vec3 -> Scene materialId -> Scene materialId
+withCameraPosition : Vec3 -> Scene objectId materialId -> Scene objectId materialId
 withCameraPosition position (Scene scene) =
     Scene { scene | camera = scene.camera |> Camera.withPosition position }
 
 
-withCameraTarget : Vec3 -> Scene materialId -> Scene materialId
+withCameraTarget : Vec3 -> Scene objectId materialId -> Scene objectId materialId
 withCameraTarget target (Scene scene) =
     Scene { scene | camera = scene.camera |> Camera.withTarget target }
 
 
-withCameraMap : (Camera -> Camera) -> Scene materialId -> Scene materialId
+withCameraMap : (Camera -> Camera) -> Scene objectId materialId -> Scene objectId materialId
 withCameraMap f (Scene scene) =
     Scene { scene | camera = f scene.camera }
 
 
-map : (Tree (Object materialId) -> Tree (Object materialId)) -> Scene materialId -> Scene materialId
+map : (Tree (Object objectId materialId) -> Tree (Object objectId materialId)) -> Scene objectId materialId -> Scene objectId materialId
 map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
 
 
-spotLights : Scene materialId -> List SpotLight
+spotLights : Scene objectId materialId -> List SpotLight
 spotLights (Scene scene) =
     scene.graph
         |> Tree.foldl
@@ -128,21 +128,21 @@ spotLights (Scene scene) =
             []
 
 
-withLightsInGraph : Scene materialId -> Scene materialId
+withLightsInGraph : Scene objectId materialId -> Scene objectId materialId
 withLightsInGraph scene =
     scene
         |> setSceneLightsEnabled True
         |> replaceLightsInRoot []
 
 
-withLights : List Light.Light -> Scene materialId -> Scene materialId
+withLights : List Light.Light -> Scene objectId materialId -> Scene objectId materialId
 withLights lights scene =
     scene
         |> setSceneLightsEnabled False
         |> replaceLightsInRoot lights
 
 
-setSceneLightsEnabled : Bool -> Scene materialId -> Scene materialId
+setSceneLightsEnabled : Bool -> Scene objectId materialId -> Scene objectId materialId
 setSceneLightsEnabled enabled scene =
     let
         enable object =
@@ -175,7 +175,7 @@ setSceneLightsEnabled enabled scene =
             )
 
 
-replaceLightsInRoot : List Light -> Scene materialId -> Scene materialId
+replaceLightsInRoot : List Light -> Scene objectId materialId -> Scene objectId materialId
 replaceLightsInRoot lights scene =
     let
         appendLightsGroup tree =
@@ -200,13 +200,13 @@ replaceLightsInRoot lights scene =
     scene |> map (Tree.mapChildren (List.filterMap removeExisting) >> appendLightsGroup)
 
 
-graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object materialId) -> Tree ( Mat4, Object materialId )
+graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object objectId materialId) -> Tree ( Mat4, Object objectId materialId )
 graphWithMatrix ({ theta, drag, mat } as config) tree =
     let
         object =
             Tree.label tree
 
-        children : List (Tree (Object materialId))
+        children : List (Tree (Object objectId materialId))
         children =
             Tree.children tree
 
@@ -228,8 +228,8 @@ type alias GraphRenderOptions =
 
 renderSimple :
     { width : Int, height : Int }
-    -> Scene materialId
-    -> Renderer materialId (Uniforms {})
+    -> Scene objectId materialId
+    -> Renderer objectId materialId (Uniforms {})
     -> List Entity
 renderSimple =
     renderSimpleWithModifiers []
@@ -238,8 +238,8 @@ renderSimple =
 renderSimpleWithModifiers :
     List Modifier
     -> { width : Int, height : Int }
-    -> Scene materialId
-    -> Renderer materialId (Uniforms {})
+    -> Scene objectId materialId
+    -> Renderer objectId materialId (Uniforms {})
     -> List Entity
 renderSimpleWithModifiers modifiers viewport scene renderer =
     render
@@ -260,7 +260,7 @@ type Modifier
     | SpotLightTargetModifier (Int -> Vec3 -> Vec3)
 
 
-applyModifier : Int -> Object materialId -> Modifier -> Object materialId
+applyModifier : Int -> Object objectId materialId -> Modifier -> Object objectId materialId
 applyModifier index object modifier =
     case modifier of
         PositionModifier f ->
@@ -278,7 +278,7 @@ applyModifier index object modifier =
                     object
 
 
-applyModifiers : List Modifier -> Int -> Object materialId -> Object materialId
+applyModifiers : List Modifier -> Int -> Object objectId materialId -> Object objectId materialId
 applyModifiers modifiers index object =
     modifiers
         |> List.foldl
@@ -288,7 +288,7 @@ applyModifiers modifiers index object =
             object
 
 
-withModifiers : List Modifier -> Scene materialId -> Scene materialId
+withModifiers : List Modifier -> Scene objectId materialId -> Scene objectId materialId
 withModifiers modifiers (Scene scene) =
     Scene
         { scene
@@ -308,9 +308,9 @@ render :
     -> { width : Int, height : Int }
     -> Vec2
     -> Float
-    -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
-    -> Scene materialId
-    -> Renderer materialId (Uniforms {})
+    -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
+    -> Scene objectId materialId
+    -> Renderer objectId materialId (Uniforms {})
     -> List Entity
 render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptions (Scene scene) renderer =
     let
@@ -377,7 +377,7 @@ render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptio
         renderer
 
 
-withGridPlane : Bool -> Axis -> List (Node materialId) -> List (Node materialId)
+withGridPlane : Bool -> Axis -> List (Node objectId materialId) -> List (Node objectId materialId)
 withGridPlane show axis nodes =
     if show then
         GridPlaneNode axis :: nodes
@@ -392,12 +392,12 @@ type Axis
     | AxisZ
 
 
-type alias Renderable materialId =
-    { index : Int, sceneMatrix : Mat4, object : Object materialId }
+type alias Renderable objectId materialId =
+    { index : Int, sceneMatrix : Mat4, object : Object objectId materialId }
 
 
-type Node materialId
-    = GraphNode (Tree (Renderable materialId))
+type Node objectId materialId
+    = GraphNode (Tree (Renderable objectId materialId))
     | GridPlaneNode Axis
     | PointLightNode Vec3
 
@@ -407,10 +407,10 @@ renderGraph :
     -> Float
     -> Renderer.Options
     -> SceneOptions.Options
-    -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
+    -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
     -> Uniforms u
-    -> List (Node materialId)
-    -> Renderer materialId (Uniforms u)
+    -> List (Node objectId materialId)
+    -> Renderer objectId materialId (Uniforms u)
     -> List Entity
 renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
     nodes
@@ -510,7 +510,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                             { sceneMatrix, object } =
                                 Tree.label graph
 
-                            children : List (Tree (Renderable materialId))
+                            children : List (Tree (Renderable objectId materialId))
                             children =
                                 Tree.children graph
 

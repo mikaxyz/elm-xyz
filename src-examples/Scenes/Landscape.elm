@@ -28,7 +28,7 @@ elevation x y =
         + (0.5 * e1 * max e1 0 * Perlin.value2d { seed = seed, freq = 10 * freq } x y)
 
 
-init : Scene Material.Name
+init : Scene {} Material.Name
 init =
     let
         divisions =
@@ -55,7 +55,7 @@ init =
                 , elevation = elevation
                 }
 
-        normalBone : Vertex -> Graph (Object Material.Name)
+        normalBone : Vertex -> Graph (Object {} Material.Name)
         normalBone v =
             [ ( v, { v | position = Vec3.add v.position v.normal } ) ]
                 |> Object.initWithLines
@@ -73,7 +73,7 @@ init =
                     )
                 |> List.map normalBone
 
-        bone : Vec3 -> Graph (Object Material.Name)
+        bone : Vec3 -> Graph (Object {} Material.Name)
         bone v =
             XYZMika.XYZ.Mesh.Primitives.bone Color.red Color.green 0.05 (Vec3.getY (Vec3.add (vec3 0 1 0) v))
                 |> Object.initWithTriangles

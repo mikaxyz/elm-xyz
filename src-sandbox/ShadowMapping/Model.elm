@@ -34,7 +34,7 @@ type alias Model =
     , keyboard : Keyboard.State
     , dragon : Dragon
     , assets : AssetStore.Store ObjId TextureId
-    , scene : Scene Material.Name
+    , scene : Scene Scene.Object Material.Name
     , objectPosition : Vec3
     }
 

@@ -21,7 +21,7 @@ renderer :
     Name
     -> Material.Options
     -> Uniforms u
-    -> Object materialId
+    -> Object objectId materialId
     -> Entity
 renderer name =
     case name of

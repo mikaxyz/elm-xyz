@@ -103,11 +103,11 @@ directionalLights (Options options) =
         |> List.filterMap Light.maybeDirectionalLight
 
 
-type alias Renderer materialId uniforms =
+type alias Renderer objectId materialId uniforms =
     Maybe materialId
     -> Options
     -> uniforms
-    -> Object materialId
+    -> Object objectId materialId
     -> Entity
 
 
@@ -128,7 +128,7 @@ material u v f =
     Material u (VertexShader v) (FragmentShader f)
 
 
-toEntity : Object materialId -> Material uniforms v -> Entity
+toEntity : Object objectId materialId -> Material uniforms v -> Entity
 toEntity object (Material uniforms_ (VertexShader vShader) (FragmentShader fShader)) =
     case Object.glSetting object of
         Just glSetting ->
@@ -147,7 +147,7 @@ toEntity object (Material uniforms_ (VertexShader vShader) (FragmentShader fShad
                 uniforms_
 
 
-toEntityWithSettings : List WebGL.Settings.Setting -> Object materialId -> Material uniforms v -> Entity
+toEntityWithSettings : List WebGL.Settings.Setting -> Object objectId materialId -> Material uniforms v -> Entity
 toEntityWithSettings settings object (Material uniforms_ (VertexShader vShader) (FragmentShader fShader)) =
     WebGL.entityWith
         settings

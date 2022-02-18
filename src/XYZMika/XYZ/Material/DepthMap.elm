@@ -11,7 +11,7 @@ import XYZMika.XYZ.Scene.Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
-renderer : Material.Options -> Uniforms u -> Object materialId -> Entity
+renderer : Material.Options -> Uniforms u -> Object objectId materialId -> Entity
 renderer _ uniforms object =
     material uniforms
         |> Material.toEntity object

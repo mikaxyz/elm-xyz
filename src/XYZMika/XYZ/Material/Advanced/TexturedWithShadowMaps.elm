@@ -107,7 +107,7 @@ type alias Varyings =
     }
 
 
-renderer : Texture -> ShadowMaps -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer : Texture -> ShadowMaps -> Material.Options -> Scene.Uniforms u -> Object objectId materialId -> Entity
 renderer fallbackTexture shadowMaps options uniforms object =
     let
         spotLight : Int -> SpotLight.ShaderData

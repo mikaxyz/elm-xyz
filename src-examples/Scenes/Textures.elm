@@ -29,7 +29,7 @@ type alias TreeAssets =
     }
 
 
-init : Store Asset.Obj Asset.Texture -> Scene Material.Name
+init : Store Asset.Obj Asset.Texture -> Scene {} Material.Name
 init assets =
     Graph.shallow
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
@@ -52,7 +52,7 @@ init assets =
 --|> Scene.withCamera { position = vec3 0 0.5 3, target = vec3 0 0.5 0 }
 
 
-render : BallAssets -> TreeAssets -> List (Object Material.Name)
+render : BallAssets -> TreeAssets -> List (Object {} Material.Name)
 render ball tree =
     --[ ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles

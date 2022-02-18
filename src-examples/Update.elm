@@ -64,7 +64,7 @@ applyHudValue hudObject hudValue value model =
 
         SelectedGraph ->
             let
-                updateObject : Object.Object materialId -> Object.Object materialId
+                updateObject : Object.Object objectId materialId -> Object.Object objectId materialId
                 updateObject object =
                     let
                         position =
@@ -198,7 +198,7 @@ update msg model =
 
         DragEnd pos ->
             let
-                selectedTreeIndexAtClickPosition : Scene.Scene materialId -> Browser.Dom.Element -> Maybe Int
+                selectedTreeIndexAtClickPosition : Scene.Scene objectId materialId -> Browser.Dom.Element -> Maybe Int
                 selectedTreeIndexAtClickPosition scene viewPortElement =
                     Util.selectGraphAtClickPosition
                         { theta = model.theta

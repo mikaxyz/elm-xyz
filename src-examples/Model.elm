@@ -100,7 +100,7 @@ type alias Model =
     , drag : Vec2
     , lastDrag : Vec2
     , dragTarget : DragTarget
-    , scene : Maybe (Scene Material.Name)
+    , scene : Maybe (Scene {} Material.Name)
     , sceneOptions : SceneOptions.Options
     , scenes : Array ActiveScene
     , currentSceneIndex : Int

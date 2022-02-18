@@ -59,7 +59,7 @@ type alias Varyings =
     }
 
 
-renderer : Texture -> Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer : Texture -> Material.Options -> Scene.Uniforms u -> Object objectId materialId -> Entity
 renderer fallbackTexture options uniforms object =
     let
         pointLight : Int -> { light : Vec4, color : Vec3 }

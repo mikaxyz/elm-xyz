@@ -35,17 +35,17 @@ type alias Graph a =
     Tree.Tree a
 
 
-graph : Object materialId -> List (Graph (Object materialId)) -> Graph (Object materialId)
+graph : Object objectId materialId -> List (Graph (Object objectId materialId)) -> Graph (Object objectId materialId)
 graph =
     Tree.tree
 
 
-shallow : Object materialId -> List (Object materialId) -> Graph (Object materialId)
+shallow : Object objectId materialId -> List (Object objectId materialId) -> Graph (Object objectId materialId)
 shallow parent children =
     Tree.tree parent (children |> List.map Tree.singleton)
 
 
-singleton : Object materialId -> Graph (Object materialId)
+singleton : Object objectId materialId -> Graph (Object objectId materialId)
 singleton =
     Tree.singleton
 
@@ -54,7 +54,7 @@ singleton =
 -- Modification
 
 
-replaceChildren : List (Graph (Object materialId)) -> Graph (Object materialId) -> Graph (Object materialId)
+replaceChildren : List (Graph (Object objectId materialId)) -> Graph (Object objectId materialId) -> Graph (Object objectId materialId)
 replaceChildren =
     Tree.replaceChildren
 
@@ -73,7 +73,7 @@ root =
     Tree.label
 
 
-count : Graph (Object materialId) -> Int
+count : Graph (Object objectId materialId) -> Int
 count =
     Tree.count
 

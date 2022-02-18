@@ -1,4 +1,4 @@
-module ShadowMapping.Scene exposing (graph)
+module ShadowMapping.Scene exposing (Object(..), graph)
 
 import Color
 import Math.Matrix4 as Mat4
@@ -21,10 +21,19 @@ type alias Assets =
     }
 
 
-graph : Assets -> Graph (Object.Object Material.Name)
+type Object
+    = Shoe
+    | Block1
+    | SpotLight1
+    | SpotLight2
+    | SpotLight
+
+
+graph : Assets -> Graph (Object.Object Object Material.Name)
 graph assets =
     [ assets.mesh
         |> Object.initWithIndexedTriangles
+        --|> Object.withId Shoe
         |> Object.withPosition (vec3 0 0.55 0)
         |> Object.withDiffuseMap assets.diffuse
         |> Object.withNormalMap assets.normal

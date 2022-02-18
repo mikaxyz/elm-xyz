@@ -23,7 +23,7 @@ type alias Varyings =
     }
 
 
-renderer : Material.Options -> Scene.Uniforms u -> Object materialId -> Entity
+renderer : Material.Options -> Scene.Uniforms u -> Object objectId materialId -> Entity
 renderer _ uniforms object =
     material
         { sceneCamera = uniforms.sceneCamera
@@ -51,7 +51,7 @@ vertexShader =
 
         attribute vec3 position;
         attribute vec3 color;
-        
+
         uniform mat4 sceneCamera;
         uniform mat4 scenePerspective;
         uniform mat4 sceneMatrix;
@@ -72,7 +72,7 @@ fragmentShader =
         precision mediump float;
 
         varying vec3 v_color;
-        
+
         void main () {
             gl_FragColor =  vec4(v_color, 1.0);
         }

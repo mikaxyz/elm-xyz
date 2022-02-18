@@ -22,7 +22,7 @@ type alias Assets =
     }
 
 
-init : Store Asset.Obj Asset.Texture -> Scene Material.Name
+init : Store Asset.Obj Asset.Texture -> Scene {} Material.Name
 init assetStore =
     Maybe.map3 Assets
         (AssetStore.vertices Asset.Deer assetStore)
@@ -65,7 +65,7 @@ init assetStore =
         |> Scene.withPerspectiveProjection { fov = 60, near = 0.01, far = 100 }
 
 
-floor : Color.Color -> Object Material.Name
+floor : Color.Color -> Object {} Material.Name
 floor color =
     XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -2 -0.5 -2, vec3 2 0 2 )
         |> Object.initWithTriangles

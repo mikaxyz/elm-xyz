@@ -26,8 +26,8 @@ toHtml :
     List (Attribute msg)
     -> { width : Int, height : Int }
     -> List Scene.Modifier
-    -> Renderer materialId (Uniforms {})
-    -> Scene materialId
+    -> Renderer objectId materialId (Uniforms {})
+    -> Scene objectId materialId
     -> Html msg
 toHtml attributes viewport modifiers renderer scene =
     case frameBuffersForShadowMaps modifiers scene of
@@ -138,7 +138,7 @@ toHtml attributes viewport modifiers renderer scene =
                 )
 
 
-frameBuffersForShadowMaps : List Scene.Modifier -> Scene materialId -> Maybe ShadowMapBuffers
+frameBuffersForShadowMaps : List Scene.Modifier -> Scene objectId materialId -> Maybe ShadowMapBuffers
 frameBuffersForShadowMaps modifiers scene =
     let
         frameBufferAndViewMatrixForLight =
@@ -201,7 +201,7 @@ frameBuffersForShadowMaps modifiers scene =
 
 frameBufferForSpotLight :
     List Scene.Modifier
-    -> Scene materialId
+    -> Scene objectId materialId
     ->
         ( { resolution : Int
           , fov : Float

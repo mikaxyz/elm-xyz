@@ -26,7 +26,7 @@ type alias Varyings =
     }
 
 
-renderer : Material.Options -> Texture -> Scene.Uniforms u -> Object materialId -> Entity
+renderer : Material.Options -> Texture -> Scene.Uniforms u -> Object objectId materialId -> Entity
 renderer _ _ uniforms object =
     material
         { sceneCamera = uniforms.sceneCamera
@@ -77,7 +77,7 @@ fragmentShader =
         precision highp float;
 
         varying vec3 v_fragPos;
-        
+
         void main () {
             float x = v_fragPos.x;
             float y = v_fragPos.y;

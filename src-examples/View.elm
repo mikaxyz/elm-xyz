@@ -64,7 +64,7 @@ attributionView model =
             text ""
 
 
-sceneView : Hud -> Model -> Scene Material.Name -> Html Msg
+sceneView : Hud -> Model -> Scene {} Material.Name -> Html Msg
 sceneView (Hud hud) model scene =
     main_ [ class "app" ]
         [ div [ class "app__viewport" ]
@@ -125,7 +125,7 @@ renderer :
     Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
     -> Uniforms u
-    -> Object Material.Name
+    -> Object {} Material.Name
     -> WebGL.Entity
 renderer name =
     case name of
@@ -136,7 +136,7 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : { treeCount : Int } -> Hud -> Camera -> Maybe (Object Material.Name) -> Model -> Html Msg
+sidebarView : { treeCount : Int } -> Hud -> Camera -> Maybe (Object {} Material.Name) -> Model -> Html Msg
 sidebarView { treeCount } (Hud hud) camera selectedObject model =
     div
         [ class "sidebar"
@@ -175,7 +175,7 @@ sidebarView { treeCount } (Hud hud) camera selectedObject model =
         ]
 
 
-selectedObjectWidget : Object Material.Name -> Html Msg
+selectedObjectWidget : Object {} Material.Name -> Html Msg
 selectedObjectWidget object =
     vector3Widget
         (Object.toHumanReadable object)
