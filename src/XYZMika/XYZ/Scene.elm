@@ -236,7 +236,7 @@ renderSimple =
 
 
 renderSimpleWithModifiers :
-    List Modifier
+    List (Modifier objectId)
     -> { width : Int, height : Int }
     -> Scene objectId materialId
     -> Renderer objectId materialId (Uniforms {})
@@ -254,56 +254,54 @@ renderSimpleWithModifiers modifiers viewport scene renderer =
         renderer
 
 
-type Modifier
-    = PositionModifier (Int -> Vec3 -> Vec3)
-    | RotationModifier (Int -> Mat4 -> Mat4)
-    | SpotLightTargetModifier (Int -> Vec3 -> Vec3)
+type Modifier objectId
+    = PositionModifier (objectId -> Vec3 -> Vec3)
+    | RotationModifier (objectId -> Mat4 -> Mat4)
+    | SpotLightTargetModifier (objectId -> Vec3 -> Vec3)
 
 
-applyModifier : Int -> Object objectId materialId -> Modifier -> Object objectId materialId
-applyModifier index object modifier =
+applyModifier : Modifier objectId -> Object objectId materialId -> Object objectId materialId
+applyModifier modifier object =
+    case Object.id object of
+        Just id ->
+            applyModifier_ id object modifier
+
+        Nothing ->
+            object
+
+
+applyModifier_ : objectId -> Object objectId materialId -> Modifier objectId -> Object objectId materialId
+applyModifier_ objectId object modifier =
     case modifier of
         PositionModifier f ->
-            Object.withPosition (f index (Object.position object)) object
+            Object.withPosition (f objectId (Object.position object)) object
 
         RotationModifier f ->
-            Object.withRotation (f index (Object.rotation object)) object
+            Object.withRotation (f objectId (Object.rotation object)) object
 
         SpotLightTargetModifier f ->
             case Object.maybeLight object of
                 Just _ ->
-                    Object.lightTargetMap (f index) object
+                    Object.lightTargetMap (f objectId) object
 
                 Nothing ->
                     object
 
 
-applyModifiers : List Modifier -> Int -> Object objectId materialId -> Object objectId materialId
-applyModifiers modifiers index object =
+applyModifiers : List (Modifier objectId) -> Object objectId materialId -> Object objectId materialId
+applyModifiers modifiers object =
     modifiers
-        |> List.foldl
-            (\animation acc ->
-                applyModifier index acc animation
-            )
-            object
+        |> List.foldl applyModifier object
 
 
-withModifiers : List Modifier -> Scene objectId materialId -> Scene objectId materialId
+withModifiers : List (Modifier objectId) -> Scene objectId materialId -> Scene objectId materialId
 withModifiers modifiers (Scene scene) =
-    Scene
-        { scene
-            | graph =
-                scene.graph
-                    |> Tree.indexedMap
-                        (\index object ->
-                            applyModifiers modifiers index object
-                        )
-        }
+    Scene { scene | graph = scene.graph |> Tree.map (applyModifiers modifiers) }
 
 
 render :
     List Light
-    -> List Modifier
+    -> List (Modifier objectId)
     -> SceneOptions.Options
     -> { width : Int, height : Int }
     -> Vec2
@@ -320,7 +318,7 @@ render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptio
         lightsInScene : List Light
         lightsInScene =
             scene.graph
-                |> Tree.indexedMap (\index object -> applyModifiers modifiers index object)
+                |> Tree.map (applyModifiers modifiers)
                 |> graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
                 |> Tree.foldl
                     (\( transform, object ) acc ->
@@ -355,7 +353,7 @@ render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptio
         }
         (GraphNode
             (scene.graph
-                |> Tree.indexedMap (\index object -> applyModifiers modifiers index object)
+                |> Tree.map (applyModifiers modifiers)
                 |> graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
                 |> Tree.indexedMap
                     (\i ( sceneMatrix, object ) ->

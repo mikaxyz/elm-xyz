@@ -1,4 +1,4 @@
-module ShadowMapping.Scene exposing (Object(..), graph)
+module ShadowMapping.Scene exposing (Light(..), Object(..), graph)
 
 import Color
 import Math.Matrix4 as Mat4
@@ -24,20 +24,25 @@ type alias Assets =
 type Object
     = Shoe
     | Block1
-    | SpotLight1
+    | Light Light
+
+
+type Light
+    = SpotLight1
     | SpotLight2
-    | SpotLight
+    | SpotLight3
+    | SpotLight4
+    | SpotLight5
 
 
 graph : Assets -> Graph (Object.Object Object Material.Name)
 graph assets =
     [ assets.mesh
-        |> Object.initWithIndexedTriangles
-        --|> Object.withId Shoe
+        |> Object.objectObjectWithIndexedTriangles Shoe
         |> Object.withPosition (vec3 0 0.55 0)
         |> Object.withDiffuseMap assets.diffuse
         |> Object.withNormalMap assets.normal
-    , Object.spotLight
+    , Object.spotLightWithId (Light SpotLight1)
         (SpotLight.light (vec3 -2 4 -1) 55
             |> SpotLight.withTarget (vec3 -2 0 -1)
             |> SpotLight.withShadowMap
@@ -46,16 +51,16 @@ graph assets =
                 , far = 100
                 }
         )
-    , Object.spotLight
-        (SpotLight.light (vec3 0 4 -2) 55
-            |> SpotLight.withTarget (vec3 0 0 -2)
+    , Object.spotLightWithId (Light SpotLight2)
+        (SpotLight.light (vec3 0 4 0) 55
+            |> SpotLight.withTarget (vec3 0 0 0)
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
                 , far = 100
                 }
         )
-    , Object.spotLight
+    , Object.spotLightWithId (Light SpotLight3)
         (SpotLight.light (vec3 2 4 -1) 55
             |> SpotLight.withTarget (vec3 2 0 -1)
             |> SpotLight.withShadowMap
@@ -66,7 +71,7 @@ graph assets =
         )
 
     --
-    , Object.spotLight
+    , Object.spotLightWithId (Light SpotLight4)
         (SpotLight.light (vec3 -1 4 1) 55
             |> SpotLight.withTarget (vec3 -1 0 1)
             |> SpotLight.withShadowMap
@@ -75,7 +80,7 @@ graph assets =
                 , far = 100
                 }
         )
-    , Object.spotLight
+    , Object.spotLightWithId (Light SpotLight5)
         (SpotLight.light (vec3 1 4 1) 55
             |> SpotLight.withTarget (vec3 1 0 1)
             |> SpotLight.withShadowMap
@@ -87,7 +92,7 @@ graph assets =
 
     -- Blocks
     , XYZMika.XYZ.Mesh.Cube.colored Color.darkRed 0.5 1 0.5
-        |> Object.initWithTriangles
+        |> Object.objectWithTriangles Block1
         |> Object.withPosition (vec3 -2 0.5 -1)
     , XYZMika.XYZ.Mesh.Cube.colored Color.darkBlue 1 0.5 0.5
         |> Object.initWithTriangles

@@ -116,21 +116,24 @@ keyboardControl model =
     { model | objectPosition = model.objectPosition |> Vec3.add (Vec3.scale speed m) }
 
 
-modifiers : Model -> List XYZMika.XYZ.Scene.Modifier
+modifiers : Model -> List (XYZMika.XYZ.Scene.Modifier Scene.Object)
 modifiers model =
     [ XYZMika.XYZ.Scene.PositionModifier
-        (\index position ->
-            case index of
-                1 ->
+        (\object position ->
+            case object of
+                Scene.Shoe ->
+                    Vec3.add model.objectPosition position
+
+                Scene.Light Scene.SpotLight2 ->
                     Vec3.add model.objectPosition position
 
                 _ ->
                     position
         )
     , XYZMika.XYZ.Scene.RotationModifier
-        (\index matrix ->
-            case index of
-                1 ->
+        (\object matrix ->
+            case object of
+                Scene.Shoe ->
                     matrix
                         |> Mat4.rotate (5 * model.theta) Vec3.j
 
@@ -138,7 +141,7 @@ modifiers model =
                     matrix
         )
     , XYZMika.XYZ.Scene.SpotLightTargetModifier
-        (\index target ->
+        (\_ target ->
             Vec3.add model.objectPosition target
         )
     ]

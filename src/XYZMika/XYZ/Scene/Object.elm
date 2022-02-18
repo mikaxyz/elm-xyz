@@ -6,7 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toHumanReadable
     , rotationInTime, rotationWithDrag, maybeLight
-    , disable, enable, group, isDisabled, lightTargetMap, maybeGroup, maybeLightDisabled, spotLight, withLightTarget
+    , disable, enable, group, id, isDisabled, lightTargetMap, maybeGroup, maybeLightDisabled, objectObjectWithIndexedTriangles, objectWithTriangles, spotLight, spotLightWithId, withLightTarget
     )
 
 {-|
@@ -174,6 +174,16 @@ light light_ =
 
 spotLight : SpotLight -> Object id materialId
 spotLight light_ =
+    spotLightWithId_ Nothing light_
+
+
+spotLightWithId : id -> SpotLight -> Object id materialId
+spotLightWithId objectId light_ =
+    spotLightWithId_ (Just objectId) light_
+
+
+spotLightWithId_ : Maybe id -> SpotLight -> Object id materialId
+spotLightWithId_ objectId light_ =
     let
         size =
             1
@@ -182,7 +192,7 @@ spotLight light_ =
             Cube.gray size size size
     in
     Light
-        { id = Nothing
+        { id = objectId
         , position = SpotLight.position light_
         , rotation = Mat4.identity
         , mesh = verts |> WebGL.triangles
@@ -331,6 +341,45 @@ initWithIndexedTriangles ( v, i ) =
     initWithBounds (getBounds v) (toTriangles ( v, i )) (WebGL.indexedTriangles v i)
 
 
+objectWithTriangles : id -> List ( Vertex, Vertex, Vertex ) -> Object id materialId
+objectWithTriangles objectId x =
+    Mesh
+        { id = Just objectId
+        , position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.triangles x
+        , triangles = x |> List.map toVec3s
+        , boundingBox =
+            x
+                |> List.foldl (\( v1, v2, v3 ) acc -> v1 :: v2 :: v3 :: acc) []
+                |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , options = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        }
+
+
+objectObjectWithIndexedTriangles : id -> ( List Vertex, List ( Int, Int, Int ) ) -> Object id materialId
+objectObjectWithIndexedTriangles objectId ( v, i ) =
+    Mesh
+        { id = Just objectId
+        , position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.indexedTriangles v i
+        , triangles = toTriangles ( v, i )
+        , boundingBox = getBounds v
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , options = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        }
+
+
 toVec3s : ( Vertex, Vertex, Vertex ) -> ( Vec3, Vec3, Vec3 )
 toVec3s ( v1, v2, v3 ) =
     ( v1.position, v2.position, v3.position )
@@ -419,6 +468,22 @@ glSetting object =
 
         Group _ data ->
             data.glSetting
+
+
+id : Object id materialId -> Maybe id
+id object =
+    case object of
+        Disabled object_ ->
+            id object_
+
+        Mesh data ->
+            data.id
+
+        Light data _ ->
+            data.id
+
+        Group _ data ->
+            data.id
 
 
 withPosition : Vec3 -> Object id materialId -> Object id materialId
