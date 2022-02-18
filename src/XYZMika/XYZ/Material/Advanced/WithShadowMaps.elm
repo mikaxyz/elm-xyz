@@ -505,7 +505,7 @@ fragmentShader =
 
         vec3 applySpotLight
         ( vec3 normal
-        , vec3 lightPosition
+        , vec4 light
         , vec3 lightDirection
         , vec3 color
         , float fov
@@ -516,12 +516,13 @@ fragmentShader =
         ) {
             highp float innerLimit = fov;
             highp float outerLimit = innerLimit - 0.02;
+            float intensity = light.w;
             float shininess = 1.0;
-            highp vec3 direction = normalize(lightPosition - v_fragPos);
+            highp vec3 direction = normalize(light.xyz - v_fragPos);
 
             highp float dotFromDirection = dot(direction, -lightDirection);
             float inLight = smoothstep(outerLimit, innerLimit, dotFromDirection);
-            float light = inLight * dot(normal, direction);
+            float lighting = inLight * dot(normal, direction);
             float specular = inLight * pow(dot(normal, direction), shininess);
 
             float shadow = applyShadowMap
@@ -530,7 +531,7 @@ fragmentShader =
                 , resolution
                 );
 
-            return color * light * specular * shadow;
+            return color * lighting * specular * intensity * shadow;
         }
 
         void main () {
@@ -562,7 +563,7 @@ fragmentShader =
             // Spotlights
             lighting += applySpotLight
                 ( normal
-                , spotLight1.xyz
+                , spotLight1
                 , spotLight1_direction.xyz
                 , spotLight1_color
                 , spotLight1_fov
@@ -573,7 +574,7 @@ fragmentShader =
 
             lighting += applySpotLight
                 ( normal
-                , spotLight2.xyz
+                , spotLight2
                 , spotLight2_direction.xyz
                 , spotLight2_color
                 , spotLight2_fov
@@ -584,7 +585,7 @@ fragmentShader =
 
             lighting += applySpotLight
                 ( normal
-                , spotLight3.xyz
+                , spotLight3
                 , spotLight3_direction.xyz
                 , spotLight3_color
                 , spotLight3_fov
@@ -595,7 +596,7 @@ fragmentShader =
 
             lighting += applySpotLight
                 ( normal
-                , spotLight4.xyz
+                , spotLight4
                 , spotLight4_direction.xyz
                 , spotLight4_color
                 , spotLight4_fov
@@ -606,7 +607,7 @@ fragmentShader =
 
             lighting += applySpotLight
                 ( normal
-                , spotLight5.xyz
+                , spotLight5
                 , spotLight5_direction.xyz
                 , spotLight5_color
                 , spotLight5_fov
