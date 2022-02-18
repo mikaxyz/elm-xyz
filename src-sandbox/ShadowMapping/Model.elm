@@ -127,6 +127,16 @@ modifiers model =
                 Scene.Light Scene.SpotLight2 ->
                     Vec3.add model.objectPosition position
 
+                Scene.Block1 ->
+                    let
+                        x =
+                            sin (model.theta * 30)
+
+                        y =
+                            cos (model.theta * 30)
+                    in
+                    Vec3.add position (vec3 x 0 y)
+
                 _ ->
                     position
         )
@@ -134,8 +144,25 @@ modifiers model =
         (\object matrix ->
             case object of
                 Scene.Shoe ->
+                    let
+                        r =
+                            sin (model.theta * 30)
+
+                        y =
+                            r
+                    in
                     matrix
-                        |> Mat4.rotate (5 * model.theta) Vec3.j
+                        |> Mat4.rotate (y * 3) Vec3.j
+
+                Scene.Block1 ->
+                    let
+                        r =
+                            sin (model.theta * 30)
+
+                        y =
+                            abs (r ^ 4)
+                    in
+                    Mat4.makeTranslate3 0 y 0
 
                 _ ->
                     matrix

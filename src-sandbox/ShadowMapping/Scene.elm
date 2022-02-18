@@ -45,6 +45,7 @@ graph assets =
     , Object.spotLightWithId (Light SpotLight1)
         (SpotLight.light (vec3 -2 4 -1) 55
             |> SpotLight.withTarget (vec3 -2 0 -1)
+            |> SpotLight.withIntensity 0.6
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
@@ -54,6 +55,7 @@ graph assets =
     , Object.spotLightWithId (Light SpotLight2)
         (SpotLight.light (vec3 0 4 0) 55
             |> SpotLight.withTarget (vec3 0 0 0)
+            |> SpotLight.withIntensity 0.2
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
@@ -63,6 +65,7 @@ graph assets =
     , Object.spotLightWithId (Light SpotLight3)
         (SpotLight.light (vec3 2 4 -1) 55
             |> SpotLight.withTarget (vec3 2 0 -1)
+            |> SpotLight.withIntensity 0.6
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
@@ -74,6 +77,7 @@ graph assets =
     , Object.spotLightWithId (Light SpotLight4)
         (SpotLight.light (vec3 -1 4 1) 55
             |> SpotLight.withTarget (vec3 -1 0 1)
+            |> SpotLight.withIntensity 0.6
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
@@ -83,6 +87,7 @@ graph assets =
     , Object.spotLightWithId (Light SpotLight5)
         (SpotLight.light (vec3 1 4 1) 55
             |> SpotLight.withTarget (vec3 1 0 1)
+            |> SpotLight.withIntensity 0.6
             |> SpotLight.withShadowMap
                 { resolution = 800
                 , near = 0.01
