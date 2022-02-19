@@ -217,22 +217,12 @@ update msg model =
 
                         Model.Default ->
                             let
+                                move : Vec3
                                 move =
-                                    -- TODO: translate screen to scene
-                                    -- TODO: Object widget with translate/rotate/scale
-                                    vec3 drag.x -drag.y 0 |> Vec3.scale 0.01
-
-                                updateObject_ : Object.Object objectId materialId -> Object.Object objectId materialId
-                                updateObject_ object =
-                                    Object.map
-                                        (\data ->
-                                            { data
-                                                | position =
-                                                    data.position
-                                                        |> Vec3.add move
-                                            }
-                                        )
-                                        object
+                                    model.scene
+                                        |> Maybe.map (Scene.camera >> Camera.inPlane (vec2 drag.x drag.y))
+                                        |> Maybe.withDefault (vec3 0 0 0)
+                                        |> Vec3.scale 0.01
                             in
                             model.scene
                                 |> Maybe.map
@@ -240,7 +230,9 @@ update msg model =
                                         (Graph.indexedMap
                                             (\index object ->
                                                 if model.selectedTreeIndex == Just index then
-                                                    updateObject_ object
+                                                    Object.map
+                                                        (\data -> { data | position = Vec3.add move data.position })
+                                                        object
 
                                                 else
                                                     object
