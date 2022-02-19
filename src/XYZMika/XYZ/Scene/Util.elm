@@ -2,7 +2,6 @@ module XYZMika.XYZ.Scene.Util exposing (selectGraphAtClickPosition)
 
 import Browser.Dom as Dom
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import Tree exposing (Tree)
@@ -18,29 +17,26 @@ type alias Viewport =
 
 
 selectGraphAtClickPosition :
-    { a
-        | theta : Float
-        , drag : Vec2
-        , viewport : Viewport
-        , viewPortElement : Dom.Element
+    { theta : Float
+    , viewport : Viewport
+    , viewPortElement : Dom.Element
     }
     -> Scene.Scene objectId materialId
     -> ( Float, Float )
     -> Maybe ( Int, Tree (Object objectId materialId) )
-selectGraphAtClickPosition { theta, drag, viewport, viewPortElement } scene pos =
+selectGraphAtClickPosition { theta, viewport, viewPortElement } scene pos =
     let
         clickPosition =
             getClickPosition
                 viewport
                 viewPortElement
-                --(Model.sceneOptions model)
                 scene
                 pos
 
         graphWithHitInfo : Tree ( Maybe TriangleHitByRay, Int, Object objectId materialId )
         graphWithHitInfo =
             Scene.getGraph scene
-                |> Scene.graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
+                |> Scene.graphWithMatrix { theta = theta, mat = Mat4.identity }
                 |> Tree.indexedMap
                     (\index ( mat, object ) ->
                         ( objectClickedInScene clickPosition mat scene object, index, object )

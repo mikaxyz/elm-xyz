@@ -24,7 +24,6 @@ module XYZMika.XYZ.Scene exposing
 
 import Color
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
 import WebGL exposing (Entity, Shader)
@@ -200,8 +199,8 @@ replaceLightsInRoot lights scene =
     scene |> map (Tree.mapChildren (List.filterMap removeExisting) >> appendLightsGroup)
 
 
-graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object objectId materialId) -> Tree ( Mat4, Object objectId materialId )
-graphWithMatrix ({ theta, drag, mat } as config) tree =
+graphWithMatrix : { theta : Float, mat : Mat4 } -> Tree (Object objectId materialId) -> Tree ( Mat4, Object objectId materialId )
+graphWithMatrix ({ theta, mat } as config) tree =
     let
         object =
             Tree.label tree
@@ -212,7 +211,6 @@ graphWithMatrix ({ theta, drag, mat } as config) tree =
 
         mat_ =
             object
-                |> Object.rotationWithDrag drag
                 |> Object.rotationInTime theta
                 |> Object.rotation
                 |> Mat4.mul (Mat4.makeTranslate (Object.position object))
@@ -247,7 +245,6 @@ renderSimpleWithModifiers modifiers viewport scene renderer =
         modifiers
         SceneOptions.create
         viewport
-        (Math.Vector2.vec2 0 0)
         0.0
         (\_ -> Nothing)
         scene
@@ -304,13 +301,12 @@ render :
     -> List (Modifier objectId)
     -> SceneOptions.Options
     -> { width : Int, height : Int }
-    -> Vec2
     -> Float
     -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
     -> Scene objectId materialId
     -> Renderer objectId materialId (Uniforms {})
     -> List Entity
-render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptions (Scene scene) renderer =
+render defaultLights modifiers sceneOptions viewport theta graphRenderOptions (Scene scene) renderer =
     let
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
@@ -319,7 +315,7 @@ render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptio
         lightsInScene =
             scene.graph
                 |> Tree.map (applyModifiers modifiers)
-                |> graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
+                |> graphWithMatrix { theta = theta, mat = Mat4.identity }
                 |> Tree.foldl
                     (\( transform, object ) acc ->
                         case Object.maybeLight object of
@@ -341,7 +337,6 @@ render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptio
                     Renderer.createOptions |> Renderer.withLights lights
     in
     renderGraph
-        drag
         theta
         rendererOptions
         sceneOptions
@@ -354,7 +349,7 @@ render defaultLights modifiers sceneOptions viewport drag theta graphRenderOptio
         (GraphNode
             (scene.graph
                 |> Tree.map (applyModifiers modifiers)
-                |> graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
+                |> graphWithMatrix { theta = theta, mat = Mat4.identity }
                 |> Tree.indexedMap
                     (\i ( sceneMatrix, object ) ->
                         Renderable i sceneMatrix object
@@ -401,8 +396,7 @@ type Node objectId materialId
 
 
 renderGraph :
-    Vec2
-    -> Float
+    Float
     -> Renderer.Options
     -> SceneOptions.Options
     -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
@@ -410,7 +404,7 @@ renderGraph :
     -> List (Node objectId materialId)
     -> Renderer objectId materialId (Uniforms u)
     -> List Entity
-renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
+renderGraph theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
     nodes
         |> List.map
             (\node ->
@@ -521,7 +515,6 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                             sceneRotationMatrix : Mat4
                             sceneRotationMatrix =
                                 object
-                                    |> Object.rotationWithDrag drag
                                     |> Object.rotationInTime theta
                                     |> Object.rotation
                                     |> Mat4.mul uniforms.sceneRotationMatrix
@@ -582,7 +575,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                             ( True, True ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                    :: renderGraph drag
+                                    :: renderGraph
                                         theta
                                         rendererOptions
                                         sceneOptions
@@ -593,7 +586,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
 
                             ( True, False ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                    :: renderGraph drag
+                                    :: renderGraph
                                         theta
                                         rendererOptions
                                         sceneOptions
@@ -604,7 +597,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
 
                             ( False, True ) ->
                                 boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                    :: renderGraph drag
+                                    :: renderGraph
                                         theta
                                         rendererOptions
                                         sceneOptions
@@ -614,7 +607,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                         renderer
 
                             _ ->
-                                renderGraph drag
+                                renderGraph
                                     theta
                                     rendererOptions
                                     sceneOptions

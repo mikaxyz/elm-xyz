@@ -72,4 +72,3 @@ floor color =
         |> Object.withColor color
         |> Object.withPosition (vec3 0 0.1 0)
         |> Object.withMaterialName Material.Advanced
-        |> Object.withOptionDragToRotateXY

@@ -4,11 +4,12 @@ import Browser.Dom
 import Color
 import File.Download
 import Keyboard
-import Math.Vector2 as Vec2 exposing (Vec2)
+import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import Task
 import XYZMika.Debug as Dbug
+import XYZMika.Dragon as Dragon
 import XYZMika.XYZ.AssetStore as AssetStore
 import XYZMika.XYZ.Parser.Serialize
 import XYZMika.XYZ.Scene as Scene
@@ -110,6 +111,15 @@ applyHudValue hudObject hudValue value model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    --let
+    --    _ =
+    --        case msg of
+    --            Animate _ ->
+    --                msg
+    --
+    --            _ ->
+    --                Debug.log "MSG ->" msg
+    --in
     case msg of
         OnResize ->
             onResize ( model, Cmd.none )
@@ -147,62 +157,12 @@ update msg model =
             , Cmd.none
             )
 
-        DragStart target pos ->
-            ( { model
-                | dragger = Just { from = pos, to = pos }
-                , lastDrag = pos
-                , dragTarget = target
-              }
-            , Cmd.none
-            )
-
-        DragBy d ->
-            ( { model
-                | lastDrag = Vec2.add model.lastDrag d
-                , scene =
-                    case model.dragTarget of
-                        Model.CameraOrbit ->
-                            model.scene
-                                |> Maybe.map
-                                    (Scene.withCameraMap
-                                        (\camera ->
-                                            camera
-                                                |> Camera.withOrbitY -(Vec2.getX d / 100)
-                                                --|> Camera.orbitX -(Vec2.getY d / 100)
-                                                |> Camera.withPositionMap (\position -> Vec3.setY (Vec3.getY position + (Vec2.getY d / 20)) position)
-                                        )
-                                    )
-
-                        Model.CameraPan ->
-                            model.scene |> Maybe.map (Scene.withCameraMap (Camera.withPan (Vec2.scale 0.01 d)))
-
-                        Model.CameraZoom ->
-                            model.scene |> Maybe.map (Scene.withCameraMap (Camera.withZoom (Vec2.getY d / 20)))
-
-                        Model.Default ->
-                            model.scene
-              }
-            , Cmd.none
-            )
-
-        Drag pos ->
-            if model.dragTarget == Model.Default then
-                ( { model
-                    | dragger = Maybe.map (\drag -> { drag | to = pos }) model.dragger
-                  }
-                , Cmd.none
-                )
-
-            else
-                ( model, Cmd.none )
-
-        DragEnd pos ->
+        OnMouseUp pos ->
             let
                 selectedTreeIndexAtClickPosition : Scene.Scene objectId materialId -> Browser.Dom.Element -> Maybe Int
                 selectedTreeIndexAtClickPosition scene viewPortElement =
                     Util.selectGraphAtClickPosition
                         { theta = model.theta
-                        , drag = model.drag
                         , viewport = Model.viewport
                         , viewPortElement = viewPortElement
                         }
@@ -211,12 +171,7 @@ update msg model =
                         |> Maybe.map Tuple.first
             in
             ( { model
-                | dragger = Nothing
-                , dragTarget = Model.Default
-                , drag =
-                    model.dragger
-                        |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
-                        |> Maybe.withDefault model.drag
+                | dragTarget = Model.Default
                 , selectedTreeIndex =
                     if model.dragTarget == Model.Default then
                         Maybe.map2 Tuple.pair model.scene model.viewPortElement
@@ -227,6 +182,68 @@ update msg model =
 
                     else
                         model.selectedTreeIndex
+              }
+            , Cmd.none
+            )
+
+        DragonMsg msg_ ->
+            Dragon.update { tagger = DragonMsg, onDragUpdate = DragonOnDrag } msg_ model.dragon
+                |> Tuple.mapFirst (\dragon -> { model | dragon = dragon })
+
+        DragonOnDrag drag ->
+            ( { model
+                | scene =
+                    case Model.dragTarget model of
+                        Model.CameraOrbit ->
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.withCameraMap
+                                        (\camera ->
+                                            camera
+                                                |> Camera.withOrbitY -(drag.x / 100)
+                                                --|> Camera.orbitX -(Vec2.getY d / 100)
+                                                |> Camera.withPositionMap (\position -> Vec3.setY (Vec3.getY position + (drag.y / 20)) position)
+                                        )
+                                    )
+
+                        Model.CameraPan ->
+                            model.scene |> Maybe.map (Scene.withCameraMap (Camera.withPan (Vec2.scale 0.01 (vec2 drag.x drag.y))))
+
+                        Model.CameraZoom ->
+                            model.scene |> Maybe.map (Scene.withCameraMap (Camera.withZoom (drag.y / 20)))
+
+                        Model.Default ->
+                            let
+                                move =
+                                    -- TODO: translate screen to scene
+                                    -- TODO: Object widget with translate/rotate/scale
+                                    vec3 drag.x -drag.y 0 |> Vec3.scale 0.01
+
+                                updateObject_ : Object.Object objectId materialId -> Object.Object objectId materialId
+                                updateObject_ object =
+                                    Object.map
+                                        (\data ->
+                                            { data
+                                                | position =
+                                                    data.position
+                                                        |> Vec3.add move
+                                            }
+                                        )
+                                        object
+                            in
+                            model.scene
+                                |> Maybe.map
+                                    (Scene.map
+                                        (Graph.indexedMap
+                                            (\index object ->
+                                                if model.selectedTreeIndex == Just index then
+                                                    updateObject_ object
+
+                                                else
+                                                    object
+                                            )
+                                        )
+                                    )
               }
             , Cmd.none
             )

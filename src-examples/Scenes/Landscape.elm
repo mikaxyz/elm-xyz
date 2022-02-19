@@ -102,7 +102,6 @@ init =
             |> Object.initWithIndexedTriangles
             |> Object.withMaterialName Material.Advanced
             --                |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (4 * theta) (vec3 0 1 0))
-            |> Object.withOptionDragToRotateXY
             |> (\obj -> Graph.graph obj helpers)
         )
         |> Scene.withCameraPosition (vec3 0 4 7)

@@ -1,7 +1,6 @@
 module View exposing (doc, view)
 
 import Array
-import Asset
 import Browser
 import Html exposing (..)
 import Html.Attributes as HA exposing (..)
@@ -11,8 +10,7 @@ import Material
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
 import WebGL
-import WebGL.Texture exposing (Texture)
-import XYZMika.XYZ.AssetStore as AssetStore
+import XYZMika.Dragon as Dragon
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
@@ -73,13 +71,13 @@ sceneView (Hud hud) model scene =
                 [ width Model.viewport.width
                 , height Model.viewport.height
                 , id "viewport"
+                , Dragon.dragEvents DragonMsg
                 ]
                 (Scene.render
                     [ Light.directional (vec3 -1 1 1) ]
                     []
                     model.sceneOptions
                     Model.viewport
-                    (Model.getDrag model)
                     model.theta
                     (\tree ->
                         let

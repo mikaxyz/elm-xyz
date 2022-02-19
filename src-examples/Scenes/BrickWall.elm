@@ -37,7 +37,6 @@ init assets =
                     , Graph.graph
                         (Object.group "Some Bricks"
                             |> Object.withPosition (vec3 0 2 0)
-                            |> Object.withOptionDragToRotateXY
                         )
                         x
                     ]

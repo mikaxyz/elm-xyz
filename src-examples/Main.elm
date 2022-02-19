@@ -8,6 +8,7 @@ import Math.Vector2 as Vec2 exposing (Vec2)
 import Model exposing (Model, Msg(..))
 import Update exposing (update)
 import View
+import XYZMika.Dragon as Dragon
 
 
 main : Program () Model Msg
@@ -28,22 +29,11 @@ subscriptions model =
             D.map2 Vec2.vec2
                 (D.field "x" D.float)
                 (D.field "y" D.float)
-
-        drags =
-            case model.dragger of
-                Just dragger ->
-                    Sub.batch
-                        [ Browser.Events.onMouseMove (vectorDecoder |> D.map Drag)
-                        , Browser.Events.onMouseMove (vectorDecoder |> D.map (\pos -> DragBy (Vec2.sub pos model.lastDrag)))
-                        , Browser.Events.onMouseUp (vectorDecoder |> D.map DragEnd)
-                        ]
-
-                Nothing ->
-                    Browser.Events.onMouseDown (vectorDecoder |> D.map (DragStart (Model.dragTarget model)))
     in
     Sub.batch
-        [ drags
-        , Keyboard.subscriptions { tagger = KeyboardMsg, keyDown = OnKeyDown }
+        [ Keyboard.subscriptions { tagger = KeyboardMsg, keyDown = OnKeyDown }
+        , Dragon.subscriptions model.dragon |> Sub.map DragonMsg
         , Browser.Events.onAnimationFrameDelta Animate
         , Browser.Events.onResize (\_ _ -> OnResize)
+        , Browser.Events.onMouseDown (vectorDecoder |> D.map OnMouseUp)
         ]

@@ -35,7 +35,6 @@ init assets =
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.5 0)
-            |> Object.withOptionDragToRotateXY
             |> Object.withColor Color.blue
             |> Object.withMaterialName Material.Advanced
         )

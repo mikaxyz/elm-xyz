@@ -53,7 +53,9 @@ update { onDragUpdate } msg (Dragon dragon) =
             case dragon.drag of
                 Just drag ->
                     ( Dragon { dragon | drag = Just { drag | to = position } }
-                    , Task.perform (\_ -> onDragUpdate (Vec2.sub drag.to position |> Vec2.toRecord)) (Task.succeed ())
+                    , Task.perform
+                        (\_ -> onDragUpdate (Vec2.sub position drag.to |> Vec2.toRecord))
+                        (Task.succeed ())
                     )
 
                 Nothing ->

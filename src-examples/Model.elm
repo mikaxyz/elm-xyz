@@ -9,7 +9,6 @@ module Model exposing
     , Msg(..)
     , currentSceneName
     , dragTarget
-    , getDrag
     , init
     , loadScene
     , mapSceneOptions
@@ -24,7 +23,7 @@ import Asset
 import Browser.Dom
 import Keyboard
 import Material
-import Math.Vector2 as Vec2 exposing (Vec2, vec2)
+import Math.Vector2 as Vec2 exposing (Vec2)
 import Scenes.Animals
 import Scenes.BrickWall
 import Scenes.Landscape
@@ -33,8 +32,9 @@ import Scenes.NormalMapping
 import Scenes.Sandbox
 import Scenes.Textures
 import XYZMika.Debug as Dbug
+import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
-import XYZMika.XYZ.Scene as Scene exposing (Scene)
+import XYZMika.XYZ.Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Options as SceneOptions
 
 
@@ -42,15 +42,16 @@ type Msg
     = Animate Float
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
     | OnResize
-    | DragStart DragTarget Vec2
-    | Drag Vec2
-    | DragBy Vec2
-    | DragEnd Vec2
     | AssetStoreLoadResult (Result AssetStore.Error AssetStore.Content)
     | AssetStoreLoadResultDownloadXyz String Asset.Obj AssetStore.Content
       --
+    | OnMouseUp Vec2
+      --
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
+      --
+    | DragonMsg Dragon.Msg
+    | DragonOnDrag Dragon.Vector
       --
     | HudMsg HudMsg
     | SetValue HudObject HudValue String
@@ -96,9 +97,6 @@ type alias Model =
     { theta : Float
     , paused : Bool
     , viewPortElement : Maybe Browser.Dom.Element
-    , dragger : Maybe { from : Vec2, to : Vec2 }
-    , drag : Vec2
-    , lastDrag : Vec2
     , dragTarget : DragTarget
     , scene : Maybe (Scene {} Material.Name)
     , sceneOptions : SceneOptions.Options
@@ -107,6 +105,7 @@ type alias Model =
     , assets : AssetStore.Store Asset.Obj Asset.Texture
     , hud : Hud
     , keyboard : Keyboard.State
+    , dragon : Dragon
     , selectedTreeIndex : Maybe Int
     }
 
@@ -127,27 +126,19 @@ type HudObject
     | SelectedGraph
 
 
-getDrag model =
-    model.dragger
-        |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
-        |> Maybe.withDefault model.drag
-
-
 init : ( Model, Cmd Msg )
 init =
     { theta = 0
     , paused = False
-    , dragger = Nothing
-    , drag = vec2 0 0
-    , lastDrag = vec2 0 0
     , dragTarget = Default
     , scene = Nothing
     , sceneOptions = SceneOptions.create
     , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
-    , currentSceneIndex = 3
+    , currentSceneIndex = 4
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
+    , dragon = Dragon.init
     , viewPortElement = Nothing
     , selectedTreeIndex = Nothing
     }

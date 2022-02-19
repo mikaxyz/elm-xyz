@@ -21,8 +21,7 @@ init =
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -1 -0.6 -1, vec3 1 -0.5 1 )
             |> Object.initWithTriangles
             |> Object.withMaterialName Material.Advanced
-            --|> Object.withPosition (vec3 0 -0.5 0)
-            |> Object.withOptionDragToRotateY
+         --|> Object.withPosition (vec3 0 -0.5 0)
         )
         [ Object.light
             (Light.pointLight (vec3 0 3 -3)
@@ -35,7 +34,6 @@ init =
                 |> Object.initWithTriangles
                 |> Object.withMaterialName Material.Advanced
                 |> Object.withPosition (vec3 0 0 0)
-                |> Object.withOptionDragToRotateX
             )
             [ Tree.singleton
                 (XYZMika.XYZ.Mesh.Cube.withBoundsColorful ( vec3 -0.2 -0.1 -0.2, vec3 0.2 0.1 0.2 )

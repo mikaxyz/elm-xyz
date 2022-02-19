@@ -4,9 +4,9 @@ module XYZMika.XYZ.Scene.Object exposing
     , withDiffuseMap, withNormalMap
     , mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
-    , withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toHumanReadable
-    , rotationInTime, rotationWithDrag, maybeLight
-    , disable, enable, group, id, isDisabled, lightTargetMap, maybeGroup, maybeLightDisabled, objectObjectWithIndexedTriangles, objectWithTriangles, spotLight, spotLightWithId, withLightTarget
+    , withOptionRotationInTime, toHumanReadable
+    , rotationInTime, maybeLight
+    , disable, enable, group, id, isDisabled, lightTargetMap, map, maybeGroup, maybeLightDisabled, objectObjectWithIndexedTriangles, objectWithTriangles, spotLight, spotLightWithId, withLightTarget
     )
 
 {-|
@@ -34,12 +34,12 @@ module XYZMika.XYZ.Scene.Object exposing
 
 ## Modify
 
-@docs withOptionRotationInTime, withOptionDragToRotateX, withOptionDragToRotateXY, withOptionDragToRotateY, toEmpty, toHumanReadable
+@docs withOptionRotationInTime, toEmpty, toHumanReadable
 
 
 ## Read
 
-@docs rotationInTime, rotationWithDrag, maybeLight
+@docs rotationInTime, maybeLight
 
 -}
 
@@ -94,6 +94,26 @@ type alias ObjectData id materialId =
     , color : Color
     , glSetting : Maybe WebGL.Settings.Setting
     }
+
+
+map : ({ position : Vec3, rotation : Mat4 } -> { position : Vec3, rotation : Mat4 }) -> Object a b -> Object a b
+map f object =
+    let
+        update x =
+            f { position = x.position, rotation = x.rotation }
+    in
+    case object of
+        Disabled object_ ->
+            Disabled object_
+
+        Mesh data ->
+            Mesh { data | position = (update data).position, rotation = (update data).rotation }
+
+        Light data light_ ->
+            Light { data | position = (update data).position, rotation = (update data).rotation } light_
+
+        Group name data ->
+            Group name { data | position = (update data).position, rotation = (update data).rotation }
 
 
 disable : Object id materialId -> Object id materialId
@@ -682,23 +702,6 @@ normalMapWithDefault default obj =
 --
 
 
-rotationWithDrag : Vec2 -> Object id materialId -> Object id materialId
-rotationWithDrag drag obj =
-    obj
-        |> get .options
-        |> Maybe.map
-            (\x ->
-                obj
-                    |> mapData
-                        (\data ->
-                            { data
-                                | rotation = Mat4.mul data.rotation (x.rotationWithDrag drag)
-                            }
-                        )
-            )
-        |> Maybe.withDefault obj
-
-
 rotationInTime : Float -> Object id materialId -> Object id materialId
 rotationInTime theta obj =
     obj
@@ -723,7 +726,6 @@ rotationInTime theta obj =
 type alias Options =
     { rotation : Float -> Mat4
     , translate : Float -> Mat4
-    , rotationWithDrag : Vec2 -> Mat4
     }
 
 
@@ -731,7 +733,6 @@ defaultOptions : Options
 defaultOptions =
     { rotation = always Mat4.identity
     , translate = always Mat4.identity
-    , rotationWithDrag = always Mat4.identity
     }
 
 
@@ -744,59 +745,3 @@ withOptionRotationInTime f obj =
                     |> (\x -> { x | rotation = f })
                     |> Just
             )
-
-
-
---
-
-
-withOptionDragToRotateX : Object id materialId -> Object id materialId
-withOptionDragToRotateX obj =
-    obj
-        |> mapOptions
-            (\options ->
-                Maybe.withDefault defaultOptions options
-                    |> (\x -> { x | rotationWithDrag = rotationWithDragX })
-                    |> Just
-            )
-
-
-withOptionDragToRotateY : Object id materialId -> Object id materialId
-withOptionDragToRotateY obj =
-    obj
-        |> mapOptions
-            (\options ->
-                Maybe.withDefault defaultOptions options
-                    |> (\x -> { x | rotationWithDrag = rotationWithDragY })
-                    |> Just
-            )
-
-
-withOptionDragToRotateXY : Object id materialId -> Object id materialId
-withOptionDragToRotateXY obj =
-    obj
-        |> mapOptions
-            (\options ->
-                Maybe.withDefault defaultOptions options
-                    |> (\x -> { x | rotationWithDrag = rotationWithDragXY })
-                    |> Just
-            )
-
-
-rotationWithDragXY : Vec2 -> Mat4
-rotationWithDragXY drag =
-    Mat4.identity
-        |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
-        |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
-
-
-rotationWithDragX : Vec2 -> Mat4
-rotationWithDragX drag =
-    Mat4.identity
-        |> Mat4.rotate (Vec2.getX drag * 0.01) (vec3 0 1 0)
-
-
-rotationWithDragY : Vec2 -> Mat4
-rotationWithDragY drag =
-    Mat4.identity
-        |> Mat4.rotate (Vec2.getY drag * 0.01) (vec3 1 0 0)
