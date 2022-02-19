@@ -7,15 +7,15 @@ module Model exposing
     , HudValue(..)
     , Model
     , Msg(..)
+    , SceneObject(..)
     , currentSceneName
     , dragTarget
-    , getDrag
     , init
     , loadScene
     , mapSceneOptions
+    , modifiers
     , nextScene
     , prevScene
-    , sceneOptions
     , updateAssetStore
     , viewport
     )
@@ -25,7 +25,7 @@ import Asset
 import Browser.Dom
 import Keyboard
 import Material
-import Math.Vector2 as Vec2 exposing (Vec2, vec2)
+import Math.Vector2 as Vec2 exposing (Vec2)
 import Scenes.Animals
 import Scenes.BrickWall
 import Scenes.Landscape
@@ -34,8 +34,9 @@ import Scenes.NormalMapping
 import Scenes.Sandbox
 import Scenes.Textures
 import XYZMika.Debug as Dbug
+import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
-import XYZMika.XYZ.Scene as Scene exposing (Scene)
+import XYZMika.XYZ.Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Options as SceneOptions
 
 
@@ -43,18 +44,25 @@ type Msg
     = Animate Float
     | OnViewportElement (Result Browser.Dom.Error Browser.Dom.Element)
     | OnResize
-    | DragStart DragTarget Vec2
-    | Drag Vec2
-    | DragBy Vec2
-    | DragEnd Vec2
     | AssetStoreLoadResult (Result AssetStore.Error AssetStore.Content)
     | AssetStoreLoadResultDownloadXyz String Asset.Obj AssetStore.Content
+      --
+    | OnMouseUp Vec2
       --
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
       --
+    | DragonMsg Dragon.Msg
+    | DragonOnDrag Dragon.Vector
+      --
     | HudMsg HudMsg
     | SetValue HudObject HudValue String
+
+
+type SceneObject
+    = LightSceneObjectId Scenes.Light.ObjectId
+    | NormalMappingSceneObjectId Scenes.NormalMapping.ObjectId
+    | TexturesSceneObjectId Scenes.Textures.ObjectId
 
 
 type DragTarget
@@ -97,17 +105,14 @@ type alias Model =
     { theta : Float
     , paused : Bool
     , viewPortElement : Maybe Browser.Dom.Element
-    , dragger : Maybe { from : Vec2, to : Vec2 }
-    , drag : Vec2
-    , lastDrag : Vec2
-    , dragTarget : DragTarget
-    , scene : Maybe (Scene Material.Name)
+    , scene : Maybe (Scene SceneObject Material.Name)
     , sceneOptions : SceneOptions.Options
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
     , assets : AssetStore.Store Asset.Obj Asset.Texture
     , hud : Hud
     , keyboard : Keyboard.State
+    , dragon : Dragon
     , selectedTreeIndex : Maybe Int
     }
 
@@ -128,20 +133,10 @@ type HudObject
     | SelectedGraph
 
 
-getDrag model =
-    model.dragger
-        |> Maybe.map (\x -> Vec2.add model.drag (Vec2.sub x.to x.from))
-        |> Maybe.withDefault model.drag
-
-
 init : ( Model, Cmd Msg )
 init =
     { theta = 0
     , paused = False
-    , dragger = Nothing
-    , drag = vec2 0 0
-    , lastDrag = vec2 0 0
-    , dragTarget = Default
     , scene = Nothing
     , sceneOptions = SceneOptions.create
     , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
@@ -149,6 +144,7 @@ init =
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
+    , dragon = Dragon.init
     , viewPortElement = Nothing
     , selectedTreeIndex = Nothing
     }
@@ -162,6 +158,34 @@ init =
                     ]
                 )
            )
+
+
+modifiers : Model -> List (XYZMika.XYZ.Scene.Modifier SceneObject Material.Name)
+modifiers model =
+    case Array.get model.currentSceneIndex model.scenes of
+        Just BrickWall ->
+            []
+
+        Just NormalMapping ->
+            Scenes.NormalMapping.modifiers model.theta NormalMappingSceneObjectId
+
+        Just Textures ->
+            Scenes.Textures.modifiers model.theta TexturesSceneObjectId
+
+        Just Sandbox ->
+            []
+
+        Just Animals ->
+            []
+
+        Just Landscape ->
+            []
+
+        Just Light ->
+            Scenes.Light.modifiers model.theta LightSceneObjectId
+
+        Nothing ->
+            []
 
 
 mapSceneOptions : (SceneOptions.Options -> SceneOptions.Options) -> Model -> Model
@@ -229,34 +253,6 @@ currentSceneName model =
             "-"
 
 
-sceneOptions : Model -> Maybe Scene.Options
-sceneOptions model =
-    case Array.get model.currentSceneIndex model.scenes of
-        Just BrickWall ->
-            Scenes.BrickWall.sceneOptions
-
-        Just NormalMapping ->
-            Scenes.NormalMapping.sceneOptions
-
-        Just Textures ->
-            Scenes.Textures.sceneOptions
-
-        Just Sandbox ->
-            Scenes.Sandbox.sceneOptions
-
-        Just Animals ->
-            Scenes.Animals.sceneOptions
-
-        Just Landscape ->
-            Scenes.Landscape.sceneOptions
-
-        Just Light ->
-            Scenes.Light.sceneOptions
-
-        Nothing ->
-            Nothing
-
-
 updateAssetStore : AssetStore.Store Asset.Obj Asset.Texture -> Model -> Model
 updateAssetStore assets model =
     { model | assets = assets }
@@ -266,10 +262,10 @@ updateAssetStore assets model =
                         { m | scene = Scenes.BrickWall.init m.assets |> Just }
 
                     Just NormalMapping ->
-                        { m | scene = Scenes.NormalMapping.init m.assets |> Just }
+                        { m | scene = Scenes.NormalMapping.init NormalMappingSceneObjectId m.assets |> Just }
 
                     Just Textures ->
-                        { m | scene = Scenes.Textures.init m.assets |> Just }
+                        { m | scene = Scenes.Textures.init TexturesSceneObjectId m.assets |> Just }
 
                     Just Sandbox ->
                         m
@@ -292,7 +288,7 @@ loadScene : Model -> ( Model, Cmd Msg )
 loadScene model =
     case Array.get model.currentSceneIndex model.scenes |> Dbug.log "loadScene" of
         Just NormalMapping ->
-            { model | scene = Just <| Scenes.NormalMapping.init model.assets }
+            { model | scene = Just <| Scenes.NormalMapping.init NormalMappingSceneObjectId model.assets }
                 |> (\model_ ->
                         ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
@@ -305,6 +301,8 @@ loadScene model =
                             --    )
                             , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets AssetStoreLoadResult
                             , AssetStore.loadTexture Asset.SneakerNormal model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.CarpetDiffuse model.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.CarpetNormal model.assets AssetStoreLoadResult
                             ]
                         )
                    )
@@ -322,7 +320,7 @@ loadScene model =
                    )
 
         Just Textures ->
-            { model | scene = Just <| Scenes.Textures.init model.assets }
+            { model | scene = Just <| Scenes.Textures.init TexturesSceneObjectId model.assets }
                 |> (\model_ ->
                         ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
@@ -355,15 +353,13 @@ loadScene model =
                    )
 
         Just Landscape ->
-            ( { model
-                | scene = Just Scenes.Landscape.init
-              }
+            ( { model | scene = Just Scenes.Landscape.init }
             , Cmd.none
             )
 
         Just Light ->
             ( { model
-                | scene = Just Scenes.Light.init
+                | scene = Just (Scenes.Light.init LightSceneObjectId)
               }
             , Cmd.none
             )

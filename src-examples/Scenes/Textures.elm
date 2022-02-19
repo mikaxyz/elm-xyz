@@ -1,17 +1,17 @@
-module Scenes.Textures exposing (init, sceneOptions)
+module Scenes.Textures exposing (ObjectId, init, modifiers)
 
 import Asset
 import Color
 import Material
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
-import Tree exposing (Tree)
 import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Mesh.Cube
-import XYZMika.XYZ.Scene as Scene exposing (Options, Scene)
+import XYZMika.XYZ.Scene as Scene exposing (Scene)
+import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -29,17 +29,29 @@ type alias TreeAssets =
     }
 
 
-init : Store Asset.Obj Asset.Texture -> Scene Material.Name
-init assets =
-    Tree.tree
+type ObjectId
+    = Ball
+
+
+modifiers : Float -> (ObjectId -> a) -> List (Scene.Modifier a b)
+modifiers theta sceneObject =
+    [ Scene.ObjectModifier (sceneObject Ball)
+        (Object.map
+            (\x -> { x | rotation = Mat4.makeTranslate3 0 (abs (sin (theta * 30) * 0.5)) 0 })
+        )
+    ]
+
+
+init : (ObjectId -> a) -> Store Asset.Obj Asset.Texture -> Scene a Material.Name
+init objectId assets =
+    Graph.shallow
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
             |> Object.initWithTriangles
             |> Object.withPosition (vec3 0 -0.5 0)
-            |> Object.withOptionDragToRotateXY
             |> Object.withColor Color.blue
             |> Object.withMaterialName Material.Advanced
         )
-        (Maybe.map2 render
+        (Maybe.map2 (render objectId)
             (getBallAssets assets)
             (getTreeAssets assets)
             |> Maybe.withDefault []
@@ -52,8 +64,8 @@ init assets =
 --|> Scene.withCamera { position = vec3 0 0.5 3, target = vec3 0 0.5 0 }
 
 
-render : BallAssets -> TreeAssets -> List (Tree (Object Material.Name))
-render ball tree =
+render : (ObjectId -> a) -> BallAssets -> TreeAssets -> List (Object a Material.Name)
+render objectId ball tree =
     --[ ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles
     --    |> Object.withMaterialName Material.Advanced
@@ -78,44 +90,28 @@ render ball tree =
         |> Object.withNormalMap ball.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 0 0 0)
-        |> Tree.singleton
     , ball.verticesIndexed
         |> Object.initWithIndexedTriangles
         |> Object.withNormalMap ball.normal
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 -0.7 0 0)
-        |> Tree.singleton
     , tree.vertices
         |> Object.initWithTriangles
         |> Object.withDiffuseMap tree.diffuse
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 -2 0 -3)
-        |> Tree.singleton
     , tree.vertices
         |> Object.initWithTriangles
         |> Object.withDiffuseMap tree.diffuse
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 2 0 -5)
-        |> Tree.singleton
     , ball.verticesIndexed
-        |> Object.initWithIndexedTriangles
+        |> Object.objectObjectWithIndexedTriangles (objectId Ball)
         |> Object.withDiffuseMap ball.diffuse
         |> Object.withNormalMap ball.normal
         |> Object.withColor Color.yellow
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 1 0 -3)
-        |> Object.withOptionRotationInTime
-            (\theta ->
-                let
-                    r =
-                        sin (theta * 30)
-
-                    y =
-                        abs r * 0.5
-                in
-                Mat4.makeTranslate3 0 y 0
-            )
-        |> Tree.singleton
     ]
 
 
@@ -135,8 +131,3 @@ getTreeAssets assets =
         (AssetStore.vertices Asset.Tree assets)
         (AssetStore.mesh Asset.Tree assets)
         (AssetStore.texture Asset.TreeDiffuse assets)
-
-
-sceneOptions : Maybe Options
-sceneOptions =
-    Nothing

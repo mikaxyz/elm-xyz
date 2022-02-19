@@ -13,7 +13,7 @@ branchMultiplier =
     0.05
 
 
-tree : Int -> Int -> List (Tree (Object materialId))
+tree : Int -> Int -> List (Tree (Object objectId materialId))
 tree i r =
     nodes i r
         |> treeFromNodes 0 []
@@ -34,7 +34,7 @@ nodes i r =
             (nodes (i - 1) -1)
 
 
-treeFromNodes : Float -> List (Tree (Object materialId)) -> Node Branch -> List (Tree (Object materialId))
+treeFromNodes : Float -> List (Tree (Object objectId materialId)) -> Node Branch -> List (Tree (Object objectId materialId))
 treeFromNodes y t node =
     case node of
         Empty ->
@@ -53,7 +53,7 @@ type alias Branch =
     }
 
 
-object : Float -> Branch -> Object materialId
+object : Float -> Branch -> Object objectId materialId
 object t branch =
     bone2 Color.orange Color.blue Color.green (0.3 * branch.l) branch.l
         |> Object.initWithTriangles

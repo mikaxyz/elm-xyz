@@ -120,7 +120,7 @@ create =
         , showBoundingBoxesOverlay = False
         , showLightGizmos = False
         , showGridX = False
-        , showGridY = True
+        , showGridY = False
         , showGridZ = False
         }
 

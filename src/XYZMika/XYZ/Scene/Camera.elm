@@ -1,5 +1,6 @@
 module XYZMika.XYZ.Scene.Camera exposing
     ( Camera
+    , inPlane
     , init
     , position
     , roll
@@ -104,8 +105,8 @@ withOrbitX roll_ (Camera camera) =
         }
 
 
-withPan : Vec2 -> Camera -> Camera
-withPan vec (Camera camera) =
+inPlane : Vec2 -> Camera -> Vec3
+inPlane vec (Camera camera) =
     let
         { panX, panY } =
             { panX = Vec2.getX vec
@@ -116,7 +117,7 @@ withPan vec (Camera camera) =
             Vec3.direction camera.position camera.target
 
         horizontal =
-            Vec3.cross dir (vec3 0 1 0)
+            Vec3.cross dir Vec3.j
 
         vertical =
             Vec3.cross dir horizontal |> Vec3.negate
@@ -124,14 +125,21 @@ withPan vec (Camera camera) =
         translate =
             Mat4.makeTranslate (Vec3.scale panX horizontal)
                 |> Mat4.translate (Vec3.scale panY vertical)
+    in
+    Mat4.transform translate (vec3 0 0 0)
+        |> Vec3.negate
 
-        m =
-            translate
+
+withPan : Vec2 -> Camera -> Camera
+withPan vec (Camera camera) =
+    let
+        t =
+            inPlane vec (Camera camera)
     in
     Camera
         { camera
-            | position = Mat4.transform m camera.position
-            , target = Mat4.transform m camera.target
+            | position = Vec3.sub camera.position t
+            , target = Vec3.sub camera.target t
         }
 
 
@@ -151,4 +159,10 @@ withZoom val (Camera camera) =
 
 toMat4 : Camera -> Mat4
 toMat4 (Camera camera) =
-    Mat4.makeLookAt camera.position camera.target camera.up
+    -- TODO: This is just a quick fix
+    -- Camera.up be set perpendicular always?
+    if Vec3.direction camera.position camera.target == camera.up then
+        Mat4.makeLookAt camera.position camera.target (vec3 0 0 -1)
+
+    else
+        Mat4.makeLookAt camera.position camera.target camera.up

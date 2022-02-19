@@ -2,7 +2,6 @@ module XYZMika.XYZ.Scene.Util exposing (selectGraphAtClickPosition)
 
 import Browser.Dom as Dom
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import Tree exposing (Tree)
@@ -18,31 +17,39 @@ type alias Viewport =
 
 
 selectGraphAtClickPosition :
-    { a
-        | theta : Float
-        , drag : Vec2
-        , viewport : Viewport
-        , viewPortElement : Dom.Element
-        , sceneOptions : Maybe Scene.Options
+    { viewport : Viewport
+    , viewPortElement : Dom.Element
     }
-    -> Scene.Scene materialId
+    -> List (Scene.Modifier objectId materialId)
+    -> Scene.Scene objectId materialId
     -> ( Float, Float )
-    -> Maybe ( Int, Tree (Object materialId) )
-selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOptions } scene pos =
+    -> Maybe ( Int, Tree (Object objectId materialId) )
+selectGraphAtClickPosition config modifiers scene pos =
+    scene
+        |> Scene.withModifiers modifiers
+        |> selectGraphAtClickPosition_ config pos
+
+
+selectGraphAtClickPosition_ :
+    { viewport : Viewport
+    , viewPortElement : Dom.Element
+    }
+    -> ( Float, Float )
+    -> Scene.Scene objectId materialId
+    -> Maybe ( Int, Tree (Object objectId materialId) )
+selectGraphAtClickPosition_ { viewport, viewPortElement } pos scene =
     let
         clickPosition =
             getClickPosition
                 viewport
                 viewPortElement
-                sceneOptions
-                --(Model.sceneOptions model)
                 scene
                 pos
 
-        graphWithHitInfo : Tree ( Maybe TriangleHitByRay, Int, Object materialId )
+        graphWithHitInfo : Tree ( Maybe TriangleHitByRay, Int, Object objectId materialId )
         graphWithHitInfo =
             Scene.getGraph scene
-                |> Scene.graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity }
+                |> Scene.graphWithMatrix { mat = Mat4.identity }
                 |> Tree.indexedMap
                     (\index ( mat, object ) ->
                         ( objectClickedInScene clickPosition mat scene object, index, object )
@@ -56,15 +63,15 @@ selectGraphAtClickPosition { theta, drag, viewport, viewPortElement, sceneOption
                 |> List.head
 
         getGraphByDistance :
-            Tree ( Maybe TriangleHitByRay, Int, Object materialId )
+            Tree ( Maybe TriangleHitByRay, Int, Object objectId materialId )
             -> ( Int, TriangleHitByRay )
-            -> Maybe ( Int, Tree (Object materialId) )
+            -> Maybe ( Int, Tree (Object objectId materialId) )
         getGraphByDistance graph ( index, distance ) =
             let
                 ( distance_, _, _ ) =
                     Tree.label graph
 
-                children : List (Tree ( Maybe TriangleHitByRay, Int, Object materialId ))
+                children : List (Tree ( Maybe TriangleHitByRay, Int, Object objectId materialId ))
                 children =
                     Tree.children graph
             in
@@ -100,7 +107,7 @@ type ClickPosition
     = ClickPosition Vec3
 
 
-objectClickedInScene_ : ClickPosition -> Mat4 -> Scene materialId -> Object materialId -> Bool
+objectClickedInScene_ : ClickPosition -> Mat4 -> Scene objectId materialId -> Object objectId materialId -> Bool
 objectClickedInScene_ (ClickPosition clickPosition) transform scene object =
     let
         origin : Vec3
@@ -126,7 +133,7 @@ objectClickedInScene_ (ClickPosition clickPosition) transform scene object =
     rayIntersectsTriangles origin direction triangles
 
 
-objectClickedInScene : ClickPosition -> Mat4 -> Scene materialId -> Object materialId -> Maybe TriangleHitByRay
+objectClickedInScene : ClickPosition -> Mat4 -> Scene objectId materialId -> Object objectId materialId -> Maybe TriangleHitByRay
 objectClickedInScene (ClickPosition clickPosition) transform scene object =
     let
         origin : Vec3
@@ -268,8 +275,8 @@ rayTriangleIntersect rayOrigin rayDirection ( triangle0, triangle1, triangle2 ) 
                 Just (vec3 v0 v1 v2)
 
 
-getClickPosition : Viewport -> Dom.Element -> Maybe Scene.Options -> Scene materialId -> ( Float, Float ) -> ClickPosition
-getClickPosition viewport viewPortElement sceneOptions scene ( x_, y_ ) =
+getClickPosition : Viewport -> Dom.Element -> Scene objectId materialId -> ( Float, Float ) -> ClickPosition
+getClickPosition viewport viewPortElement scene ( x_, y_ ) =
     let
         ratio =
             viewport.width / viewPortElement.element.width
@@ -283,11 +290,8 @@ getClickPosition viewport viewPortElement sceneOptions scene ( x_, y_ ) =
         aspectRatio =
             viewport.width / viewport.height
 
-        sceneOptions_ =
-            sceneOptions |> Maybe.withDefault Scene.defaultOptions
-
         perspective =
-            sceneOptions_.perspective aspectRatio
+            Scene.projectionMatrix aspectRatio scene
 
         normalizedPosition =
             ( (x * 2) / viewport.width - 1, 1 - y / viewport.height * 2 )

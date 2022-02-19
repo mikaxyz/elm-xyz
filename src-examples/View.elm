@@ -1,7 +1,6 @@
 module View exposing (doc, view)
 
 import Array
-import Asset
 import Browser
 import Html exposing (..)
 import Html.Attributes as HA exposing (..)
@@ -9,15 +8,15 @@ import Html.Events exposing (onClick, onInput)
 import Json.Decode as JD
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
-import Tree exposing (Tree)
+import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..), SceneObject)
 import WebGL
-import WebGL.Texture exposing (Texture)
-import XYZMika.XYZ.AssetStore as AssetStore
+import XYZMika.Dragon as Dragon
+import XYZMika.XYZ as XYZ
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
+import XYZMika.XYZ.Scene.Graph as Graph
 import XYZMika.XYZ.Scene.Light as Light
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
@@ -64,27 +63,22 @@ attributionView model =
             text ""
 
 
-sceneView : Hud -> Model -> Scene Material.Name -> Html Msg
+sceneView : Hud -> Model -> Scene SceneObject Material.Name -> Html Msg
 sceneView (Hud hud) model scene =
     main_ [ class "app" ]
         [ div [ class "app__viewport" ]
             [ attributionView model
-            , WebGL.toHtml
-                [ width Model.viewport.width
-                , height Model.viewport.height
-                , id "viewport"
-                ]
-                (Scene.render
-                    [ Light.directional (vec3 -1 1 1) ]
-                    model.sceneOptions
-                    Model.viewport
-                    (Model.getDrag model)
-                    model.theta
-                    (Model.sceneOptions model)
-                    (\tree ->
+            , XYZ.view
+                Model.viewport
+                renderer
+                |> XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
+                |> XYZ.withModifiers (Model.modifiers model)
+                |> XYZ.withSceneOptions model.sceneOptions
+                |> XYZ.withRenderOptions
+                    (\graph ->
                         let
                             index =
-                                Tuple.first (Tree.label tree)
+                                Tuple.first (Graph.root graph)
                         in
                         if model.selectedTreeIndex == Just index then
                             Just { showBoundingBox = True }
@@ -92,21 +86,19 @@ sceneView (Hud hud) model scene =
                         else
                             Nothing
                     )
-                    scene
-                    renderer
-                )
+                |> XYZ.toHtml [ id "viewport", Dragon.dragEvents DragonMsg ] scene
             ]
         , aside
             [ class "app__sidebar"
             , classList [ ( "app__sidebar--expanded", hud.sidebarExpanded ) ]
             ]
             [ sidebarView
-                { treeCount = Tree.count (Scene.getGraph scene) }
+                { treeCount = Graph.count (Scene.getGraph scene) }
                 model.hud
                 (Scene.camera scene)
                 (Scene.getGraph scene
-                    |> Tree.indexedMap Tuple.pair
-                    |> Tree.foldl
+                    |> Graph.indexedMap Tuple.pair
+                    |> Graph.foldl
                         (\( i, x ) acc ->
                             if model.selectedTreeIndex == Just i then
                                 Just x
@@ -125,7 +117,7 @@ renderer :
     Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
     -> Uniforms u
-    -> Object Material.Name
+    -> Object a Material.Name
     -> WebGL.Entity
 renderer name =
     case name of
@@ -136,7 +128,7 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : { treeCount : Int } -> Hud -> Camera -> Maybe (Object Material.Name) -> Model -> Html Msg
+sidebarView : { treeCount : Int } -> Hud -> Camera -> Maybe (Object objectId Material.Name) -> Model -> Html Msg
 sidebarView { treeCount } (Hud hud) camera selectedObject model =
     div
         [ class "sidebar"
@@ -175,7 +167,7 @@ sidebarView { treeCount } (Hud hud) camera selectedObject model =
         ]
 
 
-selectedObjectWidget : Object Material.Name -> Html Msg
+selectedObjectWidget : Object a Material.Name -> Html Msg
 selectedObjectWidget object =
     vector3Widget
         (Object.toHumanReadable object)

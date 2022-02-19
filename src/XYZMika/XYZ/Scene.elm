@@ -1,25 +1,27 @@
 module XYZMika.XYZ.Scene exposing
     ( GraphRenderOptions
-    , Options
+    , Modifier(..)
     , Scene
     , camera
-    , defaultOptions
     , getGraph
     , graphWithMatrix
     , init
     , map
+    , projectionMatrix
     , render
+    , spotLights
     , withCamera
     , withCameraMap
     , withCameraPosition
     , withCameraTarget
     , withLights
     , withLightsInGraph
+    , withModifiers
+    , withPerspectiveProjection
     )
 
 import Color
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
 import WebGL exposing (Entity, Shader)
@@ -34,76 +36,110 @@ import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Primitives
 import XYZMika.XYZ.Scene.Camera as Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
+import XYZMika.XYZ.Scene.Light.SpotLight exposing (SpotLight)
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 import XYZMika.XYZ.Scene.Options as SceneOptions
 import XYZMika.XYZ.Scene.Uniforms exposing (Uniforms)
 
 
-type Scene materialId
+type Scene objectId materialId
     = Scene
-        { graph : Tree (Object materialId)
+        { graph : Tree (Object objectId materialId)
         , camera : Camera
+        , projection : Projection
         }
 
 
-init : Tree (Object materialId) -> Scene materialId
+type Projection
+    = Perspective { fov : Float, near : Float, far : Float }
+
+
+init : Tree (Object objectId materialId) -> Scene objectId materialId
 init graph =
     Scene
         { graph = graph
         , camera = Camera.init (vec3 0 3 4) (vec3 0 0 0)
+        , projection = Perspective { fov = 45, far = 100.0, near = 0.01 }
         }
 
 
-getGraph : Scene materialId -> Tree (Object materialId)
+projectionMatrix : Float -> Scene objectId materialId -> Mat4
+projectionMatrix aspectRatio (Scene scene) =
+    case scene.projection of
+        Perspective { fov, near, far } ->
+            Mat4.makePerspective fov aspectRatio near far
+
+
+withPerspectiveProjection : { fov : Float, near : Float, far : Float } -> Scene objectId materialId -> Scene objectId materialId
+withPerspectiveProjection config (Scene scene) =
+    Scene { scene | projection = Perspective config }
+
+
+getGraph : Scene objectId materialId -> Tree (Object objectId materialId)
 getGraph (Scene scene) =
     scene.graph
 
 
-camera : Scene materialId -> Camera
+camera : Scene objectId materialId -> Camera
 camera (Scene scene) =
     scene.camera
 
 
-withCamera : { position : Vec3, target : Vec3 } -> Scene materialId -> Scene materialId
+withCamera : { position : Vec3, target : Vec3 } -> Scene objectId materialId -> Scene objectId materialId
 withCamera { position, target } (Scene scene) =
     Scene { scene | camera = Camera.init position target }
 
 
-withCameraPosition : Vec3 -> Scene materialId -> Scene materialId
+withCameraPosition : Vec3 -> Scene objectId materialId -> Scene objectId materialId
 withCameraPosition position (Scene scene) =
     Scene { scene | camera = scene.camera |> Camera.withPosition position }
 
 
-withCameraTarget : Vec3 -> Scene materialId -> Scene materialId
+withCameraTarget : Vec3 -> Scene objectId materialId -> Scene objectId materialId
 withCameraTarget target (Scene scene) =
     Scene { scene | camera = scene.camera |> Camera.withTarget target }
 
 
-withCameraMap : (Camera -> Camera) -> Scene materialId -> Scene materialId
+withCameraMap : (Camera -> Camera) -> Scene objectId materialId -> Scene objectId materialId
 withCameraMap f (Scene scene) =
     Scene { scene | camera = f scene.camera }
 
 
-map : (Tree (Object materialId) -> Tree (Object materialId)) -> Scene materialId -> Scene materialId
+map : (Tree (Object objectId materialId) -> Tree (Object objectId materialId)) -> Scene objectId materialId -> Scene objectId materialId
 map f (Scene scene) =
     Scene { scene | graph = scene.graph |> f }
 
 
-withLightsInGraph : Scene materialId -> Scene materialId
+spotLights : Scene objectId materialId -> List SpotLight
+spotLights (Scene scene) =
+    scene.graph
+        |> Tree.foldl
+            (\obj acc ->
+                case Object.maybeLight obj |> Maybe.andThen Light.maybeSpotLight of
+                    Just light ->
+                        light :: acc
+
+                    Nothing ->
+                        acc
+            )
+            []
+
+
+withLightsInGraph : Scene objectId materialId -> Scene objectId materialId
 withLightsInGraph scene =
     scene
         |> setSceneLightsEnabled True
         |> replaceLightsInRoot []
 
 
-withLights : List Light.Light -> Scene materialId -> Scene materialId
+withLights : List Light.Light -> Scene objectId materialId -> Scene objectId materialId
 withLights lights scene =
     scene
         |> setSceneLightsEnabled False
         |> replaceLightsInRoot lights
 
 
-setSceneLightsEnabled : Bool -> Scene materialId -> Scene materialId
+setSceneLightsEnabled : Bool -> Scene objectId materialId -> Scene objectId materialId
 setSceneLightsEnabled enabled scene =
     let
         enable object =
@@ -136,7 +172,7 @@ setSceneLightsEnabled enabled scene =
             )
 
 
-replaceLightsInRoot : List Light -> Scene materialId -> Scene materialId
+replaceLightsInRoot : List Light -> Scene objectId materialId -> Scene objectId materialId
 replaceLightsInRoot lights scene =
     let
         appendLightsGroup tree =
@@ -146,15 +182,7 @@ replaceLightsInRoot lights scene =
 
                 nonEmptyList ->
                     nonEmptyList
-                        |> List.map
-                            (\light ->
-                                Object.light
-                                    (Light.position light
-                                        |> Maybe.withDefault (vec3 0 0 0)
-                                    )
-                                    light
-                                    |> Tree.singleton
-                            )
+                        |> List.map (Object.light >> Tree.singleton)
                         |> Tree.tree (Object.group "defaultLights")
                         |> (\x -> Tree.appendChild x tree)
 
@@ -169,20 +197,18 @@ replaceLightsInRoot lights scene =
     scene |> map (Tree.mapChildren (List.filterMap removeExisting) >> appendLightsGroup)
 
 
-graphWithMatrix : { theta : Float, drag : Vec2, mat : Mat4 } -> Tree (Object materialId) -> Tree ( Mat4, Object materialId )
-graphWithMatrix ({ theta, drag, mat } as config) tree =
+graphWithMatrix : { mat : Mat4 } -> Tree (Object objectId materialId) -> Tree ( Mat4, Object objectId materialId )
+graphWithMatrix ({ mat } as config) tree =
     let
         object =
             Tree.label tree
 
-        children : List (Tree (Object materialId))
+        children : List (Tree (Object objectId materialId))
         children =
             Tree.children tree
 
         mat_ =
             object
-                |> Object.rotationWithDrag drag
-                |> Object.rotationInTime theta
                 |> Object.rotation
                 |> Mat4.mul (Mat4.makeTranslate (Object.position object))
                 |> Mat4.mul mat
@@ -190,48 +216,79 @@ graphWithMatrix ({ theta, drag, mat } as config) tree =
     Tree.singleton ( mat_, object ) |> Tree.replaceChildren (children |> List.map (graphWithMatrix { config | mat = mat_ }))
 
 
-type alias Options =
-    { rotation : Float -> Mat4
-    , translate : Float -> Mat4
-    , perspective : Float -> Mat4
-    }
-
-
-defaultOptions : Options
-defaultOptions =
-    { rotation = always Mat4.identity
-    , translate = always Mat4.identity
-    , perspective = \aspectRatio -> Mat4.makePerspective 45 aspectRatio 0.01 100
-    }
-
-
 type alias GraphRenderOptions =
     { showBoundingBox : Bool
     }
 
 
+type Modifier objectId materialId
+    = ObjectModifier objectId (Object objectId materialId -> Object objectId materialId)
+    | SpotLightTargetModifier objectId (Vec3 -> Vec3)
+
+
+applyModifier : Modifier objectId materialId -> Object objectId materialId -> Object objectId materialId
+applyModifier modifier object =
+    case Object.id object of
+        Just id ->
+            applyModifier_ id object modifier
+
+        Nothing ->
+            object
+
+
+applyModifier_ : objectId -> Object objectId materialId -> Modifier objectId materialId -> Object objectId materialId
+applyModifier_ objectId object modifier =
+    case modifier of
+        ObjectModifier x f ->
+            if objectId == x then
+                f object
+
+            else
+                object
+
+        SpotLightTargetModifier x f ->
+            if objectId == x then
+                case Object.maybeLight object of
+                    Just _ ->
+                        Object.lightTargetMap f object
+
+                    Nothing ->
+                        object
+
+            else
+                object
+
+
+applyModifiers : List (Modifier objectId materialId) -> Object objectId materialId -> Object objectId materialId
+applyModifiers modifiers object =
+    modifiers
+        |> List.foldl applyModifier object
+
+
+withModifiers : List (Modifier objectId materialId) -> Scene objectId materialId -> Scene objectId materialId
+withModifiers modifiers (Scene scene) =
+    Scene { scene | graph = scene.graph |> Tree.map (applyModifiers modifiers) }
+
+
 render :
     List Light
+    -> List (Modifier objectId materialId)
     -> SceneOptions.Options
-    -> { a | width : Int, height : Int }
-    -> Vec2
-    -> Float
-    -> Maybe Options
-    -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
-    -> Scene materialId
-    -> Renderer materialId (Uniforms {})
+    -> { width : Int, height : Int }
+    -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
+    -> Scene objectId materialId
+    -> Renderer objectId materialId (Uniforms {})
     -> List Entity
-render defaultLights sceneOptions viewport drag theta options graphRenderOptions (Scene scene) renderer =
+render defaultLights modifiers sceneOptions viewport graphRenderOptions (Scene scene) renderer =
     let
-        options_ =
-            options |> Maybe.withDefault defaultOptions
-
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
 
         lightsInScene : List Light
         lightsInScene =
-            graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph
+            scene.graph
+                |> Tree.map (applyModifiers modifiers)
+                |> graphWithMatrix { mat = Mat4.identity }
                 |> Tree.foldl
                     (\( transform, object ) acc ->
                         case Object.maybeLight object of
@@ -253,17 +310,23 @@ render defaultLights sceneOptions viewport drag theta options graphRenderOptions
                     Renderer.createOptions |> Renderer.withLights lights
     in
     renderGraph
-        drag
-        theta
         rendererOptions
         sceneOptions
         graphRenderOptions
         { sceneCamera = Camera.toMat4 scene.camera
-        , scenePerspective = options_.perspective aspectRatio
+        , scenePerspective = projectionMatrix aspectRatio (Scene scene)
         , sceneMatrix = Mat4.identity
         , sceneRotationMatrix = Mat4.identity
         }
-        (GraphNode (graphWithMatrix { theta = theta, drag = drag, mat = Mat4.identity } scene.graph |> Tree.indexedMap (\i ( sceneMatrix, object ) -> Renderable i sceneMatrix object))
+        (GraphNode
+            (scene.graph
+                |> Tree.map (applyModifiers modifiers)
+                |> graphWithMatrix { mat = Mat4.identity }
+                |> Tree.indexedMap
+                    (\i ( sceneMatrix, object ) ->
+                        Renderable i sceneMatrix object
+                    )
+            )
             :: (if SceneOptions.showLightGizmos sceneOptions then
                     Renderer.lights rendererOptions
                         |> List.filterMap Light.position
@@ -279,7 +342,7 @@ render defaultLights sceneOptions viewport drag theta options graphRenderOptions
         renderer
 
 
-withGridPlane : Bool -> Axis -> List (Node materialId) -> List (Node materialId)
+withGridPlane : Bool -> Axis -> List (Node objectId materialId) -> List (Node objectId materialId)
 withGridPlane show axis nodes =
     if show then
         GridPlaneNode axis :: nodes
@@ -294,27 +357,25 @@ type Axis
     | AxisZ
 
 
-type alias Renderable materialId =
-    { index : Int, sceneMatrix : Mat4, object : Object materialId }
+type alias Renderable objectId materialId =
+    { index : Int, sceneMatrix : Mat4, object : Object objectId materialId }
 
 
-type Node materialId
-    = GraphNode (Tree (Renderable materialId))
+type Node objectId materialId
+    = GraphNode (Tree (Renderable objectId materialId))
     | GridPlaneNode Axis
     | PointLightNode Vec3
 
 
 renderGraph :
-    Vec2
-    -> Float
-    -> Renderer.Options
+    Renderer.Options
     -> SceneOptions.Options
-    -> (Tree ( Int, Object materialId ) -> Maybe GraphRenderOptions)
+    -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
     -> Uniforms u
-    -> List (Node materialId)
-    -> Renderer materialId (Uniforms u)
+    -> List (Node objectId materialId)
+    -> Renderer objectId materialId (Uniforms u)
     -> List Entity
-renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
+renderGraph rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
     nodes
         |> List.map
             (\node ->
@@ -412,7 +473,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                             { sceneMatrix, object } =
                                 Tree.label graph
 
-                            children : List (Tree (Renderable materialId))
+                            children : List (Tree (Renderable objectId materialId))
                             children =
                                 Tree.children graph
 
@@ -422,19 +483,18 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                     |> Tree.map (\x -> ( x.index, x.object ))
                                     |> graphRenderOptionsFn
 
+                            sceneRotationMatrix : Mat4
                             sceneRotationMatrix =
                                 object
-                                    |> Object.rotationWithDrag drag
-                                    |> Object.rotationInTime theta
                                     |> Object.rotation
                                     |> Mat4.mul uniforms.sceneRotationMatrix
 
                             entity : Uniforms u -> Entity
                             entity uniforms_ =
-                                object
-                                    |> Object.materialName
-                                    |> renderer
-                                    |> (\r -> r rendererOptions uniforms_ object)
+                                renderer (Object.materialName object)
+                                    rendererOptions
+                                    uniforms_
+                                    object
 
                             boundingBox : Uniforms u -> Entity
                             boundingBox uniforms_ =
@@ -485,8 +545,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                             ( True, True ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                    :: renderGraph drag
-                                        theta
+                                    :: renderGraph
                                         rendererOptions
                                         sceneOptions
                                         graphRenderOptionsFn
@@ -496,8 +555,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
 
                             ( True, False ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                    :: renderGraph drag
-                                        theta
+                                    :: renderGraph
                                         rendererOptions
                                         sceneOptions
                                         graphRenderOptionsFn
@@ -507,8 +565,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
 
                             ( False, True ) ->
                                 boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
-                                    :: renderGraph drag
-                                        theta
+                                    :: renderGraph
                                         rendererOptions
                                         sceneOptions
                                         graphRenderOptionsFn
@@ -517,8 +574,7 @@ renderGraph drag theta rendererOptions sceneOptions graphRenderOptionsFn uniform
                                         renderer
 
                             _ ->
-                                renderGraph drag
-                                    theta
+                                renderGraph
                                     rendererOptions
                                     sceneOptions
                                     graphRenderOptionsFn
