@@ -166,8 +166,7 @@ update msg model =
                     -> Maybe Int
                 selectedTreeIndexAtClickPosition scene viewPortElement =
                     Util.selectGraphAtClickPosition
-                        { theta = model.theta
-                        , viewport = Model.viewport
+                        { viewport = Model.viewport
                         , viewPortElement = viewPortElement
                         }
                         (Model.modifiers model)

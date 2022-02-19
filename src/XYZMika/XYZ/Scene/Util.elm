@@ -17,8 +17,7 @@ type alias Viewport =
 
 
 selectGraphAtClickPosition :
-    { theta : Float
-    , viewport : Viewport
+    { viewport : Viewport
     , viewPortElement : Dom.Element
     }
     -> List (Scene.Modifier objectId materialId)
@@ -32,14 +31,13 @@ selectGraphAtClickPosition config modifiers scene pos =
 
 
 selectGraphAtClickPosition_ :
-    { theta : Float
-    , viewport : Viewport
+    { viewport : Viewport
     , viewPortElement : Dom.Element
     }
     -> ( Float, Float )
     -> Scene.Scene objectId materialId
     -> Maybe ( Int, Tree (Object objectId materialId) )
-selectGraphAtClickPosition_ { theta, viewport, viewPortElement } pos scene =
+selectGraphAtClickPosition_ { viewport, viewPortElement } pos scene =
     let
         clickPosition =
             getClickPosition
@@ -51,7 +49,7 @@ selectGraphAtClickPosition_ { theta, viewport, viewPortElement } pos scene =
         graphWithHitInfo : Tree ( Maybe TriangleHitByRay, Int, Object objectId materialId )
         graphWithHitInfo =
             Scene.getGraph scene
-                |> Scene.graphWithMatrix { theta = theta, mat = Mat4.identity }
+                |> Scene.graphWithMatrix { mat = Mat4.identity }
                 |> Tree.indexedMap
                     (\index ( mat, object ) ->
                         ( objectClickedInScene clickPosition mat scene object, index, object )

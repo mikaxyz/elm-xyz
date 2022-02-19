@@ -17,10 +17,10 @@ doc model =
 
 view : Model -> Html Msg
 view model =
-    XYZMika.XYZ.toHtml [ Dragon.dragEvents DragonMsg ]
+    XYZMika.XYZ.view
         { width = 800
         , height = 600
         }
-        (Model.modifiers model)
         (always XYZMika.XYZ.Material.Advanced.renderer)
-        model.scene
+        |> XYZMika.XYZ.withModifiers (Model.modifiers model)
+        |> XYZMika.XYZ.toHtml [ Dragon.dragEvents DragonMsg ] model.scene

@@ -9,8 +9,6 @@ module XYZMika.XYZ.Scene exposing
     , map
     , projectionMatrix
     , render
-    , renderSimple
-    , renderSimpleWithModifiers
     , spotLights
     , withCamera
     , withCameraMap
@@ -199,8 +197,8 @@ replaceLightsInRoot lights scene =
     scene |> map (Tree.mapChildren (List.filterMap removeExisting) >> appendLightsGroup)
 
 
-graphWithMatrix : { theta : Float, mat : Mat4 } -> Tree (Object objectId materialId) -> Tree ( Mat4, Object objectId materialId )
-graphWithMatrix ({ theta, mat } as config) tree =
+graphWithMatrix : { mat : Mat4 } -> Tree (Object objectId materialId) -> Tree ( Mat4, Object objectId materialId )
+graphWithMatrix ({ mat } as config) tree =
     let
         object =
             Tree.label tree
@@ -221,33 +219,6 @@ graphWithMatrix ({ theta, mat } as config) tree =
 type alias GraphRenderOptions =
     { showBoundingBox : Bool
     }
-
-
-renderSimple :
-    { width : Int, height : Int }
-    -> Scene objectId materialId
-    -> Renderer objectId materialId (Uniforms {})
-    -> List Entity
-renderSimple =
-    renderSimpleWithModifiers []
-
-
-renderSimpleWithModifiers :
-    List (Modifier objectId materialId)
-    -> { width : Int, height : Int }
-    -> Scene objectId materialId
-    -> Renderer objectId materialId (Uniforms {})
-    -> List Entity
-renderSimpleWithModifiers modifiers viewport scene renderer =
-    render
-        []
-        modifiers
-        SceneOptions.create
-        viewport
-        0.0
-        (\_ -> Nothing)
-        scene
-        renderer
 
 
 type Modifier objectId materialId
@@ -304,12 +275,11 @@ render :
     -> List (Modifier objectId materialId)
     -> SceneOptions.Options
     -> { width : Int, height : Int }
-    -> Float
     -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
     -> Scene objectId materialId
     -> Renderer objectId materialId (Uniforms {})
     -> List Entity
-render defaultLights modifiers sceneOptions viewport theta graphRenderOptions (Scene scene) renderer =
+render defaultLights modifiers sceneOptions viewport graphRenderOptions (Scene scene) renderer =
     let
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
@@ -318,7 +288,7 @@ render defaultLights modifiers sceneOptions viewport theta graphRenderOptions (S
         lightsInScene =
             scene.graph
                 |> Tree.map (applyModifiers modifiers)
-                |> graphWithMatrix { theta = theta, mat = Mat4.identity }
+                |> graphWithMatrix { mat = Mat4.identity }
                 |> Tree.foldl
                     (\( transform, object ) acc ->
                         case Object.maybeLight object of
@@ -340,7 +310,6 @@ render defaultLights modifiers sceneOptions viewport theta graphRenderOptions (S
                     Renderer.createOptions |> Renderer.withLights lights
     in
     renderGraph
-        theta
         rendererOptions
         sceneOptions
         graphRenderOptions
@@ -352,7 +321,7 @@ render defaultLights modifiers sceneOptions viewport theta graphRenderOptions (S
         (GraphNode
             (scene.graph
                 |> Tree.map (applyModifiers modifiers)
-                |> graphWithMatrix { theta = theta, mat = Mat4.identity }
+                |> graphWithMatrix { mat = Mat4.identity }
                 |> Tree.indexedMap
                     (\i ( sceneMatrix, object ) ->
                         Renderable i sceneMatrix object
@@ -399,15 +368,14 @@ type Node objectId materialId
 
 
 renderGraph :
-    Float
-    -> Renderer.Options
+    Renderer.Options
     -> SceneOptions.Options
     -> (Tree ( Int, Object objectId materialId ) -> Maybe GraphRenderOptions)
     -> Uniforms u
     -> List (Node objectId materialId)
     -> Renderer objectId materialId (Uniforms u)
     -> List Entity
-renderGraph theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
+renderGraph rendererOptions sceneOptions graphRenderOptionsFn uniforms nodes renderer =
     nodes
         |> List.map
             (\node ->
@@ -578,7 +546,6 @@ renderGraph theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nod
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: renderGraph
-                                        theta
                                         rendererOptions
                                         sceneOptions
                                         graphRenderOptionsFn
@@ -589,7 +556,6 @@ renderGraph theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nod
                             ( True, False ) ->
                                 entity { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: renderGraph
-                                        theta
                                         rendererOptions
                                         sceneOptions
                                         graphRenderOptionsFn
@@ -600,7 +566,6 @@ renderGraph theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nod
                             ( False, True ) ->
                                 boundingBox { uniforms | sceneMatrix = sceneMatrix, sceneRotationMatrix = sceneRotationMatrix }
                                     :: renderGraph
-                                        theta
                                         rendererOptions
                                         sceneOptions
                                         graphRenderOptionsFn
@@ -610,7 +575,6 @@ renderGraph theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nod
 
                             _ ->
                                 renderGraph
-                                    theta
                                     rendererOptions
                                     sceneOptions
                                     graphRenderOptionsFn

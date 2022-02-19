@@ -11,7 +11,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..), SceneObject)
 import WebGL
 import XYZMika.Dragon as Dragon
-import XYZMika.XYZ
+import XYZMika.XYZ as XYZ
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
@@ -68,39 +68,25 @@ sceneView (Hud hud) model scene =
     main_ [ class "app" ]
         [ div [ class "app__viewport" ]
             [ attributionView model
-
-            --, WebGL.toHtml
-            --    [ width Model.viewport.width
-            --    , height Model.viewport.height
-            --    , id "viewport"
-            --    , Dragon.dragEvents DragonMsg
-            --    ]
-            --(Scene.render
-            --    [ Light.directional (vec3 -1 1 1) ]
-            --    []
-            --    model.sceneOptions
-            --    Model.viewport
-            --    model.theta
-            --    (\tree ->
-            --        let
-            --            index =
-            --                Tuple.first (Graph.root tree)
-            --        in
-            --        if model.selectedTreeIndex == Just index then
-            --            Just { showBoundingBox = True }
-            --
-            --        else
-            --            Nothing
-            --    )
-            --    scene
-            --    renderer
-            --)
-            , XYZMika.XYZ.toHtml
-                [ id "viewport", Dragon.dragEvents DragonMsg ]
+            , XYZ.view
                 Model.viewport
-                (Model.modifiers model)
                 renderer
-                scene
+                |> XYZ.withDefaultLights [ Light.directional (vec3 -1 1 1) ]
+                |> XYZ.withModifiers (Model.modifiers model)
+                |> XYZ.withSceneOptions model.sceneOptions
+                |> XYZ.withRenderOptions
+                    (\graph ->
+                        let
+                            index =
+                                Tuple.first (Graph.root graph)
+                        in
+                        if model.selectedTreeIndex == Just index then
+                            Just { showBoundingBox = True }
+
+                        else
+                            Nothing
+                    )
+                |> XYZ.toHtml [ id "viewport", Dragon.dragEvents DragonMsg ] scene
             ]
         , aside
             [ class "app__sidebar"
