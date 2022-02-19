@@ -301,6 +301,8 @@ loadScene model =
                             --    )
                             , AssetStore.loadTexture Asset.SneakerDiffuse model_.assets AssetStoreLoadResult
                             , AssetStore.loadTexture Asset.SneakerNormal model_.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.CarpetDiffuse model.assets AssetStoreLoadResult
+                            , AssetStore.loadTexture Asset.CarpetNormal model.assets AssetStoreLoadResult
                             ]
                         )
                    )

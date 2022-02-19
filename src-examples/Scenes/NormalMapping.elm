@@ -1,6 +1,7 @@
 module Scenes.NormalMapping exposing (ObjectId, init, modifiers)
 
 import Asset
+import Color
 import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -11,6 +12,7 @@ import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
 import XYZMika.XYZ.Scene.Graph as Graph exposing (Graph)
 import XYZMika.XYZ.Scene.Light as Light
+import XYZMika.XYZ.Scene.Light.SpotLight as SpotLight
 import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 
 
@@ -18,6 +20,8 @@ type alias Assets =
     { verticesIndexed : ( List Vertex, List ( Int, Int, Int ) )
     , diffuse : Texture
     , normal : Texture
+    , carpetDiffuse : Texture
+    , carpetNormal : Texture
     }
 
 
@@ -39,43 +43,84 @@ init objectId assets =
     assets
         |> getAssets
         |> Maybe.map (render objectId)
-        |> Maybe.withDefault []
-        |> Graph.graph (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.initWithTriangles)
+        |> Maybe.withDefault (Graph.singleton (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.initWithTriangles))
         |> Scene.init
-        |> Scene.withCameraPosition (vec3 -3 1.5 2.5)
-        --|> Scene.withCameraPosition (vec3 -2 1 1.5)
+        |> Scene.withCameraPosition (vec3 0 1 3)
         |> Scene.withCameraTarget (vec3 0 0.5 0)
 
 
-render : (ObjectId -> a) -> Assets -> List (Graph (Object a Material.Name))
-render objectId cube =
-    [ pointLight 0.1 (vec3 5 5 -5) (vec3 0.85 0.95 1)
-    , pointLight 0.8 (vec3 -3 3 10) (vec3 0.99 0.99 0.9)
-    , pointLight 0.2 (vec3 -6 -3 -6) (vec3 0.99 0.99 0.99)
-    , cube.verticesIndexed
-        |> Object.objectObjectWithIndexedTriangles (objectId Sneaker)
-        |> Object.withPosition (vec3 0 0.55 0)
-        |> Object.withDiffuseMap cube.diffuse
-        |> Object.withNormalMap cube.normal
-        |> Object.withMaterialName Material.Advanced
-        |> Graph.singleton
-    ]
-
-
-pointLight : Float -> Vec3 -> Vec3 -> Graph (Object objectId materialId)
-pointLight intensity position color =
-    Object.light
-        (Light.pointLight position
-            |> Light.withIntensity intensity
-            |> Light.withColorVec color
+render : (ObjectId -> id) -> Assets -> Graph (Object id Material.Name)
+render objectId assets =
+    Graph.shallow
+        (Object.group "STUFF")
+        ((assets.verticesIndexed
+            |> Object.objectObjectWithIndexedTriangles (objectId Sneaker)
+            |> Object.withPosition (vec3 0 0.55 0)
+            |> Object.withDiffuseMap assets.diffuse
+            |> Object.withNormalMap assets.normal
+            |> Object.withMaterialName Material.Advanced
+         )
+            :: Object.spotLight
+                (SpotLight.light (vec3 -2 5 -2) 55
+                    |> SpotLight.withColor (Color.rgb 0.8 0.9 0.99)
+                    |> SpotLight.withTarget (vec3 0 0 0)
+                    |> SpotLight.withIntensity 0.2
+                    |> SpotLight.withShadowMap
+                        { resolution = 800
+                        , near = 0.01
+                        , far = 100
+                        }
+                )
+            :: Object.spotLight
+                (SpotLight.light (vec3 4 6 1) 55
+                    |> SpotLight.withColor (Color.rgb 0.99 0.9 0.8)
+                    |> SpotLight.withTarget (vec3 0 0 0)
+                    |> SpotLight.withIntensity 0.3
+                    |> SpotLight.withShadowMap
+                        { resolution = 800
+                        , near = 0.01
+                        , far = 100
+                        }
+                )
+            :: Object.spotLight
+                (SpotLight.light (vec3 -4 4 6) 55
+                    |> SpotLight.withColor (Color.rgb 0.99 0.96 0.98)
+                    |> SpotLight.withTarget (vec3 0 0 0)
+                    |> SpotLight.withIntensity 0.4
+                    |> SpotLight.withShadowMap
+                        { resolution = 800
+                        , near = 0.01
+                        , far = 100
+                        }
+                )
+            :: floor 3.0 assets
         )
-        |> Graph.singleton
+
+
+floor : Float -> Assets -> List (Object id Material.Name)
+floor tileWidth assets =
+    List.range -2 2
+        |> List.concatMap
+            (\x ->
+                List.range -2 2
+                    |> List.map
+                        (\y ->
+                            XYZMika.XYZ.Mesh.Cube.colored Color.yellow tileWidth 0.21 tileWidth
+                                |> Object.initWithTriangles
+                                |> Object.withDiffuseMap assets.carpetDiffuse
+                                |> Object.withNormalMap assets.carpetNormal
+                                |> Object.withPosition (vec3 (toFloat x * tileWidth) -0.1 (toFloat y * tileWidth))
+                                |> Object.withMaterialName Material.Advanced
+                        )
+            )
 
 
 getAssets : Store Asset.Obj Asset.Texture -> Maybe Assets
 getAssets assets =
-    Maybe.map3
+    Maybe.map5
         Assets
         (AssetStore.verticesIndexed Asset.SneakerXyz assets)
         (AssetStore.texture Asset.SneakerDiffuse assets)
         (AssetStore.texture Asset.SneakerNormal assets)
+        (AssetStore.texture Asset.CarpetDiffuse assets)
+        (AssetStore.texture Asset.CarpetNormal assets)
