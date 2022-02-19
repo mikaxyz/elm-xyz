@@ -14,7 +14,7 @@ import XYZMika.XYZ.Scene.Object as Object exposing (Object)
 --
 
 
-init : Scene {} Material.Name
+init : Scene objectId Material.Name
 init =
     Graph.graph
         (XYZMika.XYZ.Mesh.Cube.withBoundsColorful ( vec3 -0.5 -0.2 -0.5, vec3 0.5 0.2 0.5 )

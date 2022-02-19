@@ -1,4 +1,4 @@
-module Scenes.Textures exposing (init)
+module Scenes.Textures exposing (ObjectId, init, modifiers)
 
 import Asset
 import Color
@@ -29,8 +29,21 @@ type alias TreeAssets =
     }
 
 
-init : Store Asset.Obj Asset.Texture -> Scene {} Material.Name
-init assets =
+type ObjectId
+    = Ball
+
+
+modifiers : Float -> (ObjectId -> a) -> List (Scene.Modifier a b)
+modifiers theta sceneObject =
+    [ Scene.ObjectModifier (sceneObject Ball)
+        (Object.map
+            (\x -> { x | rotation = Mat4.makeTranslate3 0 (abs (sin (theta * 30) * 0.5)) 0 })
+        )
+    ]
+
+
+init : (ObjectId -> a) -> Store Asset.Obj Asset.Texture -> Scene a Material.Name
+init objectId assets =
     Graph.shallow
         (XYZMika.XYZ.Mesh.Cube.withBounds ( vec3 -6 -0.5 -6, vec3 6 0 6 )
             |> Object.initWithTriangles
@@ -38,7 +51,7 @@ init assets =
             |> Object.withColor Color.blue
             |> Object.withMaterialName Material.Advanced
         )
-        (Maybe.map2 render
+        (Maybe.map2 (render objectId)
             (getBallAssets assets)
             (getTreeAssets assets)
             |> Maybe.withDefault []
@@ -51,8 +64,8 @@ init assets =
 --|> Scene.withCamera { position = vec3 0 0.5 3, target = vec3 0 0.5 0 }
 
 
-render : BallAssets -> TreeAssets -> List (Object {} Material.Name)
-render ball tree =
+render : (ObjectId -> a) -> BallAssets -> TreeAssets -> List (Object a Material.Name)
+render objectId ball tree =
     --[ ball.verticesIndexed
     --    |> Object.initWithIndexedTriangles
     --    |> Object.withMaterialName Material.Advanced
@@ -93,23 +106,12 @@ render ball tree =
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 2 0 -5)
     , ball.verticesIndexed
-        |> Object.initWithIndexedTriangles
+        |> Object.objectObjectWithIndexedTriangles (objectId Ball)
         |> Object.withDiffuseMap ball.diffuse
         |> Object.withNormalMap ball.normal
         |> Object.withColor Color.yellow
         |> Object.withMaterialName Material.Advanced
         |> Object.withPosition (vec3 1 0 -3)
-        |> Object.withOptionRotationInTime
-            (\theta ->
-                let
-                    r =
-                        sin (theta * 30)
-
-                    y =
-                        abs r * 0.5
-                in
-                Mat4.makeTranslate3 0 y 0
-            )
     ]
 
 

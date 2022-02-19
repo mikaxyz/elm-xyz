@@ -21,10 +21,25 @@ selectGraphAtClickPosition :
     , viewport : Viewport
     , viewPortElement : Dom.Element
     }
+    -> List (Scene.Modifier objectId materialId)
     -> Scene.Scene objectId materialId
     -> ( Float, Float )
     -> Maybe ( Int, Tree (Object objectId materialId) )
-selectGraphAtClickPosition { theta, viewport, viewPortElement } scene pos =
+selectGraphAtClickPosition config modifiers scene pos =
+    scene
+        |> Scene.withModifiers modifiers
+        |> selectGraphAtClickPosition_ config pos
+
+
+selectGraphAtClickPosition_ :
+    { theta : Float
+    , viewport : Viewport
+    , viewPortElement : Dom.Element
+    }
+    -> ( Float, Float )
+    -> Scene.Scene objectId materialId
+    -> Maybe ( Int, Tree (Object objectId materialId) )
+selectGraphAtClickPosition_ { theta, viewport, viewPortElement } pos scene =
     let
         clickPosition =
             getClickPosition

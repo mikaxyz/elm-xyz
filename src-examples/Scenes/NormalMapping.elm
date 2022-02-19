@@ -1,7 +1,6 @@
-module Scenes.NormalMapping exposing (init)
+module Scenes.NormalMapping exposing (ObjectId, init, modifiers)
 
 import Asset
-import Color
 import Material
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
@@ -22,11 +21,24 @@ type alias Assets =
     }
 
 
-init : Store Asset.Obj Asset.Texture -> Scene {} Material.Name
-init assets =
+type ObjectId
+    = Sneaker
+
+
+modifiers : Float -> (ObjectId -> a) -> List (Scene.Modifier a b)
+modifiers theta sceneObject =
+    [ Scene.ObjectModifier (sceneObject Sneaker)
+        (Object.map
+            (\x -> { x | rotation = Mat4.makeRotate (2 * theta) Vec3.j })
+        )
+    ]
+
+
+init : (ObjectId -> a) -> Store Asset.Obj Asset.Texture -> Scene a Material.Name
+init objectId assets =
     assets
         |> getAssets
-        |> Maybe.map render
+        |> Maybe.map (render objectId)
         |> Maybe.withDefault []
         |> Graph.graph (XYZMika.XYZ.Mesh.Cube.gray 0 0 0 |> Object.initWithTriangles)
         |> Scene.init
@@ -35,23 +47,22 @@ init assets =
         |> Scene.withCameraTarget (vec3 0 0.5 0)
 
 
-render : Assets -> List (Graph (Object {} Material.Name))
-render cube =
+render : (ObjectId -> a) -> Assets -> List (Graph (Object a Material.Name))
+render objectId cube =
     [ pointLight 0.1 (vec3 5 5 -5) (vec3 0.85 0.95 1)
     , pointLight 0.8 (vec3 -3 3 10) (vec3 0.99 0.99 0.9)
     , pointLight 0.2 (vec3 -6 -3 -6) (vec3 0.99 0.99 0.99)
     , cube.verticesIndexed
-        |> Object.initWithIndexedTriangles
+        |> Object.objectObjectWithIndexedTriangles (objectId Sneaker)
         |> Object.withPosition (vec3 0 0.55 0)
         |> Object.withDiffuseMap cube.diffuse
         |> Object.withNormalMap cube.normal
-        |> Object.withOptionRotationInTime (\theta -> Mat4.makeRotate (2 * theta) Vec3.j)
         |> Object.withMaterialName Material.Advanced
         |> Graph.singleton
     ]
 
 
-pointLight : Float -> Vec3 -> Vec3 -> Graph (Object {} materialId)
+pointLight : Float -> Vec3 -> Vec3 -> Graph (Object objectId materialId)
 pointLight intensity position color =
     Object.light
         (Light.pointLight position

@@ -211,7 +211,6 @@ graphWithMatrix ({ theta, mat } as config) tree =
 
         mat_ =
             object
-                |> Object.rotationInTime theta
                 |> Object.rotation
                 |> Mat4.mul (Mat4.makeTranslate (Object.position object))
                 |> Mat4.mul mat
@@ -519,7 +518,6 @@ renderGraph theta rendererOptions sceneOptions graphRenderOptionsFn uniforms nod
                             sceneRotationMatrix : Mat4
                             sceneRotationMatrix =
                                 object
-                                    |> Object.rotationInTime theta
                                     |> Object.rotation
                                     |> Mat4.mul uniforms.sceneRotationMatrix
 

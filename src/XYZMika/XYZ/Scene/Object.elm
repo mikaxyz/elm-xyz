@@ -4,8 +4,8 @@ module XYZMika.XYZ.Scene.Object exposing
     , withDiffuseMap, withNormalMap
     , mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
-    , withOptionRotationInTime, toHumanReadable
-    , rotationInTime, maybeLight
+    , toHumanReadable
+    , maybeLight
     , disable, enable, group, id, isDisabled, lightTargetMap, map, maybeGroup, maybeLightDisabled, objectObjectWithIndexedTriangles, objectWithTriangles, spotLight, spotLightWithId, withLightTarget
     )
 
@@ -29,24 +29,20 @@ module XYZMika.XYZ.Scene.Object exposing
 @docs diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
 
 
-# Options (Move these to "Modifier.elm")
-
-
 ## Modify
 
-@docs withOptionRotationInTime, toEmpty, toHumanReadable
+@docs toEmpty, toHumanReadable
 
 
 ## Read
 
-@docs rotationInTime, maybeLight
+@docs maybeLight
 
 -}
 
 import Array exposing (Array)
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import WebGL exposing (Mesh)
 import WebGL.Settings
@@ -87,7 +83,6 @@ type alias ObjectData id materialId =
     , mesh : Mesh Vertex
     , triangles : List ( Vec3, Vec3, Vec3 )
     , boundingBox : ( Vec3, Vec3 )
-    , options : Maybe Options
     , diffuseMap : Maybe Texture
     , normalMap : Maybe Texture
     , material : Maybe materialId
@@ -159,7 +154,6 @@ group name =
         , boundingBox = ( vec3 0 0 0, vec3 0 0 0 )
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -184,7 +178,6 @@ light light_ =
         , boundingBox = verts |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -220,7 +213,6 @@ spotLightWithId_ objectId light_ =
         , boundingBox = verts |> List.concatMap (\( v1, v2, v3 ) -> [ v1, v2, v3 ]) |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -307,7 +299,6 @@ initWithBounds bounds tris x =
         , boundingBox = bounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -328,7 +319,6 @@ initWithLines x =
                 |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -349,7 +339,6 @@ initWithTriangles x =
                 |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -375,7 +364,6 @@ objectWithTriangles objectId x =
                 |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -393,7 +381,6 @@ objectObjectWithIndexedTriangles objectId ( v, i ) =
         , boundingBox = getBounds v
         , diffuseMap = Nothing
         , normalMap = Nothing
-        , options = Nothing
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
@@ -583,22 +570,6 @@ withNormalMap x obj =
 -- HELPERS
 
 
-mapOptions : (Maybe Options -> Maybe Options) -> Object id materialId -> Object id materialId
-mapOptions f obj =
-    case obj of
-        Disabled obj_ ->
-            Disabled obj_
-
-        Mesh data ->
-            Mesh { data | options = f data.options }
-
-        Light data light_ ->
-            Light { data | options = f data.options } light_
-
-        Group name data ->
-            Group name { data | options = f data.options }
-
-
 mapData : (ObjectData id materialId -> ObjectData id materialId) -> Object id materialId -> Object id materialId
 mapData f obj =
     case obj of
@@ -696,52 +667,3 @@ normalMap obj =
 normalMapWithDefault : Texture -> Object id materialId -> Texture
 normalMapWithDefault default obj =
     obj |> get .normalMap |> Maybe.withDefault default
-
-
-
---
-
-
-rotationInTime : Float -> Object id materialId -> Object id materialId
-rotationInTime theta obj =
-    obj
-        |> get .options
-        |> Maybe.map
-            (\x ->
-                obj
-                    |> mapData
-                        (\data ->
-                            { data
-                                | rotation = Mat4.mul data.rotation (x.rotation theta)
-                            }
-                        )
-            )
-        |> Maybe.withDefault obj
-
-
-
--- OPTIONS (Move these to "Modifier.elm")
-
-
-type alias Options =
-    { rotation : Float -> Mat4
-    , translate : Float -> Mat4
-    }
-
-
-defaultOptions : Options
-defaultOptions =
-    { rotation = always Mat4.identity
-    , translate = always Mat4.identity
-    }
-
-
-withOptionRotationInTime : (Float -> Mat4) -> Object id materialId -> Object id materialId
-withOptionRotationInTime f obj =
-    obj
-        |> mapOptions
-            (\options ->
-                Maybe.withDefault defaultOptions options
-                    |> (\x -> { x | rotation = f })
-                    |> Just
-            )

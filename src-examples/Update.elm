@@ -4,9 +4,10 @@ import Browser.Dom
 import Color
 import File.Download
 import Keyboard
+import Material
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
+import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..), SceneObject)
 import Task
 import XYZMika.Debug as Dbug
 import XYZMika.Dragon as Dragon
@@ -159,13 +160,17 @@ update msg model =
 
         OnMouseUp pos ->
             let
-                selectedTreeIndexAtClickPosition : Scene.Scene objectId materialId -> Browser.Dom.Element -> Maybe Int
+                selectedTreeIndexAtClickPosition :
+                    Scene.Scene SceneObject Material.Name
+                    -> Browser.Dom.Element
+                    -> Maybe Int
                 selectedTreeIndexAtClickPosition scene viewPortElement =
                     Util.selectGraphAtClickPosition
                         { theta = model.theta
                         , viewport = Model.viewport
                         , viewPortElement = viewPortElement
                         }
+                        (Model.modifiers model)
                         scene
                         ( Vec2.getX pos, Vec2.getY pos )
                         |> Maybe.map Tuple.first

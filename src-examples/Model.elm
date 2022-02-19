@@ -7,11 +7,13 @@ module Model exposing
     , HudValue(..)
     , Model
     , Msg(..)
+    , SceneObject(..)
     , currentSceneName
     , dragTarget
     , init
     , loadScene
     , mapSceneOptions
+    , modifiers
     , nextScene
     , prevScene
     , updateAssetStore
@@ -57,6 +59,12 @@ type Msg
     | SetValue HudObject HudValue String
 
 
+type SceneObject
+    = LightSceneObjectId Scenes.Light.ObjectId
+    | NormalMappingSceneObjectId Scenes.NormalMapping.ObjectId
+    | TexturesSceneObjectId Scenes.Textures.ObjectId
+
+
 type DragTarget
     = Default
     | CameraOrbit
@@ -98,7 +106,7 @@ type alias Model =
     , paused : Bool
     , viewPortElement : Maybe Browser.Dom.Element
     , dragTarget : DragTarget
-    , scene : Maybe (Scene {} Material.Name)
+    , scene : Maybe (Scene SceneObject Material.Name)
     , sceneOptions : SceneOptions.Options
     , scenes : Array ActiveScene
     , currentSceneIndex : Int
@@ -134,7 +142,7 @@ init =
     , scene = Nothing
     , sceneOptions = SceneOptions.create
     , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
-    , currentSceneIndex = 4
+    , currentSceneIndex = 3
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
     , keyboard = Keyboard.init
@@ -152,6 +160,34 @@ init =
                     ]
                 )
            )
+
+
+modifiers : Model -> List (XYZMika.XYZ.Scene.Modifier SceneObject Material.Name)
+modifiers model =
+    case Array.get model.currentSceneIndex model.scenes of
+        Just BrickWall ->
+            []
+
+        Just NormalMapping ->
+            Scenes.NormalMapping.modifiers model.theta NormalMappingSceneObjectId
+
+        Just Textures ->
+            Scenes.Textures.modifiers model.theta TexturesSceneObjectId
+
+        Just Sandbox ->
+            []
+
+        Just Animals ->
+            []
+
+        Just Landscape ->
+            []
+
+        Just Light ->
+            Scenes.Light.modifiers model.theta LightSceneObjectId
+
+        Nothing ->
+            []
 
 
 mapSceneOptions : (SceneOptions.Options -> SceneOptions.Options) -> Model -> Model
@@ -228,10 +264,10 @@ updateAssetStore assets model =
                         { m | scene = Scenes.BrickWall.init m.assets |> Just }
 
                     Just NormalMapping ->
-                        { m | scene = Scenes.NormalMapping.init m.assets |> Just }
+                        { m | scene = Scenes.NormalMapping.init NormalMappingSceneObjectId m.assets |> Just }
 
                     Just Textures ->
-                        { m | scene = Scenes.Textures.init m.assets |> Just }
+                        { m | scene = Scenes.Textures.init TexturesSceneObjectId m.assets |> Just }
 
                     Just Sandbox ->
                         m
@@ -254,7 +290,7 @@ loadScene : Model -> ( Model, Cmd Msg )
 loadScene model =
     case Array.get model.currentSceneIndex model.scenes |> Dbug.log "loadScene" of
         Just NormalMapping ->
-            { model | scene = Just <| Scenes.NormalMapping.init model.assets }
+            { model | scene = Just <| Scenes.NormalMapping.init NormalMappingSceneObjectId model.assets }
                 |> (\model_ ->
                         ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
@@ -284,7 +320,7 @@ loadScene model =
                    )
 
         Just Textures ->
-            { model | scene = Just <| Scenes.Textures.init model.assets }
+            { model | scene = Just <| Scenes.Textures.init TexturesSceneObjectId model.assets }
                 |> (\model_ ->
                         ( model_ |> mapSceneOptions (SceneOptions.toggle SceneOptions.showGridYOption)
                         , Cmd.batch
@@ -317,15 +353,13 @@ loadScene model =
                    )
 
         Just Landscape ->
-            ( { model
-                | scene = Just Scenes.Landscape.init
-              }
+            ( { model | scene = Just Scenes.Landscape.init }
             , Cmd.none
             )
 
         Just Light ->
             ( { model
-                | scene = Just Scenes.Light.init
+                | scene = Just (Scenes.Light.init LightSceneObjectId)
               }
             , Cmd.none
             )

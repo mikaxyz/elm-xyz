@@ -8,9 +8,10 @@ import Html.Events exposing (onClick, onInput)
 import Json.Decode as JD
 import Material
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..))
+import Model exposing (Hud(..), HudMsg(..), HudObject(..), HudValue(..), Model, Msg(..), SceneObject)
 import WebGL
 import XYZMika.Dragon as Dragon
+import XYZMika.XYZ
 import XYZMika.XYZ.Material
 import XYZMika.XYZ.Material.Simple
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
@@ -62,37 +63,44 @@ attributionView model =
             text ""
 
 
-sceneView : Hud -> Model -> Scene {} Material.Name -> Html Msg
+sceneView : Hud -> Model -> Scene SceneObject Material.Name -> Html Msg
 sceneView (Hud hud) model scene =
     main_ [ class "app" ]
         [ div [ class "app__viewport" ]
             [ attributionView model
-            , WebGL.toHtml
-                [ width Model.viewport.width
-                , height Model.viewport.height
-                , id "viewport"
-                , Dragon.dragEvents DragonMsg
-                ]
-                (Scene.render
-                    [ Light.directional (vec3 -1 1 1) ]
-                    []
-                    model.sceneOptions
-                    Model.viewport
-                    model.theta
-                    (\tree ->
-                        let
-                            index =
-                                Tuple.first (Graph.root tree)
-                        in
-                        if model.selectedTreeIndex == Just index then
-                            Just { showBoundingBox = True }
 
-                        else
-                            Nothing
-                    )
-                    scene
-                    renderer
-                )
+            --, WebGL.toHtml
+            --    [ width Model.viewport.width
+            --    , height Model.viewport.height
+            --    , id "viewport"
+            --    , Dragon.dragEvents DragonMsg
+            --    ]
+            --(Scene.render
+            --    [ Light.directional (vec3 -1 1 1) ]
+            --    []
+            --    model.sceneOptions
+            --    Model.viewport
+            --    model.theta
+            --    (\tree ->
+            --        let
+            --            index =
+            --                Tuple.first (Graph.root tree)
+            --        in
+            --        if model.selectedTreeIndex == Just index then
+            --            Just { showBoundingBox = True }
+            --
+            --        else
+            --            Nothing
+            --    )
+            --    scene
+            --    renderer
+            --)
+            , XYZMika.XYZ.toHtml
+                [ id "viewport", Dragon.dragEvents DragonMsg ]
+                Model.viewport
+                (Model.modifiers model)
+                renderer
+                scene
             ]
         , aside
             [ class "app__sidebar"
@@ -123,7 +131,7 @@ renderer :
     Maybe Material.Name
     -> XYZMika.XYZ.Material.Options
     -> Uniforms u
-    -> Object {} Material.Name
+    -> Object a Material.Name
     -> WebGL.Entity
 renderer name =
     case name of
@@ -134,7 +142,7 @@ renderer name =
             XYZMika.XYZ.Material.Simple.renderer
 
 
-sidebarView : { treeCount : Int } -> Hud -> Camera -> Maybe (Object {} Material.Name) -> Model -> Html Msg
+sidebarView : { treeCount : Int } -> Hud -> Camera -> Maybe (Object objectId Material.Name) -> Model -> Html Msg
 sidebarView { treeCount } (Hud hud) camera selectedObject model =
     div
         [ class "sidebar"
@@ -173,7 +181,7 @@ sidebarView { treeCount } (Hud hud) camera selectedObject model =
         ]
 
 
-selectedObjectWidget : Object {} Material.Name -> Html Msg
+selectedObjectWidget : Object a Material.Name -> Html Msg
 selectedObjectWidget object =
     vector3Widget
         (Object.toHumanReadable object)
