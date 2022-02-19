@@ -116,59 +116,30 @@ keyboardControl model =
     { model | objectPosition = model.objectPosition |> Vec3.add (Vec3.scale speed m) }
 
 
-modifiers : Model -> List (XYZMika.XYZ.Scene.Modifier Scene.Object)
+modifiers : Model -> List (XYZMika.XYZ.Scene.Modifier Scene.Object a)
 modifiers model =
-    [ XYZMika.XYZ.Scene.PositionModifier
-        (\object position ->
-            case object of
-                Scene.Shoe ->
-                    Vec3.add model.objectPosition position
-
-                Scene.Light Scene.SpotLight2 ->
-                    Vec3.add model.objectPosition position
-
-                Scene.Block1 ->
-                    let
-                        x =
-                            sin (model.theta * 30)
-
-                        y =
-                            cos (model.theta * 30)
-                    in
-                    Vec3.add position (vec3 x 0 y)
-
-                _ ->
-                    position
+    [ XYZMika.XYZ.Scene.ObjectModifier Scene.Shoe
+        (Object.map
+            (\x ->
+                { x
+                    | position = Vec3.add model.objectPosition x.position
+                    , rotation = Mat4.rotate (sin (model.theta * 30) * 3) Vec3.j x.rotation
+                }
+            )
         )
-    , XYZMika.XYZ.Scene.RotationModifier
-        (\object matrix ->
-            case object of
-                Scene.Shoe ->
-                    let
-                        r =
-                            sin (model.theta * 30)
-
-                        y =
-                            r
-                    in
-                    matrix
-                        |> Mat4.rotate (y * 3) Vec3.j
-
-                Scene.Block1 ->
-                    let
-                        r =
-                            sin (model.theta * 30)
-
-                        y =
-                            abs (r ^ 4)
-                    in
-                    Mat4.makeTranslate3 0 y 0
-
-                _ ->
-                    matrix
+    , XYZMika.XYZ.Scene.ObjectModifier Scene.Block1
+        (Object.map
+            (\x ->
+                let
+                    jump =
+                        abs (sin (model.theta * 30) ^ 4)
+                in
+                { x
+                    | position = Vec3.add x.position (vec3 (sin (model.theta * 30)) 0 (cos (model.theta * 30)))
+                    , rotation = Mat4.makeTranslate3 0 jump 0
+                }
+            )
         )
-    , XYZMika.XYZ.Scene.SpotLightTargetModifier
-        (\_ target ->
-            Vec3.add model.objectPosition target
-        )
+    , XYZMika.XYZ.Scene.SpotLightTargetModifier (Scene.Light Scene.SpotLight2)
+        (Vec3.add model.objectPosition)
     ]

@@ -25,7 +25,7 @@ type alias ShadowMapBuffers =
 toHtml :
     List (Attribute msg)
     -> { width : Int, height : Int }
-    -> List (Scene.Modifier objectId)
+    -> List (Scene.Modifier objectId materialId)
     -> Renderer objectId materialId (Uniforms {})
     -> Scene objectId materialId
     -> Html msg
@@ -138,7 +138,7 @@ toHtml attributes viewport modifiers renderer scene =
                 )
 
 
-frameBuffersForShadowMaps : List (Scene.Modifier objectId) -> Scene objectId materialId -> Maybe ShadowMapBuffers
+frameBuffersForShadowMaps : List (Scene.Modifier objectId materialId) -> Scene objectId materialId -> Maybe ShadowMapBuffers
 frameBuffersForShadowMaps modifiers scene =
     let
         frameBufferAndViewMatrixForLight =
@@ -200,7 +200,7 @@ frameBuffersForShadowMaps modifiers scene =
 
 
 frameBufferForSpotLight :
-    List (Scene.Modifier objectId)
+    List (Scene.Modifier objectId materialId)
     -> Scene objectId materialId
     ->
         ( { resolution : Int

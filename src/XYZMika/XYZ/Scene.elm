@@ -234,7 +234,7 @@ renderSimple =
 
 
 renderSimpleWithModifiers :
-    List (Modifier objectId)
+    List (Modifier objectId materialId)
     -> { width : Int, height : Int }
     -> Scene objectId materialId
     -> Renderer objectId materialId (Uniforms {})
@@ -251,13 +251,12 @@ renderSimpleWithModifiers modifiers viewport scene renderer =
         renderer
 
 
-type Modifier objectId
-    = PositionModifier (objectId -> Vec3 -> Vec3)
-    | RotationModifier (objectId -> Mat4 -> Mat4)
-    | SpotLightTargetModifier (objectId -> Vec3 -> Vec3)
+type Modifier objectId materialId
+    = ObjectModifier objectId (Object objectId materialId -> Object objectId materialId)
+    | SpotLightTargetModifier objectId (Vec3 -> Vec3)
 
 
-applyModifier : Modifier objectId -> Object objectId materialId -> Object objectId materialId
+applyModifier : Modifier objectId materialId -> Object objectId materialId -> Object objectId materialId
 applyModifier modifier object =
     case Object.id object of
         Just id ->
@@ -267,38 +266,43 @@ applyModifier modifier object =
             object
 
 
-applyModifier_ : objectId -> Object objectId materialId -> Modifier objectId -> Object objectId materialId
+applyModifier_ : objectId -> Object objectId materialId -> Modifier objectId materialId -> Object objectId materialId
 applyModifier_ objectId object modifier =
     case modifier of
-        PositionModifier f ->
-            Object.withPosition (f objectId (Object.position object)) object
+        ObjectModifier x f ->
+            if objectId == x then
+                f object
 
-        RotationModifier f ->
-            Object.withRotation (f objectId (Object.rotation object)) object
+            else
+                object
 
-        SpotLightTargetModifier f ->
-            case Object.maybeLight object of
-                Just _ ->
-                    Object.lightTargetMap (f objectId) object
+        SpotLightTargetModifier x f ->
+            if objectId == x then
+                case Object.maybeLight object of
+                    Just _ ->
+                        Object.lightTargetMap f object
 
-                Nothing ->
-                    object
+                    Nothing ->
+                        object
+
+            else
+                object
 
 
-applyModifiers : List (Modifier objectId) -> Object objectId materialId -> Object objectId materialId
+applyModifiers : List (Modifier objectId materialId) -> Object objectId materialId -> Object objectId materialId
 applyModifiers modifiers object =
     modifiers
         |> List.foldl applyModifier object
 
 
-withModifiers : List (Modifier objectId) -> Scene objectId materialId -> Scene objectId materialId
+withModifiers : List (Modifier objectId materialId) -> Scene objectId materialId -> Scene objectId materialId
 withModifiers modifiers (Scene scene) =
     Scene { scene | graph = scene.graph |> Tree.map (applyModifiers modifiers) }
 
 
 render :
     List Light
-    -> List (Modifier objectId)
+    -> List (Modifier objectId materialId)
     -> SceneOptions.Options
     -> { width : Int, height : Int }
     -> Float
