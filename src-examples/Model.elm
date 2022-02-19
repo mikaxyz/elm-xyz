@@ -105,7 +105,6 @@ type alias Model =
     { theta : Float
     , paused : Bool
     , viewPortElement : Maybe Browser.Dom.Element
-    , dragTarget : DragTarget
     , scene : Maybe (Scene SceneObject Material.Name)
     , sceneOptions : SceneOptions.Options
     , scenes : Array ActiveScene
@@ -138,7 +137,6 @@ init : ( Model, Cmd Msg )
 init =
     { theta = 0
     , paused = False
-    , dragTarget = Default
     , scene = Nothing
     , sceneOptions = SceneOptions.create
     , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList

@@ -175,9 +175,8 @@ update msg model =
                         |> Maybe.map Tuple.first
             in
             ( { model
-                | dragTarget = Model.Default
-                , selectedTreeIndex =
-                    if model.dragTarget == Model.Default then
+                | selectedTreeIndex =
+                    if Model.dragTarget model == Model.Default then
                         Maybe.map2 Tuple.pair model.scene model.viewPortElement
                             |> Maybe.andThen
                                 (\( scene, viewPortElement ) ->
