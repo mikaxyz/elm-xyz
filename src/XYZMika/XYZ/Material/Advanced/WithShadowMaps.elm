@@ -481,7 +481,7 @@ fragmentShader =
         , vec4 vertexRelativeToSpotLight
         , float resolution
         ) {
-            const bool SOFT_SHADOWS = false;
+            const bool SOFT_SHADOWS = true;
             const float TEXEL_SIZE_MULTIPLIER = 1.0;
 
             float visibility = 1.0;
@@ -490,7 +490,7 @@ fragmentShader =
             vec3 shadowMapCoords = (vertexRelativeToSpotLight.xyz/vertexRelativeToSpotLight.w)/2.0 + 0.5;
             float shadowMapWidth = resolution;
             float shadowMapHeight = resolution;
-            float bias = 0.0001;
+            float bias = 0.00003;
 
             if (SOFT_SHADOWS) {
                 vec2 texelSize = vec2(vec2(1.0/shadowMapWidth, 1.0/shadowMapHeight));
