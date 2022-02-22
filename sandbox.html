@@ -12,7 +12,16 @@
 			min-height: 100vh;
 			margin: 0;
 		}
-		canvas {background-color: #16161D;}
+		canvas {
+			background-color: #16161D;
+			align-self: stretch;
+			max-width: 100%;
+			max-height: 100%;
+			width: 100%;
+			object-fit: cover;
+		}
+
+
 	</style>
 </head>
 <body id="game">
@@ -26,27 +35,39 @@
 		app = Elm[example].init();
 	} else {
 		app = Elm.Sandbox.init();
-		document.addEventListener('pointerlockchange', pointerLockChange, false);
-
-		var e = document.getElementsByTagName('body')[0];
-		e.addEventListener('click', function() {
-			e.requestPointerLock();
-		});
 	}
 
-	function sendPosition(e) {
-		requestAnimationFrame(function (_time) {
-			app.ports.onPointerMove.send({x: e.movementX, y: e.movementY})
-		});
+	app.ports && app.ports.registerToPointerMove && app.ports.registerToPointerMove.subscribe(registerToPointerLock);
+
+	function registerToPointerLock() {
+		var pointerMovePort = app.ports && app.ports.onPointerMove;
+
+		if (pointerMovePort) {
+			document.addEventListener('pointerlockchange', pointerLockChange(pointerMovePort), false);
+
+			var el = document.getElementsByTagName('body')[0];
+			el.addEventListener('click', function() {
+				el.requestPointerLock();
+			});
+		}
 	}
 
-	function pointerLockChange () {
-		if (document.pointerLockElement === e) {
-			console.log('The pointer lock status is now locked');
-			document.addEventListener("mousemove", sendPosition, false);
-		} else {
-			console.log('The pointer lock status is now unlocked');
-			document.removeEventListener("mousemove", sendPosition, false);
+	function pointerLockChange(port) {
+		function sendPosition(e) {
+			requestAnimationFrame(function (_time) {
+				port.send({x: e.movementX, y: e.movementY})
+			});
+		}
+
+		var el = document.getElementsByTagName('body')[0];
+		return function() {
+			if (document.pointerLockElement === el) {
+				console.log('The pointer lock status is now locked');
+				document.addEventListener("mousemove", sendPosition, false);
+			} else {
+				console.log('The pointer lock status is now unlocked');
+				document.removeEventListener("mousemove", sendPosition, false);
+			}
 		}
 	}
 </script>

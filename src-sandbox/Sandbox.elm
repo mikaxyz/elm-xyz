@@ -1,4 +1,4 @@
-port module Sandbox exposing (main)
+module Sandbox exposing (main)
 
 import Browser
 import Browser.Events
@@ -10,6 +10,7 @@ import Keyboard
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Ports
 import WebGL exposing (Entity, Mesh, Shader)
 import WebGL.Texture exposing (Texture)
 import XYZMika.GridWorld as GridWorld exposing (GridWorld)
@@ -18,9 +19,6 @@ import XYZMika.XYZ.Data.Vertex exposing (Vertex)
 import XYZMika.XYZ.Generator.Perlin as Perlin
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Landscape
-
-
-port onPointerMove : ({ x : Int, y : Int } -> msg) -> Sub msg
 
 
 playerHeight =
@@ -248,6 +246,7 @@ main =
                     , AssetStore.loadTexture BrickWall initModel.assets AssetLoaded
                     , AssetStore.loadObjWithScale 0.1 Tree initModel.assets AssetLoaded
                     , AssetStore.loadTexture TreeDiffuse initModel.assets AssetLoaded
+                    , Ports.registerToPointerMove True
                     ]
                 )
         , view = doc
@@ -280,7 +279,7 @@ subscriptions model =
         --        [ drags
         [ Browser.Events.onAnimationFrameDelta Animate
         , Keyboard.subscriptions { tagger = KeyboardMsg, keyDown = OnKeyDown }
-        , onPointerMove OnPointerMove
+        , Ports.onPointerMove OnPointerMove
         ]
 
 
@@ -775,7 +774,7 @@ fragmentShader : Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
         precision mediump float;
-        
+
         uniform sampler2D texture;
 
 
@@ -787,7 +786,7 @@ fragmentShader =
 
 
         void main () {
-        
+
             vec4 tex = texture2D(texture, v_coord) * 2.5;
 
             gl_FragColor = tex * vec4(v_color , 1.0);
@@ -823,13 +822,13 @@ vertexShaderTerrain =
 
         void main () {
             vec3 wPosition = (translate * rotation * vec4(position, 1.0)).xyz;
-            
+
             float d = length(wPosition.xz - playerPos.xz);
             vec3 yPlanetP = vec3(0.0, -(d * d * d * d * 0.00000005), 0.0);
-            
-            
+
+
             gl_Position = perspective * camera * vec4(wPosition + yPlanetP, 1.0);
-            
+
             highp vec3 ambientLight = vec3(0.0, 0.05, 0.01);
             highp vec3 directionalLightColor = vec3(1, 1, 1);
             highp vec3 directionalVector = normalize(directionalLight);
@@ -864,7 +863,7 @@ fragmentShaderTerrain =
         varying vec2 v_coord;
 
         void main () {
-        
+
             // Player drop shadow
             float s1 = 0.0;
             float s2 = 0.9;
@@ -872,16 +871,16 @@ fragmentShaderTerrain =
             float dClamped = min(s2, d / s2);
             float playerShadow = (dClamped + s1) / (1.0 + s1);
             float shadow = ((receiveShadow * playerShadow) + 1.0) / 2.0;
-            
+
 //             View area
             float vDistance = 80.0;
             float vDiff = length(v_position.xz - cameraFocus.xz);
             float vShadow = abs(receiveShadow * min(vDistance, vDiff) / vDistance - 1.0);
 //            float vShadow = 1.0;
-            
+
             vec4 bColor = receiveShadow * vec4(0.08627451, 0.08627451, 0.11372549, 1.0);
             vec3 lighting = receiveShadow > 0.0 ? v_lighting : vec3(1,1,1);
             gl_FragColor = bColor + vec4(3.0 * v_color * lighting * shadow * (vShadow), 1.0);
-            
+
         }
     |]
