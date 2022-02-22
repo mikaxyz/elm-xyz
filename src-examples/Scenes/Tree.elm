@@ -1,7 +1,6 @@
-module Scenes.Sandbox exposing (init)
+module Scenes.Tree exposing (init)
 
 import Material
-import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (vec3)
 import XYZMika.XYZ.Mesh.Cube
 import XYZMika.XYZ.Mesh.Tree exposing (tree)

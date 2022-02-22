@@ -31,8 +31,8 @@ import Scenes.BrickWall
 import Scenes.Landscape
 import Scenes.Light
 import Scenes.NormalMapping
-import Scenes.Sandbox
 import Scenes.Textures
+import Scenes.Tree
 import XYZMika.Debug as Dbug
 import XYZMika.Dragon as Dragon exposing (Dragon)
 import XYZMika.XYZ.AssetStore as AssetStore exposing (Store)
@@ -139,7 +139,7 @@ init =
     , paused = False
     , scene = Nothing
     , sceneOptions = SceneOptions.create
-    , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Sandbox, Landscape ] |> Array.fromList
+    , scenes = [ BrickWall, Animals, Textures, NormalMapping, Light, Tree, Landscape ] |> Array.fromList
     , currentSceneIndex = 3
     , assets = AssetStore.init Asset.objPath Asset.texturePath
     , hud = Hud { sidebarExpanded = True }
@@ -172,7 +172,7 @@ modifiers model =
         Just Textures ->
             Scenes.Textures.modifiers model.theta TexturesSceneObjectId
 
-        Just Sandbox ->
+        Just Tree ->
             []
 
         Just Animals ->
@@ -219,7 +219,7 @@ type ActiveScene
     = BrickWall
     | NormalMapping
     | Textures
-    | Sandbox
+    | Tree
     | Animals
     | Light
     | Landscape
@@ -237,8 +237,8 @@ currentSceneName model =
         Just Textures ->
             "Textures"
 
-        Just Sandbox ->
-            "Sandbox"
+        Just Tree ->
+            "Tree"
 
         Just Animals ->
             "Animals"
@@ -267,7 +267,7 @@ updateAssetStore assets model =
                     Just Textures ->
                         { m | scene = Scenes.Textures.init TexturesSceneObjectId m.assets |> Just }
 
-                    Just Sandbox ->
+                    Just Tree ->
                         m
 
                     Just Animals ->
@@ -333,8 +333,8 @@ loadScene model =
                         )
                    )
 
-        Just Sandbox ->
-            ( { model | scene = Just Scenes.Sandbox.init }
+        Just Tree ->
+            ( { model | scene = Just Scenes.Tree.init }
             , Cmd.none
             )
 
