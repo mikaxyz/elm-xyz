@@ -1,6 +1,7 @@
 module Tests.ObjParser exposing (suite)
 
 import Expect exposing (Expectation)
+import Math.Matrix4 as Mat4
 import Math.Vector2 exposing (vec2)
 import Math.Vector3 exposing (vec3)
 import Test exposing (..)
@@ -63,8 +64,8 @@ suite =
                     --    , [ ( 0, 1, 2 ) ]
                     --    )
                     vertices =
-                        Obj.parse { scale = 1, color = color } input
-                            |> .indexedTrianglesWithTangents
+                        Obj.parse { scale = 1, color = color, transform = Mat4.identity } input
+                            |> .indexedTriangles
 
                     subject =
                         vertices
@@ -87,17 +88,20 @@ suite =
 
                     expected =
                         [ ( Vertex.vertex (vec3 -1 1 0)
+                                |> Vertex.withNormal (vec3 0 0 -1)
                                 |> Vertex.withColor color
                           , Vertex.vertex (vec3 1 1 0)
+                                |> Vertex.withNormal (vec3 0 0 -1)
                                 |> Vertex.withColor color
                           , Vertex.vertex (vec3 1 -1 0)
+                                |> Vertex.withNormal (vec3 0 0 -1)
                                 |> Vertex.withColor color
                           )
                         ]
                 in
                 Expect.equal
                     expected
-                    (Obj.parse { scale = 1, color = color } input).triangles
+                    (Obj.parse { scale = 1, color = color, transform = Mat4.identity } input).triangles
         , test "parses triangles with position and uvs" <|
             \_ ->
                 let
@@ -114,12 +118,15 @@ suite =
 
                     expected =
                         [ ( Vertex.vertex (vec3 -1 1 0)
+                                |> Vertex.withNormal (vec3 0 0 -1)
                                 |> Vertex.withUV (vec2 0 0)
                                 |> Vertex.withColor color
                           , Vertex.vertex (vec3 1 1 0)
+                                |> Vertex.withNormal (vec3 0 0 -1)
                                 |> Vertex.withUV (vec2 1 0)
                                 |> Vertex.withColor color
                           , Vertex.vertex (vec3 1 -1 0)
+                                |> Vertex.withNormal (vec3 0 0 -1)
                                 |> Vertex.withUV (vec2 0 1)
                                 |> Vertex.withColor color
                           )
@@ -127,7 +134,7 @@ suite =
                 in
                 Expect.equal
                     expected
-                    (Obj.parse { scale = 1, color = color } input).triangles
+                    (Obj.parse { scale = 1, color = color, transform = Mat4.identity } input).triangles
         , test "parses triangles with position and normals" <|
             \_ ->
                 let
@@ -162,7 +169,7 @@ suite =
                 in
                 Expect.equal
                     expected
-                    (Obj.parse { scale = 1, color = color } input).triangles
+                    (Obj.parse { scale = 1, color = color, transform = Mat4.identity } input).triangles
         , skip <|
             --  TODO: handle/triangulate quads
             test "parses faces with 4 vertices"
@@ -205,11 +212,11 @@ suite =
                         --  )
                         --]
                         subject =
-                            Obj.parse { scale = 1, color = color } input
+                            Obj.parse { scale = 1, color = color, transform = Mat4.identity } input
                     in
                     Expect.equal
                         expected
-                        (Obj.parse { scale = 1, color = color } input).triangles
+                        (Obj.parse { scale = 1, color = color, transform = Mat4.identity } input).triangles
         , test "generates indexed triangles" <|
             \_ ->
                 let
@@ -248,7 +255,7 @@ suite =
                         )
 
                     subject =
-                        Obj.parse { scale = 1, color = color } input
+                        Obj.parse { scale = 1, color = color, transform = Mat4.identity } input
                 in
                 Expect.equal
                     expected
