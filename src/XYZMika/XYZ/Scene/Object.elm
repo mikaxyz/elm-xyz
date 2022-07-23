@@ -6,7 +6,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , toHumanReadable
     , maybeLight
-    , disable, enable, group, id, isDisabled, lightTargetMap, map, maybeGroup, maybeLightDisabled, objectObjectWithIndexedTriangles, objectWithTriangles, spotLight, spotLightWithId, withLightTarget
+    , disable, enable, group, groupWithId, id, isDisabled, lightTargetMap, map, maybeGroup, maybeLightDisabled, objectObjectWithIndexedTriangles, objectWithTriangles, spotLight, spotLightWithId, withLightTarget
     )
 
 {-|
@@ -145,8 +145,18 @@ enable object =
 
 group : String -> Object id materialId
 group name =
+    groupWithId_ Nothing name
+
+
+groupWithId : id -> String -> Object id materialId
+groupWithId id_ name =
+    groupWithId_ (Just id_) name
+
+
+groupWithId_ : Maybe id -> String -> Object id materialId
+groupWithId_ id_ name =
     Group name
-        { id = Nothing
+        { id = id_
         , position = vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = [] |> WebGL.triangles
