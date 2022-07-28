@@ -1,4 +1,13 @@
-module XYZMika.Dragon exposing (Dragon, Msg, Vector, dragEvents, init, subscriptions, update)
+module XYZMika.Dragon exposing
+    ( Dragon
+    , Msg
+    , Vector
+    , dragEvents
+    , init
+    , isDragging
+    , subscriptions
+    , update
+    )
 
 import Browser.Events
 import Html
@@ -12,6 +21,7 @@ type Dragon
     = Dragon
         { drag : Maybe Drag
         , current : Vec2
+        , clickSensitivity : Float
         }
 
 
@@ -38,11 +48,17 @@ init =
     Dragon
         { drag = Nothing
         , current = Vec2.vec2 0 0
+        , clickSensitivity = 1.0
         }
 
 
-update : { tagger : Msg -> msg, onDragUpdate : Vector -> msg } -> Msg -> Dragon -> ( Dragon, Cmd msg )
-update { onDragUpdate } msg (Dragon dragon) =
+isDragging : Dragon -> Bool
+isDragging (Dragon { drag }) =
+    drag /= Nothing
+
+
+update : { tagger : Msg -> msg, onDragUpdate : Vector -> msg, onMouseUp : Vector -> msg } -> Msg -> Dragon -> ( Dragon, Cmd msg )
+update { onDragUpdate, onMouseUp } msg (Dragon dragon) =
     case msg of
         DragStart position ->
             ( Dragon { dragon | drag = Just { from = position, to = position } }
@@ -67,7 +83,25 @@ update { onDragUpdate } msg (Dragon dragon) =
                     | drag = Nothing
                     , current = dragon.current |> Vec2.add position
                 }
-            , Cmd.none
+            , case clickPositionWhenDragDistanceBelow dragon.clickSensitivity dragon.drag of
+                Just pos_ ->
+                    Task.succeed () |> Task.perform (\_ -> onMouseUp pos_)
+
+                Nothing ->
+                    Cmd.none
+            )
+
+
+clickPositionWhenDragDistanceBelow : Float -> Maybe Drag -> Maybe Vector
+clickPositionWhenDragDistanceBelow limit drag =
+    drag
+        |> Maybe.andThen
+            (\{ from, to } ->
+                if Vec2.distance from to < limit then
+                    Just (Vec2.toRecord to)
+
+                else
+                    Nothing
             )
 
 

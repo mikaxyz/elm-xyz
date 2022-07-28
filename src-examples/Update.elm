@@ -171,7 +171,7 @@ update msg model =
                         }
                         (Model.modifiers model)
                         scene
-                        ( Vec2.getX pos, Vec2.getY pos )
+                        ( pos.x, pos.y )
                         |> Maybe.map Tuple.first
             in
             ( { model
@@ -190,7 +190,13 @@ update msg model =
             )
 
         DragonMsg msg_ ->
-            Dragon.update { tagger = DragonMsg, onDragUpdate = DragonOnDrag } msg_ model.dragon
+            Dragon.update
+                { tagger = DragonMsg
+                , onDragUpdate = DragonOnDrag
+                , onMouseUp = OnMouseUp
+                }
+                msg_
+                model.dragon
                 |> Tuple.mapFirst (\dragon -> { model | dragon = dragon })
 
         DragonOnDrag drag ->

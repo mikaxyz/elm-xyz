@@ -47,7 +47,7 @@ type Msg
     | AssetStoreLoadResult (Result AssetStore.Error AssetStore.Content)
     | AssetStoreLoadResultDownloadXyz String Asset.Obj AssetStore.Content
       --
-    | OnMouseUp Vec2
+    | OnMouseUp Dragon.Vector
       --
     | KeyboardMsg Keyboard.Msg
     | OnKeyDown Keyboard.Key
@@ -74,7 +74,7 @@ type DragTarget
 
 viewport =
     { width = 1600
-    , height = 800
+    , height = 1200
     }
 
 
