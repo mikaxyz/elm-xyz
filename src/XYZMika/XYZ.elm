@@ -14,6 +14,7 @@ import Html.Attributes
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import WebGL exposing (Entity, Shader)
 import WebGL.Texture exposing (Texture)
+import XYZMika.WebGL
 import XYZMika.XYZ.Material exposing (Renderer, ShadowMaps)
 import XYZMika.XYZ.Material.DepthMap
 import XYZMika.XYZ.Scene as Scene exposing (Scene)
@@ -97,9 +98,13 @@ toHtml :
     -> View objectId materialId
     -> Html msg
 toHtml attributes scene (View ({ viewport, modifiers, renderer } as config)) =
-    case frameBuffersForShadowMaps modifiers scene of
+    case
+        XYZMika.WebGL.supportsFrameBuffers
+            (\_ -> frameBuffersForShadowMaps modifiers scene)
+            (\_ -> Nothing)
+    of
         Just frameBuffers ->
-            WebGL.toHtmlWithFrameBuffers
+            XYZMika.WebGL.toHtmlWithFrameBuffers
                 ([ frameBuffers.shadowMap1
                  , frameBuffers.shadowMap2
                  , frameBuffers.shadowMap3
@@ -195,6 +200,14 @@ toHtml attributes scene (View ({ viewport, modifiers, renderer } as config)) =
                 )
 
         Nothing ->
+            let
+                lightsInScene : List SpotLight
+                lightsInScene =
+                    scene
+                        |> Scene.withModifiers modifiers
+                        |> Scene.spotLights
+                        |> List.reverse
+            in
             WebGL.toHtml
                 (Html.Attributes.width viewport.width
                     :: Html.Attributes.height viewport.height
@@ -212,11 +225,11 @@ toHtml attributes scene (View ({ viewport, modifiers, renderer } as config)) =
 
 
 type alias ShadowMapBuffers =
-    { shadowMap1 : Maybe ( WebGL.FrameBuffer, Mat4 )
-    , shadowMap2 : Maybe ( WebGL.FrameBuffer, Mat4 )
-    , shadowMap3 : Maybe ( WebGL.FrameBuffer, Mat4 )
-    , shadowMap4 : Maybe ( WebGL.FrameBuffer, Mat4 )
-    , shadowMap5 : Maybe ( WebGL.FrameBuffer, Mat4 )
+    { shadowMap1 : Maybe ( XYZMika.WebGL.FrameBuffer, Mat4 )
+    , shadowMap2 : Maybe ( XYZMika.WebGL.FrameBuffer, Mat4 )
+    , shadowMap3 : Maybe ( XYZMika.WebGL.FrameBuffer, Mat4 )
+    , shadowMap4 : Maybe ( XYZMika.WebGL.FrameBuffer, Mat4 )
+    , shadowMap5 : Maybe ( XYZMika.WebGL.FrameBuffer, Mat4 )
     }
 
 
@@ -226,6 +239,7 @@ frameBuffersForShadowMaps modifiers scene =
         frameBufferAndViewMatrixForLight =
             frameBufferForSpotLight modifiers scene
 
+        lightsInScene : List SpotLight
         lightsInScene =
             scene
                 |> Scene.withModifiers modifiers
@@ -292,7 +306,7 @@ frameBufferForSpotLight :
           }
         , SpotLight
         )
-    -> ( WebGL.FrameBuffer, Mat4 )
+    -> ( XYZMika.WebGL.FrameBuffer, Mat4 )
 frameBufferForSpotLight modifiers originalScene ( shadowMapData, spotLight ) =
     let
         scene =
@@ -312,7 +326,7 @@ frameBufferForSpotLight modifiers originalScene ( shadowMapData, spotLight ) =
         aspectRatio =
             1
     in
-    ( WebGL.frameBuffer ( shadowMapData.resolution, shadowMapData.resolution )
+    ( XYZMika.WebGL.frameBuffer ( shadowMapData.resolution, shadowMapData.resolution )
         (renderSimpleWithModifiers
             modifiers
             { width = shadowMapData.resolution, height = shadowMapData.resolution }

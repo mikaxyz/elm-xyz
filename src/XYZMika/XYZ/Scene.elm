@@ -28,6 +28,7 @@ import WebGL exposing (Entity, Shader)
 import WebGL.Settings
 import WebGL.Settings.DepthTest
 import XYZMika.Color
+import XYZMika.WebGL
 import XYZMika.XYZ.Material as Renderer exposing (Renderer)
 import XYZMika.XYZ.Material.Gizmo
 import XYZMika.XYZ.Material.Grid
@@ -291,7 +292,11 @@ render defaultLights modifiers sceneOptions viewport graphRenderOptions (Scene s
                 |> graphWithMatrix { mat = Mat4.identity }
                 |> Tree.foldl
                     (\( transform, object ) acc ->
-                        case Object.maybeLight object of
+                        case
+                            XYZMika.WebGL.supportsFrameBuffers
+                                (\_ -> Object.maybeLight object)
+                                (\_ -> Object.maybeLight object |> Maybe.map Light.spotLightToPointLight)
+                        of
                             Just light ->
                                 Light.withPosition (vec3 0 0 0 |> Mat4.transform transform) light :: acc
 

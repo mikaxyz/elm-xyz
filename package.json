@@ -5,6 +5,8 @@
   "description": "My Elm Web GL utilities",
   "main": "index.html",
   "scripts": {
+    "setup": "./codegen/webgl-fork/webgl-fork.sh",
+    "enable_webgl_fork": "./codegen/webgl-fork/webgl-fork.sh enable",
     "run": "npx http-server -c-1 -a localhost -p 8085",
     "build_dev": "./src/XYZMika/Debug/run.sh debug && ./node_modules/.bin/elm make ./src-examples/Main.elm --output=./dist/app.js",
     "build_debugger": "./src/XYZMika/Debug/run.sh debug && ./node_modules/.bin/elm make ./src-examples/Main.elm --output=./dist/app.js --debug",

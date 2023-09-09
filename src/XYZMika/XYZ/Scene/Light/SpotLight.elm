@@ -4,6 +4,7 @@ module XYZMika.XYZ.Scene.Light.SpotLight exposing
     , color
     , direction
     , fov
+    , intensity
     , light
     , position
     , shadowMapData
@@ -135,6 +136,11 @@ position (SpotLight light_) =
 color : SpotLight -> Vec3
 color (SpotLight light_) =
     light_.color
+
+
+intensity : SpotLight -> Float
+intensity (SpotLight light_) =
+    light_.intensity
 
 
 fov : SpotLight -> Float

@@ -8,6 +8,7 @@ module XYZMika.XYZ.Scene.Light exposing
     , pointLight
     , position
     , spotLight
+    , spotLightToPointLight
     , targetMap
     , toHumanReadable
     , withColor
@@ -29,6 +30,22 @@ type Light
     = DirectionalLight DirectionalLight
     | PointLight PointLight
     | SpotLight SpotLight
+
+
+spotLightToPointLight : Light -> Light
+spotLightToPointLight light =
+    case light of
+        DirectionalLight light_ ->
+            DirectionalLight light_
+
+        PointLight light_ ->
+            PointLight light_
+
+        SpotLight light_ ->
+            PointLight.light (SpotLight.position light_)
+                |> PointLight.withIntensity (SpotLight.intensity light_)
+                |> PointLight.withColor (SpotLight.color light_)
+                |> PointLight
 
 
 fromSpotLight : SpotLight -> Light
