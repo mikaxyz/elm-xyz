@@ -170,53 +170,52 @@ suite =
                 Expect.equal
                     expected
                     (Obj.parse { scale = 1, color = color, transform = Mat4.identity } input).triangles
-        , skip <|
-            --  TODO: handle/triangulate quads
-            test "parses faces with 4 vertices"
-            <|
-                \_ ->
-                    let
-                        input =
-                            [ "v -1.0 1.0 0.0"
-                            , "v 1.0 1.0 0.0"
-                            , "v 1.0 -1.0 0.0"
-                            , "v -1.0 -1.0 0.0"
-                            , "f 1 2 3 4"
-                            ]
-                                |> String.join "\n"
 
-                        expected =
-                            [ ( Vertex.vertex (vec3 -1 1 0)
-                                    |> Vertex.withColor color
-                              , Vertex.vertex (vec3 -1 1 0)
-                                    |> Vertex.withColor color
-                              , Vertex.vertex (vec3 -1 1 0)
-                                    |> Vertex.withColor color
-                              )
-                            , ( Vertex.vertex (vec3 -1 1 0)
-                                    |> Vertex.withColor color
-                              , Vertex.vertex (vec3 -1 1 0)
-                                    |> Vertex.withColor color
-                              , Vertex.vertex (vec3 -1 1 0)
-                                    |> Vertex.withColor color
-                              )
-                            ]
-
-                        --[ ( Vertex color (vec3 -1 1 0) (vec3 0 0 -1)
-                        --  , Vertex color (vec3 1 1 0) (vec3 0 0 -1)
-                        --  , Vertex color (vec3 1 -1 0) (vec3 0 0 -1)
-                        --  )
-                        --, ( Vertex color (vec3 1 -1 0) (vec3 0 0 -1)
-                        --  , Vertex color (vec3 -1 -1 0) (vec3 0 0 -1)
-                        --  , Vertex color (vec3 1 1 0) (vec3 0 0 -1)
-                        --  )
-                        --]
-                        subject =
-                            Obj.parse { scale = 1, color = color, transform = Mat4.identity } input
-                    in
-                    Expect.equal
-                        expected
-                        (Obj.parse { scale = 1, color = color, transform = Mat4.identity } input).triangles
+        --, --  TODO: handle/triangulate quads
+        --  test "parses faces with 4 vertices" <|
+        --    \_ ->
+        --        let
+        --            input =
+        --                [ "v -1.0 1.0 0.0"
+        --                , "v 1.0 1.0 0.0"
+        --                , "v 1.0 -1.0 0.0"
+        --                , "v -1.0 -1.0 0.0"
+        --                , "f 1 2 3 4"
+        --                ]
+        --                    |> String.join "\n"
+        --
+        --            expected =
+        --                [ ( Vertex.vertex (vec3 -1 1 0)
+        --                        |> Vertex.withColor color
+        --                  , Vertex.vertex (vec3 -1 1 0)
+        --                        |> Vertex.withColor color
+        --                  , Vertex.vertex (vec3 -1 1 0)
+        --                        |> Vertex.withColor color
+        --                  )
+        --                , ( Vertex.vertex (vec3 -1 1 0)
+        --                        |> Vertex.withColor color
+        --                  , Vertex.vertex (vec3 -1 1 0)
+        --                        |> Vertex.withColor color
+        --                  , Vertex.vertex (vec3 -1 1 0)
+        --                        |> Vertex.withColor color
+        --                  )
+        --                ]
+        --
+        --            --[ ( Vertex color (vec3 -1 1 0) (vec3 0 0 -1)
+        --            --  , Vertex color (vec3 1 1 0) (vec3 0 0 -1)
+        --            --  , Vertex color (vec3 1 -1 0) (vec3 0 0 -1)
+        --            --  )
+        --            --, ( Vertex color (vec3 1 -1 0) (vec3 0 0 -1)
+        --            --  , Vertex color (vec3 -1 -1 0) (vec3 0 0 -1)
+        --            --  , Vertex color (vec3 1 1 0) (vec3 0 0 -1)
+        --            --  )
+        --            --]
+        --            subject =
+        --                Obj.parse { scale = 1, color = color, transform = Mat4.identity } input
+        --        in
+        --        Expect.equal
+        --            expected
+        --            (Obj.parse { scale = 1, color = color, transform = Mat4.identity } input).triangles
         , test "generates indexed triangles" <|
             \_ ->
                 let
