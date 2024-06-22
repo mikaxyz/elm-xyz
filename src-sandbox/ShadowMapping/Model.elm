@@ -26,6 +26,7 @@ type Msg
     | OnKeyDown Keyboard.Key
     | DragonMsg Dragon.Msg
     | DragonOnDrag Dragon.Vector
+    | OnMouseUp Dragon.Vector
     | AssetLoaded (Result AssetStore.Error AssetStore.Content)
 
 

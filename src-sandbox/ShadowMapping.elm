@@ -76,7 +76,7 @@ update msg model =
             ( model, Cmd.none )
 
         DragonMsg msg_ ->
-            Dragon.update { tagger = DragonMsg, onDragUpdate = DragonOnDrag } msg_ model.dragon
+            Dragon.update { tagger = DragonMsg, onDragUpdate = DragonOnDrag, onMouseUp = OnMouseUp } msg_ model.dragon
                 |> Tuple.mapFirst (\dragon -> { model | dragon = dragon })
 
         DragonOnDrag drag ->
@@ -97,3 +97,6 @@ update msg model =
               }
             , Cmd.none
             )
+
+        OnMouseUp v ->
+            ( model, Cmd.none )
