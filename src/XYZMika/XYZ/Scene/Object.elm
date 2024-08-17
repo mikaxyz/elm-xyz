@@ -7,6 +7,7 @@ module XYZMika.XYZ.Scene.Object exposing
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , toHumanReadable
     , maybeLight
+    , BoneTransforms, boneTransforms, boneTransformsIdentity, withBoneTransforms
     , disable, enable, group, groupWithId, id, isDisabled, lightTargetMap, map, maybeGroup, maybeLightDisabled, objectObjectWithIndexedTriangles, objectWithTriangles, spotLight, spotLightWithId, withLightTarget
     )
 
@@ -39,6 +40,11 @@ module XYZMika.XYZ.Scene.Object exposing
 ## Read
 
 @docs maybeLight
+
+
+## Skeleton
+
+@docs BoneTransforms, boneTransforms, boneTransformsIdentity, withBoneTransforms
 
 -}
 
@@ -91,6 +97,122 @@ type alias ObjectData id materialId =
     , material : Maybe materialId
     , color : Color
     , glSetting : Maybe WebGL.Settings.Setting
+    , boneTransforms : Maybe BoneTransforms
+    }
+
+
+type alias Skin =
+    { inverseBindMatrices : List Mat4
+    , joints : List Int
+    }
+
+
+type alias BoneTransforms =
+    { joint0 : Mat4
+    , joint1 : Mat4
+    , joint2 : Mat4
+    , joint3 : Mat4
+    , joint4 : Mat4
+    , joint5 : Mat4
+    , joint6 : Mat4
+    , joint7 : Mat4
+    , joint8 : Mat4
+    , joint9 : Mat4
+    , joint10 : Mat4
+    , joint11 : Mat4
+    , joint12 : Mat4
+    , joint13 : Mat4
+    , joint14 : Mat4
+    , joint15 : Mat4
+    , joint16 : Mat4
+    , joint17 : Mat4
+    , joint18 : Mat4
+    , joint19 : Mat4
+    , joint20 : Mat4
+    , joint21 : Mat4
+    , joint22 : Mat4
+    , joint23 : Mat4
+    , joint24 : Mat4
+    , inverseBindMatrix0 : Mat4
+    , inverseBindMatrix1 : Mat4
+    , inverseBindMatrix2 : Mat4
+    , inverseBindMatrix3 : Mat4
+    , inverseBindMatrix4 : Mat4
+    , inverseBindMatrix5 : Mat4
+    , inverseBindMatrix6 : Mat4
+    , inverseBindMatrix7 : Mat4
+    , inverseBindMatrix8 : Mat4
+    , inverseBindMatrix9 : Mat4
+    , inverseBindMatrix10 : Mat4
+    , inverseBindMatrix11 : Mat4
+    , inverseBindMatrix12 : Mat4
+    , inverseBindMatrix13 : Mat4
+    , inverseBindMatrix14 : Mat4
+    , inverseBindMatrix15 : Mat4
+    , inverseBindMatrix16 : Mat4
+    , inverseBindMatrix17 : Mat4
+    , inverseBindMatrix18 : Mat4
+    , inverseBindMatrix19 : Mat4
+    , inverseBindMatrix20 : Mat4
+    , inverseBindMatrix21 : Mat4
+    , inverseBindMatrix22 : Mat4
+    , inverseBindMatrix23 : Mat4
+    , inverseBindMatrix24 : Mat4
+    }
+
+
+boneTransformsIdentity : BoneTransforms
+boneTransformsIdentity =
+    { joint0 = Mat4.identity
+    , joint1 = Mat4.identity
+    , joint2 = Mat4.identity
+    , joint3 = Mat4.identity
+    , joint4 = Mat4.identity
+    , joint5 = Mat4.identity
+    , joint6 = Mat4.identity
+    , joint7 = Mat4.identity
+    , joint8 = Mat4.identity
+    , joint9 = Mat4.identity
+    , joint10 = Mat4.identity
+    , joint11 = Mat4.identity
+    , joint12 = Mat4.identity
+    , joint13 = Mat4.identity
+    , joint14 = Mat4.identity
+    , joint15 = Mat4.identity
+    , joint16 = Mat4.identity
+    , joint17 = Mat4.identity
+    , joint18 = Mat4.identity
+    , joint19 = Mat4.identity
+    , joint20 = Mat4.identity
+    , joint21 = Mat4.identity
+    , joint22 = Mat4.identity
+    , joint23 = Mat4.identity
+    , joint24 = Mat4.identity
+    , inverseBindMatrix0 = Mat4.identity
+    , inverseBindMatrix1 = Mat4.identity
+    , inverseBindMatrix2 = Mat4.identity
+    , inverseBindMatrix3 = Mat4.identity
+    , inverseBindMatrix4 = Mat4.identity
+    , inverseBindMatrix5 = Mat4.identity
+    , inverseBindMatrix6 = Mat4.identity
+    , inverseBindMatrix7 = Mat4.identity
+    , inverseBindMatrix8 = Mat4.identity
+    , inverseBindMatrix9 = Mat4.identity
+    , inverseBindMatrix10 = Mat4.identity
+    , inverseBindMatrix11 = Mat4.identity
+    , inverseBindMatrix12 = Mat4.identity
+    , inverseBindMatrix13 = Mat4.identity
+    , inverseBindMatrix14 = Mat4.identity
+    , inverseBindMatrix15 = Mat4.identity
+    , inverseBindMatrix16 = Mat4.identity
+    , inverseBindMatrix17 = Mat4.identity
+    , inverseBindMatrix18 = Mat4.identity
+    , inverseBindMatrix19 = Mat4.identity
+    , inverseBindMatrix20 = Mat4.identity
+    , inverseBindMatrix21 = Mat4.identity
+    , inverseBindMatrix22 = Mat4.identity
+    , inverseBindMatrix23 = Mat4.identity
+    , inverseBindMatrix24 = Mat4.identity
     }
 
 
@@ -171,6 +293,7 @@ groupWithId_ id_ name =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
 
 
@@ -196,6 +319,7 @@ light light_ =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
         light_
 
@@ -232,6 +356,7 @@ spotLightWithId_ objectId light_ =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
         (Light.fromSpotLight light_)
 
@@ -319,6 +444,7 @@ initWithBounds bounds tris x =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
 
 
@@ -340,6 +466,7 @@ initWithLines x =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
 
 
@@ -361,6 +488,7 @@ initWithTriangles x =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
 
 
@@ -387,6 +515,7 @@ objectWithTriangles objectId x =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
 
 
@@ -405,6 +534,7 @@ objectObjectWithIndexedTriangles objectId ( v, i ) =
         , material = Nothing
         , color = Color.white
         , glSetting = Nothing
+        , boneTransforms = Nothing
         }
 
 
@@ -512,6 +642,38 @@ id object =
 
         Group _ data ->
             data.id
+
+
+boneTransforms : Object id materialId -> Maybe BoneTransforms
+boneTransforms object =
+    case object of
+        Disabled disabledObject ->
+            boneTransforms disabledObject
+
+        Mesh data ->
+            data.boneTransforms
+
+        Light data light_ ->
+            data.boneTransforms
+
+        Group name data ->
+            data.boneTransforms
+
+
+withBoneTransforms : BoneTransforms -> Object id materialId -> Object id materialId
+withBoneTransforms x object =
+    case object of
+        Disabled disabledObject ->
+            Disabled (disabledObject |> withBoneTransforms x)
+
+        Mesh data ->
+            Mesh { data | boneTransforms = Just x }
+
+        Light data light_ ->
+            Light { data | boneTransforms = Just x } light_
+
+        Group name data ->
+            Group name { data | boneTransforms = Just x }
 
 
 withPosition : Vec3 -> Object id materialId -> Object id materialId

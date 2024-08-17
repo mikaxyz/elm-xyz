@@ -2,13 +2,16 @@ module XYZMika.XYZ.Data.Vertex exposing
     ( Vertex
     , vertex
     , withColor
+    , withJoints
     , withNormal
     , withTangent
     , withUV
+    , withWeights
     )
 
 import Math.Vector2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector4 exposing (Vec4, vec4)
 
 
 type alias Vertex =
@@ -23,6 +26,8 @@ type alias Vertex =
         , hasTangent : Bool
         , hasUV : Bool
         }
+    , weights : Vec4
+    , joints : Vec4
     }
 
 
@@ -39,6 +44,8 @@ vertex pos =
         , hasTangent = False
         , hasUV = False
         }
+    , weights = vec4 1 1 1 1
+    , joints = vec4 1 1 1 1
     }
 
 
@@ -66,3 +73,13 @@ withTangent x ({ meta } as v) =
 withUV : Vec2 -> Vertex -> Vertex
 withUV x ({ meta } as v) =
     { v | uv = x, meta = { meta | hasUV = True } }
+
+
+withJoints : Int -> Int -> Int -> Int -> Vertex -> Vertex
+withJoints j1 j2 j3 j4 v =
+    { v | joints = vec4 (toFloat j1) (toFloat j2) (toFloat j3) (toFloat j4) }
+
+
+withWeights : Vec4 -> Vertex -> Vertex
+withWeights x v =
+    { v | weights = x }

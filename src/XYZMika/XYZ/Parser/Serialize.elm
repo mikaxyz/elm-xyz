@@ -4,6 +4,7 @@ import Json.Decode as JD
 import Json.Encode as JE
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import XYZMika.XYZ.Data.Vertex as Vertex exposing (Vertex)
 
 
@@ -67,7 +68,7 @@ indexedTrianglesDecoder =
 
 vertexDecoder : JD.Decoder Vertex
 vertexDecoder =
-    JD.map6 Vertex
+    JD.map8 Vertex
         (JD.field "position" vec3Decoder)
         (JD.field "color" vec3Decoder)
         (JD.field "normal" vec3Decoder)
@@ -79,6 +80,8 @@ vertexDecoder =
             (JD.at [ "meta", "hasColor" ] JD.bool)
             (JD.at [ "meta", "hasUV" ] JD.bool)
         )
+        (JD.maybe (JD.field "weights" vec4Decoder) |> JD.map (Maybe.withDefault (vec4 1 1 1 1)))
+        (JD.maybe (JD.field "joints" vec4Decoder) |> JD.map (Maybe.withDefault (vec4 1 1 1 1)))
 
 
 vec2Decoder : JD.Decoder Vec2
@@ -94,6 +97,15 @@ vec3Decoder =
         (JD.field "x" JD.float)
         (JD.field "y" JD.float)
         (JD.field "z" JD.float)
+
+
+vec4Decoder : JD.Decoder Vec4
+vec4Decoder =
+    JD.map4 vec4
+        (JD.field "x" JD.float)
+        (JD.field "y" JD.float)
+        (JD.field "z" JD.float)
+        (JD.field "w" JD.float)
 
 
 
@@ -143,6 +155,8 @@ encodeVertex vertex =
         , ( "normal", encodeVec3 vertex.normal )
         , ( "tangent", encodeVec3 vertex.tangent )
         , ( "uv", encodeVec2 vertex.uv )
+        , ( "weights", encodeVec4 vertex.weights )
+        , ( "joints", encodeVec4 vertex.joints )
         , ( "meta"
           , JE.object
                 [ ( "hasColor", JE.bool vertex.meta.hasColor )
@@ -151,6 +165,20 @@ encodeVertex vertex =
                 , ( "hasUV", JE.bool vertex.meta.hasUV )
                 ]
           )
+        ]
+
+
+encodeVec4 : Vec4 -> JE.Value
+encodeVec4 vec =
+    let
+        { x, y, z, w } =
+            Vec4.toRecord vec
+    in
+    JE.object
+        [ ( "x", JE.float x )
+        , ( "y", JE.float y )
+        , ( "z", JE.float z )
+        , ( "w", JE.float w )
         ]
 
 
