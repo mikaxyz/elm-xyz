@@ -1,6 +1,7 @@
 module XYZMika.XYZ.Mesh.Primitives exposing
     ( bone
     , bone2
+    , bone3
     , quad
     , quadWithNormal
     )
@@ -74,4 +75,43 @@ bone2 color1 color2 color3 thickness length =
     in
     [ ( vertex color1 top, vertex color2 bottomL1, vertex color2 bottomR1 )
     , ( vertex color1 top, vertex color3 bottomL2, vertex color3 bottomR2 )
+    ]
+
+
+bone3 : Float -> List ( Vertex, Vertex, Vertex )
+bone3 length =
+    let
+        ( color1, color2 ) =
+            ( Color.cyan, Color.magenta )
+
+        ( top, bottom ) =
+            ( vec3 0 length 0
+            , vec3 0 0 0
+            )
+
+        ( ly, thickness ) =
+            ( length * 0.1, length * 0.1 )
+
+        { l1, l2, r1, r2 } =
+            { l1 = vec3 0 ly -thickness
+            , l2 = vec3 -thickness ly 0
+            , r1 = vec3 0 ly thickness
+            , r2 = vec3 thickness ly 0
+            }
+
+        vertex color position =
+            Vertex.vertex position
+                |> Vertex.withNormal (vec3 0 1 0)
+                |> Vertex.withColor (Color.toVec3 color)
+    in
+    [ ( vertex color1 top, vertex color1 l1, vertex color1 l2 )
+    , ( vertex color1 top, vertex color1 l2, vertex color1 r1 )
+    , ( vertex color1 top, vertex color1 r1, vertex color1 r2 )
+    , ( vertex color1 top, vertex color1 r2, vertex color1 l1 )
+
+    --
+    , ( vertex color2 bottom, vertex color2 l1, vertex color2 l2 )
+    , ( vertex color2 bottom, vertex color2 l2, vertex color2 r1 )
+    , ( vertex color2 bottom, vertex color2 r1, vertex color2 r2 )
+    , ( vertex color2 bottom, vertex color2 r2, vertex color2 l1 )
     ]
