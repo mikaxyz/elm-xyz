@@ -1,6 +1,7 @@
 module XYZMika.XYZ.Scene.Light.DirectionalLight exposing
     ( DirectionalLight
     , color
+    , direction
     , light
     , toVec4
     , withColor
@@ -20,9 +21,9 @@ type DirectionalLight
 
 
 light : Vec3 -> DirectionalLight
-light direction =
+light direction_ =
     DirectionalLight
-        { direction = direction
+        { direction = direction_
         , intensity = 1.0
         , color = vec3 1 1 1
         }
@@ -41,6 +42,11 @@ withIntensity x (DirectionalLight light_) =
 withColor : Vec3 -> DirectionalLight -> DirectionalLight
 withColor x (DirectionalLight light_) =
     DirectionalLight { light_ | color = x }
+
+
+direction : DirectionalLight -> Vec3
+direction (DirectionalLight light_) =
+    light_.direction
 
 
 color : DirectionalLight -> Vec3
