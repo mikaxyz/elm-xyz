@@ -17,6 +17,7 @@ module XYZMika.XYZ.Scene exposing
     , withLights
     , withLightsInGraph
     , withModifiers
+    , withOrthographicProjection
     , withPerspectiveProjection
     )
 
@@ -53,6 +54,7 @@ type Scene objectId materialId
 
 type Projection
     = Perspective { fov : Float, near : Float, far : Float }
+    | Orthographic { xMag : Float, yMag : Float, near : Float, far : Float }
 
 
 init : Tree (Object objectId materialId) -> Scene objectId materialId
@@ -70,10 +72,18 @@ projectionMatrix aspectRatio (Scene scene) =
         Perspective { fov, near, far } ->
             Mat4.makePerspective fov aspectRatio near far
 
+        Orthographic { xMag, yMag, near, far } ->
+            Mat4.makeOrtho -xMag xMag -yMag yMag near far
+
 
 withPerspectiveProjection : { fov : Float, near : Float, far : Float } -> Scene objectId materialId -> Scene objectId materialId
 withPerspectiveProjection config (Scene scene) =
     Scene { scene | projection = Perspective config }
+
+
+withOrthographicProjection : { xMag : Float, yMag : Float, near : Float, far : Float } -> Scene objectId materialId -> Scene objectId materialId
+withOrthographicProjection config (Scene scene) =
+    Scene { scene | projection = Orthographic config }
 
 
 getGraph : Scene objectId materialId -> Tree (Object objectId materialId)
