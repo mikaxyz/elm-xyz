@@ -2,6 +2,7 @@ module XYZMika.XYZ.Scene.Object exposing
     ( Object, initWithTriangles, initWithLines, initWithIndexedTriangles, light
     , withPosition, withRotation, withColor, withMaterialName, withGlSetting
     , withDiffuseMap, withNormalMap
+    , withName
     , mesh, triangles, position, rotation, color, colorVec3, materialName, boundingBox, glSetting
     , diffuseMap, diffuseMapWithDefault, normalMap, normalMapWithDefault
     , toHumanReadable
@@ -21,6 +22,7 @@ module XYZMika.XYZ.Scene.Object exposing
 
 @docs withPosition, withRotation, withColor, withMaterialName, withGlSetting
 @docs withDiffuseMap, withNormalMap
+@docs withName
 
 
 ## Read
@@ -64,10 +66,10 @@ toHumanReadable : Object id materialId -> String
 toHumanReadable object =
     case object of
         Disabled _ ->
-            "Disabled"
+            "[Disabled] " ++ toHumanReadable object
 
-        Mesh _ ->
-            "Mesh"
+        Mesh data ->
+            "Mesh <" ++ Maybe.withDefault "Untitled" data.name ++ ">"
 
         Light _ light_ ->
             Light.toHumanReadable light_
@@ -78,6 +80,7 @@ toHumanReadable object =
 
 type alias ObjectData id materialId =
     { id : Maybe id
+    , name : Maybe String
     , position : Vec3
     , rotation : Mat4
     , mesh : Mesh Vertex
@@ -157,6 +160,7 @@ groupWithId_ : Maybe id -> String -> Object id materialId
 groupWithId_ id_ name =
     Group name
         { id = id_
+        , name = Just name
         , position = vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = [] |> WebGL.triangles
@@ -181,6 +185,7 @@ light light_ =
     in
     Light
         { id = Nothing
+        , name = Just (Light.toHumanReadable light_)
         , position = Light.position light_ |> Maybe.withDefault (vec3 0 0 0)
         , rotation = Mat4.identity
         , mesh = verts |> WebGL.triangles
@@ -216,6 +221,7 @@ spotLightWithId_ objectId light_ =
     in
     Light
         { id = objectId
+        , name = Nothing
         , position = SpotLight.position light_
         , rotation = Mat4.identity
         , mesh = verts |> WebGL.triangles
@@ -302,6 +308,7 @@ initWithBounds : ( Vec3, Vec3 ) -> List ( Vec3, Vec3, Vec3 ) -> Mesh Vertex -> O
 initWithBounds bounds tris x =
     Mesh
         { id = Nothing
+        , name = Nothing
         , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = x
@@ -319,6 +326,7 @@ initWithLines : List ( Vertex, Vertex ) -> Object id materialId
 initWithLines x =
     Mesh
         { id = Nothing
+        , name = Nothing
         , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.lines x
@@ -339,6 +347,7 @@ initWithTriangles : List ( Vertex, Vertex, Vertex ) -> Object id materialId
 initWithTriangles x =
     Mesh
         { id = Nothing
+        , name = Nothing
         , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.triangles x
@@ -364,6 +373,7 @@ objectWithTriangles : id -> List ( Vertex, Vertex, Vertex ) -> Object id materia
 objectWithTriangles objectId x =
     Mesh
         { id = Just objectId
+        , name = Nothing
         , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.triangles x
@@ -384,6 +394,7 @@ objectObjectWithIndexedTriangles : id -> ( List Vertex, List ( Int, Int, Int ) )
 objectObjectWithIndexedTriangles objectId ( v, i ) =
     Mesh
         { id = Just objectId
+        , name = Nothing
         , position = Vec3.vec3 0 0 0
         , rotation = Mat4.identity
         , mesh = WebGL.indexedTriangles v i
@@ -549,6 +560,11 @@ lightTargetMap f object =
 
         Group name data ->
             Group name data
+
+
+withName : String -> Object id materialId -> Object id materialId
+withName x obj =
+    obj |> mapData (\data -> { data | name = Just x })
 
 
 withRotation : Mat4 -> Object id materialId -> Object id materialId
