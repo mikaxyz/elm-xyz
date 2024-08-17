@@ -1,9 +1,11 @@
 module XYZMika.XYZ.Scene.Camera exposing
     ( Camera
+    , fromMat4
     , inPlane
     , init
     , position
     , roll
+    , target
     , toMat4
     , withOrbitX
     , withOrbitY
@@ -27,6 +29,29 @@ type Camera
         }
 
 
+fromMat4 : Mat4 -> Camera
+fromMat4 mat =
+    let
+        eye : Vec3
+        eye =
+            vec3 0 0 0 |> Mat4.transform mat
+
+        center : Vec3
+        center =
+            vec3 0 0 -1 |> Mat4.transform mat
+
+        up : Vec3
+        up =
+            vec3 0 -1 0 |> Mat4.transform mat |> Vec3.sub eye
+    in
+    Camera
+        { position = eye
+        , target = center
+        , up = up
+        }
+
+
+init : Vec3 -> Vec3 -> Camera
 init position_ target_ =
     Camera
         { position = position_
@@ -38,6 +63,11 @@ init position_ target_ =
 position : Camera -> Vec3
 position (Camera camera) =
     camera.position
+
+
+target : Camera -> Vec3
+target (Camera camera) =
+    camera.target
 
 
 withPosition : Vec3 -> Camera -> Camera

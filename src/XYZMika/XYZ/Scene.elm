@@ -7,9 +7,11 @@ module XYZMika.XYZ.Scene exposing
     , graphWithMatrix
     , init
     , map
+    , pinCameraToObject
     , projectionMatrix
     , render
     , spotLights
+    , unpinCamera
     , withCamera
     , withCameraMap
     , withCameraPosition
@@ -23,7 +25,7 @@ module XYZMika.XYZ.Scene exposing
 
 import Color
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Tree exposing (Tree)
 import WebGL exposing (Entity, Shader)
 import WebGL.Settings
@@ -48,8 +50,19 @@ type Scene objectId materialId
     = Scene
         { graph : Tree (Object objectId materialId)
         , camera : Camera
+        , cameraObject : Maybe objectId
         , projection : Projection
         }
+
+
+pinCameraToObject : objectId -> Scene objectId materialId -> Scene objectId materialId
+pinCameraToObject objectId (Scene scene) =
+    Scene { scene | cameraObject = Just objectId }
+
+
+unpinCamera : Scene objectId materialId -> Scene objectId materialId
+unpinCamera (Scene scene) =
+    Scene { scene | cameraObject = Nothing }
 
 
 type Projection
@@ -62,6 +75,7 @@ init graph =
     Scene
         { graph = graph
         , camera = Camera.init (vec3 0 3 4) (vec3 0 0 0)
+        , cameraObject = Nothing
         , projection = Perspective { fov = 45, far = 100.0, near = 0.01 }
         }
 
@@ -281,6 +295,30 @@ withModifiers modifiers (Scene scene) =
     Scene { scene | graph = scene.graph |> Tree.map (applyModifiers modifiers) }
 
 
+sceneWithPinnedCamera : Tree ( Mat4, Object objectId materialId ) -> Scene objectId materialId -> Scene objectId materialId
+sceneWithPinnedCamera sceneGraph (Scene scene) =
+    let
+        pinnedCameraMatrix : objectId -> Maybe Mat4
+        pinnedCameraMatrix cameraObject =
+            sceneGraph
+                |> Tree.foldl
+                    (\( mat, object ) acc ->
+                        if Object.id object == Just cameraObject then
+                            Just mat
+
+                        else
+                            acc
+                    )
+                    Nothing
+    in
+    case scene.cameraObject |> Maybe.andThen pinnedCameraMatrix of
+        Just cameraMatrix ->
+            Scene { scene | camera = Camera.fromMat4 cameraMatrix }
+
+        Nothing ->
+            Scene scene
+
+
 render :
     List Light
     -> List (Modifier objectId materialId)
@@ -290,16 +328,24 @@ render :
     -> Scene objectId materialId
     -> Renderer objectId materialId (Uniforms {})
     -> List Entity
-render defaultLights modifiers sceneOptions viewport graphRenderOptions (Scene scene) renderer =
+render defaultLights modifiers sceneOptions viewport graphRenderOptions (Scene scene_) renderer =
     let
+        sceneGraph : Tree ( Mat4, Object objectId materialId )
+        sceneGraph =
+            scene_.graph
+                |> Tree.map (applyModifiers modifiers)
+                |> graphWithMatrix { mat = Mat4.identity }
+
+        (Scene scene) =
+            Scene scene_ |> sceneWithPinnedCamera sceneGraph
+
+        aspectRatio : Float
         aspectRatio =
             toFloat viewport.width / toFloat viewport.height
 
         lightsInScene : List Light
         lightsInScene =
-            scene.graph
-                |> Tree.map (applyModifiers modifiers)
-                |> graphWithMatrix { mat = Mat4.identity }
+            sceneGraph
                 |> Tree.foldl
                     (\( transform, object ) acc ->
                         case
@@ -319,10 +365,10 @@ render defaultLights modifiers sceneOptions viewport graphRenderOptions (Scene s
         rendererOptions =
             case lightsInScene of
                 [] ->
-                    Renderer.createOptions |> Renderer.withLights defaultLights
+                    Renderer.createOptions scene.camera |> Renderer.withLights defaultLights
 
                 lights ->
-                    Renderer.createOptions |> Renderer.withLights lights
+                    Renderer.createOptions scene.camera |> Renderer.withLights lights
     in
     renderGraph
         rendererOptions
@@ -334,9 +380,7 @@ render defaultLights modifiers sceneOptions viewport graphRenderOptions (Scene s
         , sceneRotationMatrix = Mat4.identity
         }
         (GraphNode
-            (scene.graph
-                |> Tree.map (applyModifiers modifiers)
-                |> graphWithMatrix { mat = Mat4.identity }
+            (sceneGraph
                 |> Tree.indexedMap
                     (\i ( sceneMatrix, object ) ->
                         Renderable i sceneMatrix object

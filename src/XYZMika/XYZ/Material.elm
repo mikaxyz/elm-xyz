@@ -4,6 +4,7 @@ module XYZMika.XYZ.Material exposing
     , Renderer
     , ShadowMap
     , ShadowMaps
+    , camera
     , createOptions
     , directionalLights
     , lights
@@ -22,6 +23,7 @@ import WebGL exposing (Entity, Shader)
 import WebGL.Settings
 import WebGL.Texture exposing (Texture)
 import XYZMika.XYZ.Data.Vertex exposing (Vertex)
+import XYZMika.XYZ.Scene.Camera exposing (Camera)
 import XYZMika.XYZ.Scene.Light as Light exposing (Light)
 import XYZMika.XYZ.Scene.Light.DirectionalLight exposing (DirectionalLight)
 import XYZMika.XYZ.Scene.Light.PointLight exposing (PointLight)
@@ -49,15 +51,22 @@ type Options
     = Options
         { lights : List Light
         , shadowMaps : Maybe ShadowMaps
+        , camera : Camera
         }
 
 
-createOptions : Options
-createOptions =
+createOptions : Camera -> Options
+createOptions camera_ =
     Options
         { lights = []
         , shadowMaps = Nothing
+        , camera = camera_
         }
+
+
+camera : Options -> Camera
+camera (Options options) =
+    options.camera
 
 
 withLights : List Light -> Options -> Options
