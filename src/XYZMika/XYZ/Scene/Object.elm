@@ -1,5 +1,6 @@
 module XYZMika.XYZ.Scene.Object exposing
     ( Object, initWithTriangles, initWithLines, initWithIndexedTriangles, light
+    , initWithLineLoop, initWithLineStrip, initWithPoints, initWithTriangleFan, initWithTriangleStrip
     , withPosition, withRotation, withColor, withMaterialName, withGlSetting
     , withDiffuseMap, withNormalMap
     , withName
@@ -17,6 +18,7 @@ module XYZMika.XYZ.Scene.Object exposing
 # Create
 
 @docs Object, initWithTriangles, initWithLines, initWithIndexedTriangles, light, pointLight
+@docs initWithLineLoop, initWithLineStrip, initWithPoints, initWithTriangleFan, initWithTriangleStrip
 
 
 ## Modify
@@ -448,6 +450,25 @@ initWithBounds bounds tris x =
         }
 
 
+initWithPoints : List Vertex -> Object id materialId
+initWithPoints x =
+    Mesh
+        { id = Nothing
+        , name = Nothing
+        , position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.points x
+        , triangles = []
+        , boundingBox = x |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        , boneTransforms = Nothing
+        }
+
+
 initWithLines : List ( Vertex, Vertex ) -> Object id materialId
 initWithLines x =
     Mesh
@@ -461,6 +482,82 @@ initWithLines x =
             x
                 |> List.foldl (\( v1, v2 ) acc -> v1 :: v2 :: acc) []
                 |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        , boneTransforms = Nothing
+        }
+
+
+initWithLineLoop : List Vertex -> Object id materialId
+initWithLineLoop x =
+    Mesh
+        { id = Nothing
+        , name = Nothing
+        , position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.lineLoop x
+        , triangles = []
+        , boundingBox = x |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        , boneTransforms = Nothing
+        }
+
+
+initWithLineStrip : List Vertex -> Object id materialId
+initWithLineStrip x =
+    Mesh
+        { id = Nothing
+        , name = Nothing
+        , position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.lineStrip x
+        , triangles = []
+        , boundingBox = x |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        , boneTransforms = Nothing
+        }
+
+
+initWithTriangleStrip : List Vertex -> Object id materialId
+initWithTriangleStrip x =
+    Mesh
+        { id = Nothing
+        , name = Nothing
+        , position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.triangleStrip x
+        , triangles = []
+        , boundingBox = x |> getBounds
+        , diffuseMap = Nothing
+        , normalMap = Nothing
+        , material = Nothing
+        , color = Color.white
+        , glSetting = Nothing
+        , boneTransforms = Nothing
+        }
+
+
+initWithTriangleFan : List Vertex -> Object id materialId
+initWithTriangleFan x =
+    Mesh
+        { id = Nothing
+        , name = Nothing
+        , position = Vec3.vec3 0 0 0
+        , rotation = Mat4.identity
+        , mesh = WebGL.triangleFan x
+        , triangles = []
+        , boundingBox = x |> getBounds
         , diffuseMap = Nothing
         , normalMap = Nothing
         , material = Nothing
