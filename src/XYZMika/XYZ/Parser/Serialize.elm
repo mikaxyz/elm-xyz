@@ -68,20 +68,41 @@ indexedTrianglesDecoder =
 
 vertexDecoder : JD.Decoder Vertex
 vertexDecoder =
-    JD.map8 Vertex
-        (JD.field "position" vec3Decoder)
-        (JD.field "color" vec3Decoder)
-        (JD.field "normal" vec3Decoder)
-        (JD.field "tangent" vec3Decoder)
-        (JD.field "uv" vec2Decoder)
-        (JD.map4 (\a b c d -> { hasColor = a, hasNormal = b, hasTangent = c, hasUV = d })
-            (JD.at [ "meta", "hasColor" ] JD.bool)
-            (JD.at [ "meta", "hasNormal" ] JD.bool)
-            (JD.at [ "meta", "hasColor" ] JD.bool)
-            (JD.at [ "meta", "hasUV" ] JD.bool)
-        )
-        (JD.maybe (JD.field "weights" vec4Decoder) |> JD.map (Maybe.withDefault (vec4 1 1 1 1)))
-        (JD.maybe (JD.field "joints" vec4Decoder) |> JD.map (Maybe.withDefault (vec4 1 1 1 1)))
+    let
+        metaDecoder : JD.Decoder { hasColor : Bool, hasNormal : Bool, hasTangent : Bool, hasUV : Bool, hasUV1 : Bool }
+        metaDecoder =
+            JD.map5 (\a b c d e -> { hasColor = a, hasNormal = b, hasTangent = c, hasUV = d, hasUV1 = e })
+                (JD.at [ "meta", "hasColor" ] JD.bool)
+                (JD.at [ "meta", "hasNormal" ] JD.bool)
+                (JD.at [ "meta", "hasColor" ] JD.bool)
+                (JD.at [ "meta", "hasUV" ] JD.bool)
+                (JD.at [ "meta", "hasUV1" ] JD.bool)
+    in
+    metaDecoder
+        |> JD.andThen
+            (\meta ->
+                JD.map8
+                    (\position color normal tangent uv0 uv1 weights joints ->
+                        { position = position
+                        , color = color
+                        , normal = normal
+                        , tangent = tangent
+                        , uv = uv0
+                        , uv1 = uv1
+                        , meta = meta
+                        , weights = weights
+                        , joints = joints
+                        }
+                    )
+                    (JD.field "position" vec3Decoder)
+                    (JD.field "color" vec3Decoder)
+                    (JD.field "normal" vec3Decoder)
+                    (JD.field "tangent" vec3Decoder)
+                    (JD.field "uv" vec2Decoder)
+                    (JD.field "uv1" vec2Decoder)
+                    (JD.maybe (JD.field "weights" vec4Decoder) |> JD.map (Maybe.withDefault (vec4 1 1 1 1)))
+                    (JD.maybe (JD.field "joints" vec4Decoder) |> JD.map (Maybe.withDefault (vec4 1 1 1 1)))
+            )
 
 
 vec2Decoder : JD.Decoder Vec2
@@ -163,6 +184,7 @@ encodeVertex vertex =
                 , ( "hasNormal", JE.bool vertex.meta.hasNormal )
                 , ( "hasTangent", JE.bool vertex.meta.hasTangent )
                 , ( "hasUV", JE.bool vertex.meta.hasUV )
+                , ( "hasUV1", JE.bool vertex.meta.hasUV1 )
                 ]
           )
         ]

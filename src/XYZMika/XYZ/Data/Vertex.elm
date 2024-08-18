@@ -6,6 +6,7 @@ module XYZMika.XYZ.Data.Vertex exposing
     , withNormal
     , withTangent
     , withUV
+    , withUV1
     , withWeights
     )
 
@@ -20,11 +21,13 @@ type alias Vertex =
     , normal : Vec3
     , tangent : Vec3
     , uv : Vec2
+    , uv1 : Vec2
     , meta :
         { hasColor : Bool
         , hasNormal : Bool
         , hasTangent : Bool
         , hasUV : Bool
+        , hasUV1 : Bool
         }
     , weights : Vec4
     , joints : Vec4
@@ -38,11 +41,13 @@ vertex pos =
     , normal = vec3 0 0 0
     , tangent = vec3 0 0 0
     , uv = vec2 0 0
+    , uv1 = vec2 0 0
     , meta =
         { hasColor = False
         , hasNormal = False
         , hasTangent = False
         , hasUV = False
+        , hasUV1 = False
         }
     , weights = vec4 1 1 1 1
     , joints = vec4 1 1 1 1
@@ -73,6 +78,11 @@ withTangent x ({ meta } as v) =
 withUV : Vec2 -> Vertex -> Vertex
 withUV x ({ meta } as v) =
     { v | uv = x, meta = { meta | hasUV = True } }
+
+
+withUV1 : Vec2 -> Vertex -> Vertex
+withUV1 x ({ meta } as v) =
+    { v | uv1 = x, meta = { meta | hasUV1 = True } }
 
 
 withJoints : Int -> Int -> Int -> Int -> Vertex -> Vertex
