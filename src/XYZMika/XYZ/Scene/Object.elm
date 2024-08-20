@@ -135,6 +135,41 @@ type alias BoneTransforms =
     , joint22 : Mat4
     , joint23 : Mat4
     , joint24 : Mat4
+    , joint25 : Mat4
+    , joint26 : Mat4
+    , joint27 : Mat4
+    , joint28 : Mat4
+    , joint29 : Mat4
+    , joint30 : Mat4
+    , joint31 : Mat4
+    , joint32 : Mat4
+    , joint33 : Mat4
+    , joint34 : Mat4
+    , joint35 : Mat4
+    , joint36 : Mat4
+    , joint37 : Mat4
+    , joint38 : Mat4
+    , joint39 : Mat4
+    , joint40 : Mat4
+    , joint41 : Mat4
+    , joint42 : Mat4
+    , joint43 : Mat4
+    , joint44 : Mat4
+    , joint45 : Mat4
+    , joint46 : Mat4
+    , joint47 : Mat4
+    , joint48 : Mat4
+    , joint49 : Mat4
+    , joint50 : Mat4
+    , joint51 : Mat4
+    , joint52 : Mat4
+    , joint53 : Mat4
+    , joint54 : Mat4
+    , joint55 : Mat4
+    , joint56 : Mat4
+    , joint57 : Mat4
+    , joint58 : Mat4
+    , joint59 : Mat4
     , inverseBindMatrix0 : Mat4
     , inverseBindMatrix1 : Mat4
     , inverseBindMatrix2 : Mat4
@@ -160,6 +195,41 @@ type alias BoneTransforms =
     , inverseBindMatrix22 : Mat4
     , inverseBindMatrix23 : Mat4
     , inverseBindMatrix24 : Mat4
+    , inverseBindMatrix25 : Mat4
+    , inverseBindMatrix26 : Mat4
+    , inverseBindMatrix27 : Mat4
+    , inverseBindMatrix28 : Mat4
+    , inverseBindMatrix29 : Mat4
+    , inverseBindMatrix30 : Mat4
+    , inverseBindMatrix31 : Mat4
+    , inverseBindMatrix32 : Mat4
+    , inverseBindMatrix33 : Mat4
+    , inverseBindMatrix34 : Mat4
+    , inverseBindMatrix35 : Mat4
+    , inverseBindMatrix36 : Mat4
+    , inverseBindMatrix37 : Mat4
+    , inverseBindMatrix38 : Mat4
+    , inverseBindMatrix39 : Mat4
+    , inverseBindMatrix40 : Mat4
+    , inverseBindMatrix41 : Mat4
+    , inverseBindMatrix42 : Mat4
+    , inverseBindMatrix43 : Mat4
+    , inverseBindMatrix44 : Mat4
+    , inverseBindMatrix45 : Mat4
+    , inverseBindMatrix46 : Mat4
+    , inverseBindMatrix47 : Mat4
+    , inverseBindMatrix48 : Mat4
+    , inverseBindMatrix49 : Mat4
+    , inverseBindMatrix50 : Mat4
+    , inverseBindMatrix51 : Mat4
+    , inverseBindMatrix52 : Mat4
+    , inverseBindMatrix53 : Mat4
+    , inverseBindMatrix54 : Mat4
+    , inverseBindMatrix55 : Mat4
+    , inverseBindMatrix56 : Mat4
+    , inverseBindMatrix57 : Mat4
+    , inverseBindMatrix58 : Mat4
+    , inverseBindMatrix59 : Mat4
     }
 
 
@@ -190,6 +260,41 @@ boneTransformsIdentity =
     , joint22 = Mat4.identity
     , joint23 = Mat4.identity
     , joint24 = Mat4.identity
+    , joint25 = Mat4.identity
+    , joint26 = Mat4.identity
+    , joint27 = Mat4.identity
+    , joint28 = Mat4.identity
+    , joint29 = Mat4.identity
+    , joint30 = Mat4.identity
+    , joint31 = Mat4.identity
+    , joint32 = Mat4.identity
+    , joint33 = Mat4.identity
+    , joint34 = Mat4.identity
+    , joint35 = Mat4.identity
+    , joint36 = Mat4.identity
+    , joint37 = Mat4.identity
+    , joint38 = Mat4.identity
+    , joint39 = Mat4.identity
+    , joint40 = Mat4.identity
+    , joint41 = Mat4.identity
+    , joint42 = Mat4.identity
+    , joint43 = Mat4.identity
+    , joint44 = Mat4.identity
+    , joint45 = Mat4.identity
+    , joint46 = Mat4.identity
+    , joint47 = Mat4.identity
+    , joint48 = Mat4.identity
+    , joint49 = Mat4.identity
+    , joint50 = Mat4.identity
+    , joint51 = Mat4.identity
+    , joint52 = Mat4.identity
+    , joint53 = Mat4.identity
+    , joint54 = Mat4.identity
+    , joint55 = Mat4.identity
+    , joint56 = Mat4.identity
+    , joint57 = Mat4.identity
+    , joint58 = Mat4.identity
+    , joint59 = Mat4.identity
     , inverseBindMatrix0 = Mat4.identity
     , inverseBindMatrix1 = Mat4.identity
     , inverseBindMatrix2 = Mat4.identity
@@ -215,6 +320,41 @@ boneTransformsIdentity =
     , inverseBindMatrix22 = Mat4.identity
     , inverseBindMatrix23 = Mat4.identity
     , inverseBindMatrix24 = Mat4.identity
+    , inverseBindMatrix25 = Mat4.identity
+    , inverseBindMatrix26 = Mat4.identity
+    , inverseBindMatrix27 = Mat4.identity
+    , inverseBindMatrix28 = Mat4.identity
+    , inverseBindMatrix29 = Mat4.identity
+    , inverseBindMatrix30 = Mat4.identity
+    , inverseBindMatrix31 = Mat4.identity
+    , inverseBindMatrix32 = Mat4.identity
+    , inverseBindMatrix33 = Mat4.identity
+    , inverseBindMatrix34 = Mat4.identity
+    , inverseBindMatrix35 = Mat4.identity
+    , inverseBindMatrix36 = Mat4.identity
+    , inverseBindMatrix37 = Mat4.identity
+    , inverseBindMatrix38 = Mat4.identity
+    , inverseBindMatrix39 = Mat4.identity
+    , inverseBindMatrix40 = Mat4.identity
+    , inverseBindMatrix41 = Mat4.identity
+    , inverseBindMatrix42 = Mat4.identity
+    , inverseBindMatrix43 = Mat4.identity
+    , inverseBindMatrix44 = Mat4.identity
+    , inverseBindMatrix45 = Mat4.identity
+    , inverseBindMatrix46 = Mat4.identity
+    , inverseBindMatrix47 = Mat4.identity
+    , inverseBindMatrix48 = Mat4.identity
+    , inverseBindMatrix49 = Mat4.identity
+    , inverseBindMatrix50 = Mat4.identity
+    , inverseBindMatrix51 = Mat4.identity
+    , inverseBindMatrix52 = Mat4.identity
+    , inverseBindMatrix53 = Mat4.identity
+    , inverseBindMatrix54 = Mat4.identity
+    , inverseBindMatrix55 = Mat4.identity
+    , inverseBindMatrix56 = Mat4.identity
+    , inverseBindMatrix57 = Mat4.identity
+    , inverseBindMatrix58 = Mat4.identity
+    , inverseBindMatrix59 = Mat4.identity
     }
 
 
